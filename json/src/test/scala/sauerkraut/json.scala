@@ -22,7 +22,7 @@ given Writer[TestManual]
       }).
       endStructure()
 
-case class TestDerived(x: Double, b: Int) derives Writer, Reader
+case class TestDerived(x: Double, b: Int, z: List[String]) derives Writer
 
 class TestJson {
 
@@ -31,11 +31,28 @@ class TestJson {
      pickle(Json).to(out).write(value)
      out.toString()
 
+  @Test def writeUnit(): Unit =
+    assertEquals("null", json(()))
+  @Test def writeBoolean(): Unit =
+    assertEquals("true", json(true))
+    assertEquals("false", json(false))
+  @Test def writeChar(): Unit =
+    assertEquals("\"c\"", json('c'))
+  @Test def writeShort(): Unit =
+    assertEquals("1", json(1.toShort))
   @Test def writeInt(): Unit =  
     assertEquals("5", json(5))
+  @Test def writeLong(): Unit =
+    assertEquals("4", json(4L))
+  @Test def writeFloat(): Unit =
+    assertEquals("1.0", json(1.0f))
+  @Test def writeDouble(): Unit =
+    assertEquals("1.0", json(1.0))
+  @Test def writeString(): Unit =
+    assertEquals("\"Test\"", json("Test"))
   @Test def writeManualGiven(): Unit =
     assertEquals("""{"x":4.3,"b":1,"stuff":[1,2]}""",
                  json(TestManual(4.3, 1, Array(1,2))))
   @Test def writeDerivedCaseClass(): Unit =
-    assertEquals("""{"x":1.2,"b":1}""", json(TestDerived(1.2, 1)))
+    assertEquals("""{"x":1.2,"b":1,"z":["a","xyz"]}""", json(TestDerived(1.2, 1, List("a", "xyz"))))
 }

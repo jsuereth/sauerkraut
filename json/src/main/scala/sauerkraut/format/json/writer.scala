@@ -15,21 +15,16 @@ class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter
     tag match
       case FastTypeTag.UnitTag => out.write("null")
       case FastTypeTag.BooleanTag => out.write(picklee.asInstanceOf[Boolean].toString)
-      case FastTypeTag.CharTag => 
-        out.write('\'')
-        out.write(picklee.asInstanceOf[Char])
-        out.write('\'')
+      case FastTypeTag.CharTag | FastTypeTag.StringTag => 
+        out.write('"')
+        out.write(picklee.toString)
+        out.write('"')
       case FastTypeTag.ShortTag | FastTypeTag.IntTag | FastTypeTag.LongTag =>
         // TODO - appropriate int handling
         out.write(picklee.toString)
       case FastTypeTag.FloatTag | FastTypeTag.DoubleTag =>
         // TODO - appropriate floating point handling
         out.write(picklee.toString)
-      case FastTypeTag.StringTag =>
-        out.write('"')
-        // TODO - escape the string
-        out.write(picklee.toString)
-        out.write('"')
       case _ => ???
 
   override def beginStructure(picklee: Any, tag: FastTypeTag[_]): PickleStructureWriter =

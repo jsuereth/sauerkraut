@@ -8,11 +8,14 @@ import core.{Writer,given}
 import com.google.protobuf.CodedOutputStream
 
 
+case class Derived(x: Boolean, test: String) derives Writer
+case class Repeated(x: List[Boolean]) derives Writer
+
 class TestProtocolBufferSimple
   def binary[T: Writer](value: T): Array[Byte] =
     val out = java.io.ByteArrayOutputStream()
     val codedOut = CodedOutputStream.newInstance(out)
-    val formatWriter = ProtocolBufferPickleWriter(codedOut)
+    val formatWriter = RawProtocolBufferPickleWriter(codedOut)
     summon[Writer[T]].write(value, formatWriter)
     codedOut.flush()
     out.toByteArray()
@@ -44,3 +47,9 @@ class TestProtocolBufferSimple
     assertEquals("0774657374696e67", binaryString("testing"))
 
   // TODO - Ensure writing 'erased' as primitive throws.
+
+  @Test def writeDerived(): Unit =
+    assertEquals("0800120774657374696e67", binaryString(Derived(false, "testing"))) 
+
+  @Test def writeRepeated(): Unit =
+    assertEquals("080008010800", binaryString(Repeated(List(false, true, false))))
