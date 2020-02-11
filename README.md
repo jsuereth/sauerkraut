@@ -1,0 +1,29 @@
+# Sauerkraut
+
+The library for those cabbage lovers out there who want
+to send data over the wire.
+
+A revitalization of Pickling in the Scala 3 world.
+
+## Usage
+
+When defining over-the-wire messages, do this:
+
+```scala
+import sauerkraut.core.{Reader,Writer,given}
+case class MyMessage(field: String, data: Int)
+  derives Reader, Writer
+```
+
+Then, when you need to serialize, pick a format and go:
+
+```scala
+import format.json.{Json,given}
+import saurekraut.pickle
+
+val out = StringWriter()
+pickle(Json).to(out).write(MyMessage("test", 1))
+println(out.toString())
+```
+
+
