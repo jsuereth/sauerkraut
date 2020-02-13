@@ -10,4 +10,4 @@ trait PickleReaderSupport[Input, Format]
 
 
 trait PickleWriterSupport[Output, Format]
-  def writerFor(output: Output): PickleWriter
+  def writerFor(format: Format, output: Output): PickleWriter

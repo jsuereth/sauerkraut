@@ -12,16 +12,16 @@ import com.google.protobuf.CodedOutputStream
  */ 
 object RawBinary extends PickleFormat
 
-given PickleWriterSupport[OutputStream, RawBinary.type]
-  def writerFor(output: OutputStream): PickleWriter = 
+given [O <: OutputStream] as PickleWriterSupport[O, RawBinary.type]
+  def writerFor(format: RawBinary.type, output: O): PickleWriter = 
     RawProtocolBufferPickleWriter(CodedOutputStream.newInstance(output))
 
 given PickleWriterSupport[Array[Byte], RawBinary.type]
-  def writerFor(output: Array[Byte]): PickleWriter = 
+  def writerFor(format: RawBinary.type, output: Array[Byte]): PickleWriter = 
     RawProtocolBufferPickleWriter(CodedOutputStream.newInstance(output))
 
 given PickleWriterSupport[ByteBuffer, RawBinary.type]
-  def writerFor(output: ByteBuffer): PickleWriter = 
+  def writerFor(format: RawBinary.type, output: ByteBuffer): PickleWriter = 
     RawProtocolBufferPickleWriter(CodedOutputStream.newInstance(output))
 
 /**
@@ -35,8 +35,8 @@ given PickleWriterSupport[ByteBuffer, RawBinary.type]
 trait Protos extends PickleFormat
   def repository: TypeDescriptorRepository
 
-// TODO constructor for Protos
-given PickleWriterSupport[OutputStream, Protos]
-  def writerFor(output: OutputStream): PickleWriter =
-    ???
+
+given [O <: OutputStream, P <: Protos] as PickleWriterSupport[O, P]
+  def writerFor(protos: P, output: O): PickleWriter =
+    DescriptorBasedProtoWriter(CodedOutputStream.newInstance(output), protos.repository)
 

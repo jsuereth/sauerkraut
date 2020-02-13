@@ -7,7 +7,7 @@ import format.{PickleFormat, PickleWriterSupport, PickleWriter}
 final class WriterApi[F <: PickleFormat](format: F)
   /** Applies a specific output to the pickle format chosen. */
   def to[O](output: O)(given s: PickleWriterSupport[O, F]): WriterApi2 =
-    WriterApi2(s.writerFor(output))
+    WriterApi2(s.writerFor(format, output))
 
 // Helper API.
 final class WriterApi2(pickle: PickleWriter)

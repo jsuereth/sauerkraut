@@ -8,4 +8,5 @@ object Json extends PickleFormat
 
 
 given PickleWriterSupport[StringWriter, Json.type]
-  def writerFor(output: StringWriter): PickleWriter = JsonPickleWriter(output)
+  def writerFor(format: Json.type, output: StringWriter): PickleWriter = 
+    JsonPickleWriter(output)

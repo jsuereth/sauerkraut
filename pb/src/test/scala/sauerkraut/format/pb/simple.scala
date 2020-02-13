@@ -40,10 +40,23 @@ object NestedDesc extends TypeDescriptorMapping[Nested]
       case _   => ???
 given TypeDescriptorMapping[Nested] = NestedDesc
 
+/** A collection of proto descriptors for our case classes. */
+// TODO - find a way to autogenerate or simplify this..
+object MyProtos extends Protos
+  object repository extends TypeDescriptorRepository
+    val NestedTag = fastTypeTag[Nested]()
+    val NestingTag = fastTypeTag[Nesting]()
+    def find[T](tag: FastTypeTag[T]): TypeDescriptorMapping[T] =
+      tag match
+        case NestedTag => NestedDesc.asInstanceOf[TypeDescriptorMapping[T]]
+        case NestingTag => NestingDesc.asInstanceOf[TypeDescriptorMapping[T]]
+        case _ => ???
+      
+
 class TestProtocolBufferSimple
   def binary[T: Writer](value: T): Array[Byte] =
     val out = java.io.ByteArrayOutputStream()
-    pickle(RawBinary).to(out: java.io.OutputStream).write(value)
+    pickle(RawBinary).to(out).write(value)
     out.toByteArray()
   def hexString(buf: Array[Byte]): String =
     buf.map(b => f"$b%02x").mkString("")
@@ -52,11 +65,8 @@ class TestProtocolBufferSimple
 
   def binaryWithDesc[T: Writer : TypeDescriptorMapping](value: T): Array[Byte] =
     val out = java.io.ByteArrayOutputStream()
+    pickle(MyProtos).to(out).write(value)
     val codedOut = CodedOutputStream.newInstance(out)
-    val formatWriter = DescriptorBasedProtoWriter(codedOut,
-       summon[TypeDescriptorMapping[T]])
-    summon[Writer[T]].write(value, formatWriter)
-    codedOut.flush()
     out.toByteArray()
   def binaryStringWithDesc[T : Writer : TypeDescriptorMapping](value: T): String =
     hexString(binaryWithDesc(value))

@@ -110,10 +110,10 @@ class DescriptorBasedProtoStructureWriter(
 // TODO - migrate this to be based on TypeDescriptorRepository
 class DescriptorBasedProtoWriter(
     out: CodedOutputStream,
-    desc: TypeDescriptorMapping[?]
+    repository: TypeDescriptorRepository
 ) extends PickleWriter
   def beginStructure(picklee: Any, tag: FastTypeTag[?]): PickleStructureWriter =
-    DescriptorBasedProtoStructureWriter(out, desc)
+    DescriptorBasedProtoStructureWriter(out, repository.find(tag))
   def putPrimitive(picklee: Any, tag: FastTypeTag[?]): Unit = ???
   def beginCollection(length: Int): PickleCollectionWriter = ???
   override def flush(): Unit = out.flush()
