@@ -34,7 +34,7 @@ class RawProtocolBufferPickleWriter(out: CodedOutputStream) extends PickleWriter
       case FastTypeTag.FloatTag => out.writeFloatNoTag(picklee.asInstanceOf[Float])
       case FastTypeTag.DoubleTag => out.writeDoubleNoTag(picklee.asInstanceOf[Double])
       case FastTypeTag.StringTag => out.writeStringNoTag(picklee.asInstanceOf[String])
-      case FastTypeTag.Erased() => ???
+      case FastTypeTag.Named(name) => ???
   override def flush(): Unit = out.flush()
 
 /** 
@@ -85,7 +85,7 @@ class ProtocolBufferFieldWriter(
       case FastTypeTag.FloatTag => out.writeFloat(fieldNum, picklee.asInstanceOf[Float])
       case FastTypeTag.DoubleTag => out.writeDouble(fieldNum, picklee.asInstanceOf[Double])
       case FastTypeTag.StringTag => out.writeString(fieldNum, picklee.asInstanceOf[String])
-      case FastTypeTag.Erased() => ???
+      case FastTypeTag.Named(name) => ???
 
   def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     pickler(this)

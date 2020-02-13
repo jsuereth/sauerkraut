@@ -11,8 +11,9 @@ enum FastTypeTag[T]
   case DoubleTag extends FastTypeTag[Double]
   case StringTag extends FastTypeTag[String]
   // TODO - case ArrayByte extends FastTypeTag[Array[Byte]]
-  // TODO - figure out if we want to keep a string-ified class name or not.
-  case Erased[T]() extends FastTypeTag[T]
+  // TODO - determine the right mechanism to refrence non-primitive types.
+  /** A non-primitive type, where we keep the fully-qualified name. */
+  case Named[T](name: String) extends FastTypeTag[T]
 
 
 import compiletime.erasedValue
@@ -27,5 +28,11 @@ inline def fastTypeTag[T](): FastTypeTag[T] =
         case _: Float => FastTypeTag.FloatTag.asInstanceOf
         case _: Double => FastTypeTag.DoubleTag.asInstanceOf
         case _: String => FastTypeTag.StringTag.asInstanceOf
-        case _ => FastTypeTag.Erased[T]()
-    
+        case _ => FastTypeTag.Named[T](typeName[T])
+
+
+import scala.quoted._
+private def typeNameImpl[T: Type](using QuoteContext): Expr[String] =
+  Expr(summon[Type[T]].show)
+/** Pulls a full-string (unique) name for the given type. */
+inline def typeName[T]: String = ${typeNameImpl[T]}
