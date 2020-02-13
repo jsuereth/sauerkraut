@@ -64,6 +64,8 @@ trait PickleWriter
    * @return  A pickler which can serialzie the collection.
    */
   def beginCollection(length: Int): PickleCollectionWriter
+  /** Flush any pending writes down this writer. */
+  def flush(): Unit
 
 /** A mechanism to write a 'structure' to the pickle. 
  *  Structures are key-value pairs of 'fields'.

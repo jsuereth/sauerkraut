@@ -24,7 +24,7 @@ given Writer[TestManual]
 
 case class TestDerived(x: Double, b: Int, z: List[String]) derives Writer
 
-class TestJson {
+class TestJson
 
   def json[T: Writer](value: T): String =
      val out = StringWriter()
@@ -50,9 +50,10 @@ class TestJson {
     assertEquals("1.0", json(1.0))
   @Test def writeString(): Unit =
     assertEquals("\"Test\"", json("Test"))
+  @Test def writeListOfInt(): Unit =
+    assertEquals("""[3,4]""", json(List(3,4)))
   @Test def writeManualGiven(): Unit =
     assertEquals("""{"x":4.3,"b":1,"stuff":[1,2]}""",
                  json(TestManual(4.3, 1, Array(1,2))))
   @Test def writeDerivedCaseClass(): Unit =
     assertEquals("""{"x":1.2,"b":1,"z":["a","xyz"]}""", json(TestDerived(1.2, 1, List("a", "xyz"))))
-}

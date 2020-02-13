@@ -10,23 +10,60 @@ import com.google.protobuf.CodedOutputStream
 
 case class Derived(x: Boolean, test: String) derives Writer
 case class Repeated(x: List[Boolean]) derives Writer
+// Example from: https://developers.google.com/protocol-buffers/docs/encoding
+// ```
+// message Test1 {
+//   optional int32 a = 1;
+// }
+// ```
+case class Nesting(a: Int) derives Writer
+object NestingDesc extends TypeDescriptorMapping[Nesting]
+  def fieldNumber(name: String): Int = name match
+    case "a" => 1
+    case _ => ???
+  def fieldDescriptor[F](name: String): Option[TypeDescriptorMapping[F]] =
+    None
+given TypeDescriptorMapping[Nesting] = NestingDesc
+// ```
+// message Test3 {
+//   optional Test1 c = 3;
+// }
+// ```
+case class Nested(c: Nesting) derives Writer
+object NestedDesc extends TypeDescriptorMapping[Nested]
+  def fieldNumber(name: String) : Int = name match
+    case "c" => 3
+    case _   => ???
+  def fieldDescriptor[F](name: String): Option[TypeDescriptorMapping[F]] =
+    name match
+      case "c" => Some(NestingDesc.asInstanceOf[TypeDescriptorMapping[F]])
+      case _   => ???
+given TypeDescriptorMapping[Nested] = NestedDesc
 
 class TestProtocolBufferSimple
   def binary[T: Writer](value: T): Array[Byte] =
     val out = java.io.ByteArrayOutputStream()
-    val codedOut = CodedOutputStream.newInstance(out)
-    val formatWriter = RawProtocolBufferPickleWriter(codedOut)
-    summon[Writer[T]].write(value, formatWriter)
-    codedOut.flush()
+    pickle(RawBinary).to(out: java.io.OutputStream).write(value)
     out.toByteArray()
   def hexString(buf: Array[Byte]): String =
     buf.map(b => f"$b%02x").mkString("")
   def binaryString[T: Writer](value: T): String =
     hexString(binary(value))
 
+  def binaryWithDesc[T: Writer : TypeDescriptorMapping](value: T): Array[Byte] =
+    val out = java.io.ByteArrayOutputStream()
+    val codedOut = CodedOutputStream.newInstance(out)
+    val formatWriter = DescriptorBasedProtoWriter(codedOut,
+       summon[TypeDescriptorMapping[T]])
+    summon[Writer[T]].write(value, formatWriter)
+    codedOut.flush()
+    out.toByteArray()
+  def binaryStringWithDesc[T : Writer : TypeDescriptorMapping](value: T): String =
+    hexString(binaryWithDesc(value))
+
   @Test def writeUnit(): Unit =
     assertEquals("", binaryString(()))
-  @Test def writeBool(): Unit =
+  @Test def writeBoolean(): Unit =
     assertEquals("01", binaryString(true))
     assertEquals("00", binaryString(false))
   @Test def writeChar(): Unit =
@@ -45,11 +82,17 @@ class TestProtocolBufferSimple
     assertEquals("000000000000f03f", binaryString(1.0))
   @Test def writeString(): Unit =
     assertEquals("0774657374696e67", binaryString("testing"))
-
   // TODO - Ensure writing 'erased' as primitive throws.
+
+  @Test def writeListOfInt(): Unit =
+    assertEquals("020304", binaryString(List(3,4)))
 
   @Test def writeDerived(): Unit =
     assertEquals("0800120774657374696e67", binaryString(Derived(false, "testing"))) 
 
   @Test def writeRepeated(): Unit =
     assertEquals("080008010800", binaryString(Repeated(List(false, true, false))))
+
+  @Test def writeNested(): Unit =
+    assertEquals("089601", binaryStringWithDesc(Nesting(150)))
+    assertEquals("1a03089601", binaryStringWithDesc(Nested(Nesting(150))))

@@ -19,11 +19,20 @@ Then, when you need to serialize, pick a format and go:
 
 ```scala
 import format.json.{Json,given}
-import saurekraut.pickle
+import sauerkraut.pickle
 
 val out = StringWriter()
 pickle(Json).to(out).write(MyMessage("test", 1))
 println(out.toString())
 ```
 
+Or, if you wanted something binary looking
 
+```scala
+import format.pb.{RawBinary,given}
+import sauerkraut.pickle
+
+val out: java.io.OutputString =
+   new java.io.ByteArrayOutputStream()
+pickle(RawBinary).to(out).write(MyMessage("test", 1))
+```

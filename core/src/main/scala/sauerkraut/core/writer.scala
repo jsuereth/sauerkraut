@@ -16,7 +16,7 @@ object Writer
       def write(value: T, pickle: format.PickleWriter): Unit =
         inline m match
           case m: Mirror.ProductOf[T] =>
-            val writer = pickle.beginStructure(this, null)
+            val writer = pickle.beginStructure(this, format.fastTypeTag[T]())
             writeElems[m.MirroredElemTypes, m.MirroredElemLabels](writer, value, 0)
             writer.endStructure()
           case _ => compiletime.error("Cannot derive serialization for non-product classes")

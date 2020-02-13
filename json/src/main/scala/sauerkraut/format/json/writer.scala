@@ -31,6 +31,8 @@ class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter
     out.write('{')
     JsonStructureWriter(out)
 
+  override def flush(): Unit = ()
+
 
 class JsonStructureWriter(out: JsonOutputStream) extends PickleStructureWriter
   private var needsComma = false
