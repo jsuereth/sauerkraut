@@ -17,6 +17,8 @@ import sauerkraut.format.pb.{
 
 case class TestPickle1(thing: Long, more: String, stuff: List[Int]) derives Writer
 
+// TODO - autogenerate this somehow
+// TODO - reduce boilerplate before autogenerating.
 object TestPickle1Descriptor extends TypeDescriptorMapping[TestPickle1]
   def fieldDescriptor[F](name: String): Option[sauerkraut.format.pb.TypeDescriptorMapping[F]] =
     None
