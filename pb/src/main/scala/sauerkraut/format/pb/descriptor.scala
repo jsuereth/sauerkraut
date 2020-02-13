@@ -18,3 +18,4 @@ trait TypeDescriptorMapping[T]
  */ 
 trait TypeDescriptorRepository
   def find[T](tag: FastTypeTag[T]): TypeDescriptorMapping[T]
+

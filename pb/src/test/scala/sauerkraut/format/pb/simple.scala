@@ -5,7 +5,6 @@ package pb
 import org.junit.Test
 import org.junit.Assert._
 import core.{Writer,given}
-import com.google.protobuf.CodedOutputStream
 
 
 case class Derived(x: Boolean, test: String) derives Writer
@@ -66,7 +65,6 @@ class TestProtocolBufferSimple
   def binaryWithDesc[T: Writer : TypeDescriptorMapping](value: T): Array[Byte] =
     val out = java.io.ByteArrayOutputStream()
     pickle(MyProtos).to(out).write(value)
-    val codedOut = CodedOutputStream.newInstance(out)
     out.toByteArray()
   def binaryStringWithDesc[T : Writer : TypeDescriptorMapping](value: T): String =
     hexString(binaryWithDesc(value))

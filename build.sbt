@@ -21,4 +21,16 @@ val pb = project
     libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.11.3"
   )
 
-val root = project.in(file(".")).aggregate(core,json,pb).settings(skip in publish := true)
+val pbtest = project
+  .settings(commonSettings:_*)
+  .dependsOn(pb)
+  .enablePlugins(ProtobufPlugin)
+  .settings(
+    skip in publish := true,
+    libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.11.3",
+    protobufRunProtoc in ProtobufConfig := { args =>
+      com.github.os72.protocjar.Protoc.runProtoc("-v370" +: args.toArray)
+    }
+  )
+
+val root = project.in(file(".")).aggregate(core,json,pb,pbtest).settings(skip in publish := true)

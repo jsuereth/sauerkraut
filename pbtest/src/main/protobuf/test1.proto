@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package test;
+
+message Test1{
+  int32 thing = 1;
+  string more = 3;
+  repeated int32 stuff = 5;
+}
