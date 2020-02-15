@@ -16,17 +16,27 @@
 
 package sauerkraut
 
-import core.Writer
-import format.{PickleFormat, PickleWriterSupport, PickleWriter}
+import core.{Reader,Writer}
+import format.{
+  PickleFormat,
+  PickleReader,
+  PickleReaderSupport,
+  PickleWriter,
+  PickleWriterSupport
+}
 
-// Helper API.
-final class WriterApi[F <: PickleFormat](format: F)
+final class PickleFormatDsl[F <: PickleFormat](format: F)
   /** Applies a specific output to the pickle format chosen. */
-  def to[O](output: O)(given s: PickleWriterSupport[O, F]): WriterApi2 =
-    WriterApi2(s.writerFor(format, output))
+  def to[O](output: O)(given s: PickleWriterSupport[O, F]): WriterDsl =
+    WriterDsl(s.writerFor(format, output))
+  def from[I](input: I)(given s: PickleReaderSupport[I, F]): ReaderDsl =
+    ReaderDsl(s.readerFor(format, input))
 
-// Helper API.
-final class WriterApi2(pickle: PickleWriter)
+final class ReaderDsl(pickle: PickleReader)
+  def read[T](given s: Reader[T]): T =
+    s.read(pickle)
+
+final class WriterDsl(pickle: PickleWriter)
   /** Writes the given value into a pickle, and flushes the writer. */
   def write[T](value: T)(given s: Writer[T]): Unit =
     s.write(value, pickle)
@@ -35,4 +45,6 @@ final class WriterApi2(pickle: PickleWriter)
   def lazyWrite[T](value: T)(given s: Writer[T]): Unit =
     s.write(value, pickle)
 
-def pickle[F <: PickleFormat](format: F): WriterApi[F] = WriterApi(format)
+def pickle[F <: PickleFormat](format: F): PickleFormatDsl[F] = 
+  PickleFormatDsl(format)
+

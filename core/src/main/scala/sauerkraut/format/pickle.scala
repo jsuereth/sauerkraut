@@ -22,7 +22,7 @@ trait PickleFormat
 
 
 trait PickleReaderSupport[Input, Format]
-  def readerFor(value: Input): PickleReader
+  def readerFor(format: Format, value: Input): PickleReader
 
 
 trait PickleWriterSupport[Output, Format]

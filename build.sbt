@@ -36,7 +36,7 @@ val json = project
 
 val pb = project
   .settings(commonSettings:_*)
-  .dependsOn(core)
+  .dependsOn(core, compliance % "test")
   .settings(
     libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.11.3"
   )

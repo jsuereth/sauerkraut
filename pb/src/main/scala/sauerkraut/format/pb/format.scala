@@ -19,8 +19,8 @@ package format
 package pb
 
 import java.nio.ByteBuffer
-import java.io.OutputStream
-import com.google.protobuf.CodedOutputStream
+import java.io.{InputStream,OutputStream}
+import com.google.protobuf.{CodedInputStream,CodedOutputStream}
 
 /** 
  * A binary format that is protocol-buffer like, but will not allow
@@ -31,6 +31,11 @@ object RawBinary extends PickleFormat
 given [O <: OutputStream] as PickleWriterSupport[O, RawBinary.type]
   def writerFor(format: RawBinary.type, output: O): PickleWriter = 
     RawBinaryPickleWriter(CodedOutputStream.newInstance(output))
+
+given [I <: InputStream] as PickleReaderSupport[I, RawBinary.type]
+  def readerFor(format: RawBinary.type, input: I): PickleReader = 
+    RawBinaryPickleReader(CodedInputStream.newInstance(input))
+
 
 given PickleWriterSupport[Array[Byte], RawBinary.type]
   def writerFor(format: RawBinary.type, output: Array[Byte]): PickleWriter = 
