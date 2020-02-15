@@ -23,6 +23,13 @@ val commonSettings: Seq[Setting[_]] = Seq(
 val core = project
   .settings(commonSettings:_*)
 
+val compliance = project
+  .settings(commonSettings:_*)
+  .dependsOn(core)
+  .settings(
+    libraryDependencies += "junit" % "junit" % "4.11"
+  )
+
 val json = project
   .settings(commonSettings:_*)
   .dependsOn(core)
@@ -46,4 +53,4 @@ val pbtest = project
     }
   )
 
-val root = project.in(file(".")).aggregate(core,json,pb,pbtest).settings(skip in publish := true)
+val root = project.in(file(".")).aggregate(core,compliance,json,pb,pbtest).settings(skip in publish := true)
