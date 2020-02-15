@@ -15,41 +15,18 @@ case class Repeated(x: List[Boolean]) derives Writer
 //   optional int32 a = 1;
 // }
 // ```
-case class Nesting(a: Int) derives Writer
-object NestingDesc extends TypeDescriptorMapping[Nesting]
-  def fieldNumber(name: String): Int = name match
-    case "a" => 1
-    case _ => ???
-  def fieldDescriptor[F](name: String): Option[TypeDescriptorMapping[F]] =
-    None
-given TypeDescriptorMapping[Nesting] = NestingDesc
+case class Nesting(a: Int @field(1))
+  derives Writer, TypeDescriptorMapping
+
 // ```
 // message Test3 {
 //   optional Test1 c = 3;
 // }
 // ```
-case class Nested(c: Nesting) derives Writer
-object NestedDesc extends TypeDescriptorMapping[Nested]
-  def fieldNumber(name: String) : Int = name match
-    case "c" => 3
-    case _   => ???
-  def fieldDescriptor[F](name: String): Option[TypeDescriptorMapping[F]] =
-    name match
-      case "c" => Some(NestingDesc.asInstanceOf[TypeDescriptorMapping[F]])
-      case _   => ???
-given TypeDescriptorMapping[Nested] = NestedDesc
+case class Nested(c: Nesting @field(3))
+  derives Writer, TypeDescriptorMapping
 
-/** A collection of proto descriptors for our case classes. */
-// TODO - find a way to autogenerate or simplify this..
-object MyProtos extends Protos
-  object repository extends TypeDescriptorRepository
-    val NestedTag = fastTypeTag[Nested]()
-    val NestingTag = fastTypeTag[Nesting]()
-    def find[T](tag: FastTypeTag[T]): TypeDescriptorMapping[T] =
-      tag match
-        case NestedTag => NestedDesc.asInstanceOf[TypeDescriptorMapping[T]]
-        case NestingTag => NestingDesc.asInstanceOf[TypeDescriptorMapping[T]]
-        case _ => ???
+val MyProtos = Protos[(Nested, Nesting)]()
       
 
 class TestProtocolBufferSimple

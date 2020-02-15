@@ -50,7 +50,11 @@ given PickleWriterSupport[ByteBuffer, RawBinary.type]
  */ 
 trait Protos extends PickleFormat
   def repository: TypeDescriptorRepository
-
+object Protos
+  inline def apply[T <: Tuple](): Protos =
+     new Protos() {
+       val repository = TypeDescriptorRepository[T]()
+     }
 
 given [O <: OutputStream, P <: Protos] as PickleWriterSupport[O, P]
   def writerFor(protos: P, output: O): PickleWriter =

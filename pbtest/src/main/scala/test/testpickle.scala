@@ -20,33 +20,17 @@ import sauerkraut.core.{
   Writer,
   given
 }
-import sauerkraut.format.{
-  fastTypeTag,
-  FastTypeTag
-}
 import sauerkraut.format.pb.{
   Protos,
   TypeDescriptorMapping,
-  TypeDescriptorRepository,
+  field,
   given
 }
 
-case class TestPickle1(thing: Long, more: String, stuff: List[Int]) derives Writer
+case class TestPickle1(
+  thing: Long @field(1),
+  more: String @field(3),
+  stuff: List[Int] @field(5)) 
+  derives Writer, TypeDescriptorMapping
 
-// TODO - autogenerate this somehow
-// TODO - reduce boilerplate before autogenerating.
-object TestPickle1Descriptor extends TypeDescriptorMapping[TestPickle1]
-  def fieldDescriptor[F](name: String): Option[sauerkraut.format.pb.TypeDescriptorMapping[F]] =
-    None
-  def fieldNumber(name: String): Int =
-    if (name == "thing") 1
-    else if (name == "more") 3
-    else if (name == "stuff") 5
-    else ???
-
-object TestProtos extends Protos
-  object repository extends TypeDescriptorRepository
-    val TestPickle1Tag = fastTypeTag[TestPickle1]()
-    override def find[T](tag: FastTypeTag[T]): TypeDescriptorMapping[T] =
-      tag match
-        case TestPickle1Tag => TestPickle1Descriptor.asInstanceOf[TypeDescriptorMapping[T]]
+val TestProtos = Protos[TestPickle1 *: Unit]()
