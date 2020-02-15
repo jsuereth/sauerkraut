@@ -20,8 +20,6 @@ package pb
 
 /** An annotation for field numbers on a case class. */
 class field(number: Int) extends scala.annotation.StaticAnnotation
-// TODO - RefiningAnnotation is preserved, but alters the underlying
-// type.
 
 /** 
  * A descriptor for how a Scala case class/enum matches
