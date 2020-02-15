@@ -30,15 +30,15 @@ object RawBinary extends PickleFormat
 
 given [O <: OutputStream] as PickleWriterSupport[O, RawBinary.type]
   def writerFor(format: RawBinary.type, output: O): PickleWriter = 
-    RawProtocolBufferPickleWriter(CodedOutputStream.newInstance(output))
+    RawBinaryPickleWriter(CodedOutputStream.newInstance(output))
 
 given PickleWriterSupport[Array[Byte], RawBinary.type]
   def writerFor(format: RawBinary.type, output: Array[Byte]): PickleWriter = 
-    RawProtocolBufferPickleWriter(CodedOutputStream.newInstance(output))
+    RawBinaryPickleWriter(CodedOutputStream.newInstance(output))
 
 given PickleWriterSupport[ByteBuffer, RawBinary.type]
   def writerFor(format: RawBinary.type, output: ByteBuffer): PickleWriter = 
-    RawProtocolBufferPickleWriter(CodedOutputStream.newInstance(output))
+    RawBinaryPickleWriter(CodedOutputStream.newInstance(output))
 
 /**
  * A binary format that allows the encoding of specific protocol

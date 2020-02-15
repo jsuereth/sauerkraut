@@ -20,55 +20,10 @@ package pb
 
 import com.google.protobuf.CodedOutputStream
 
-/**
- * A PickleWriter that writes protocol-buffer-like pickles.   This will NOT
- * lookup appropriate field numbers per type, but instead number fields in order
- * it sees them as 1->N. This is ok for ephemeral serialization where there is no
- * class/definition skew, but not ok in most serialization applications.
- */
-class RawProtocolBufferPickleWriter(out: CodedOutputStream) extends PickleWriter with PickleCollectionWriter
-  def beginCollection(length: Int): PickleCollectionWriter =
-    // When writing 'raw' collections, we just write a length, then each element.
-    out.writeInt32NoTag(length)
-    this
-  def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
-    pickler(this)
-    this
-  def endCollection(): Unit = ()
-
-  // TODO - lookup known structure before using this.
-  def beginStructure(picklee: Any, tag: FastTypeTag[?]): PickleStructureWriter =
-    ProtocolBufferPickleUnknownStructureWriter(out)
-  def putPrimitive(picklee: Any, tag: FastTypeTag[?]): Unit =
-    tag match
-      case FastTypeTag.UnitTag => ()
-      case FastTypeTag.BooleanTag => out.writeBoolNoTag(picklee.asInstanceOf[Boolean])
-      case FastTypeTag.CharTag => out.writeInt32NoTag(picklee.asInstanceOf[Char].toInt)
-      case FastTypeTag.ShortTag => out.writeInt32NoTag(picklee.asInstanceOf[Short].toInt)
-      case FastTypeTag.IntTag => out.writeInt32NoTag(picklee.asInstanceOf[Int])
-      case FastTypeTag.LongTag => out.writeInt64NoTag(picklee.asInstanceOf[Long])
-      case FastTypeTag.FloatTag => out.writeFloatNoTag(picklee.asInstanceOf[Float])
-      case FastTypeTag.DoubleTag => out.writeDoubleNoTag(picklee.asInstanceOf[Double])
-      case FastTypeTag.StringTag => out.writeStringNoTag(picklee.asInstanceOf[String])
-      case FastTypeTag.Named(name) => ???
-  override def flush(): Unit = out.flush()
-
-/** 
- * An unknown protocol buffer structure writer.  It simply gives all new fields
- * a new index, starting with 1 and moving up.
- */
-class ProtocolBufferPickleUnknownStructureWriter(out: CodedOutputStream) extends PickleStructureWriter
-  private var currentFieldIndex = 0
-  def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
-    currentFieldIndex += 1
-    pickler(ProtocolBufferFieldWriter(out, currentFieldIndex))
-    this
-  def endStructure(): Unit = ()
-
-
 class ProtocolBufferFieldWriter(
     out: CodedOutputStream, 
     fieldNum: Int,
+    // TODO - only allow this for primitives.
     optDescriptor: Option[TypeDescriptorMapping[?]] = None) 
     extends PickleWriter with PickleCollectionWriter
   // Writing a collection should simple write a field multiple times.
@@ -86,9 +41,8 @@ class ProtocolBufferFieldWriter(
             out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
         })
         p
-      // TODO - Configuration to allow raw
-      case None => 
-        ProtocolBufferPickleUnknownStructureWriter(out)
+      // TODO - Better errors.
+      case None => throw RuntimeException(s"Cannot find structure definition for: $tag")
 
   def putPrimitive(picklee: Any, tag: FastTypeTag[?]): Unit =
     tag match
