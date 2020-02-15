@@ -33,15 +33,15 @@ object Reader
       def read(pickle: format.PickleReader): T =
         inline m match
           case m: Mirror.ProductOf[T] =>
-            // TODO - asssert the tag matches this type
-            pickle.beginEntry()
-            val value = m.fromProduct(readFields[m.MirroredElemTypes, m.MirroredElemLabels](pickle, 0).asInstanceOf).asInstanceOf[T]
-            pickle.endEntry()
-            value
+            pickle.readStructure { structReader =>
+              m.fromProduct(
+                readFields[m.MirroredElemTypes, m.MirroredElemLabels](
+                  structReader, 0).asInstanceOf).asInstanceOf[T]
+            }
           case _ => compiletime.error("Cannot derive serialization for non-product structures.")
     }
 
-  inline private def readFields[Fields <: Tuple, Labels <: Tuple](pickle: format.PickleReader, idx: Int): Fields =
+  inline private def readFields[Fields <: Tuple, Labels <: Tuple](pickle: format.StructureReader, idx: Int): Fields =
     inline erasedValue[Fields] match {
       case _: (elem *: elems) => 
         (readField[elem](pickle, summonLabel[Labels](idx)) *: readFields[elems, Labels](pickle, idx+1)).asInstanceOf[Fields]
@@ -49,9 +49,9 @@ object Reader
     }
 
   inline private def readField[T](
-    pickle: format.PickleReader,
+    pickle: format.StructureReader,
     fieldName: String
   ): T =
     summonFrom {
-      case reader: Reader[T] => reader.read(pickle.readField(fieldName))
+      case reader: Reader[T] => pickle.readField(fieldName, reader.read)
     }

@@ -32,3 +32,5 @@ class CollectionWriter[T: Writer]() extends Writer[Iterable[T]]
 given [T](using Writer[T]) as Writer[List[T]] = CollectionWriter[T]().asInstanceOf
 given [T](using Writer[T]) as Writer[Seq[T]] = CollectionWriter[T]().asInstanceOf
 given [T](using Writer[T]) as Writer[Iterable[T]] = CollectionWriter[T]().asInstanceOf
+
+// TODO - Readers

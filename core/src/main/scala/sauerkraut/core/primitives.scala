@@ -25,14 +25,17 @@ final class PrimitiveWriter[T](tag: FastTypeTag[T]) extends Writer[T]
     pickle.putPrimitive(value, tag)
 
 object PrimitiveWriter {
-  inline def apply[T](): PrimitiveWriter[T] = new PrimitiveWriter[T](fastTypeTag[T]())
+  inline def apply[T](): PrimitiveWriter[T] =
+    new PrimitiveWriter[T](fastTypeTag[T]())
 }
 
 // A reader of primitive values.
-final class PrimitiveReader[T] extends Reader[T]
+final class PrimitiveReader[T](tag: FastTypeTag[T]) extends Reader[T]
   override def read(pickle: format.PickleReader): T =
-    pickle.readPrimitive().asInstanceOf[T]
-
+    pickle.readPrimitive(tag).asInstanceOf[T]
+object PrimitiveReader
+  inline def apply[T](): PrimitiveReader[T] =
+    new PrimitiveReader[T](fastTypeTag[T]())
 
 given Writer[Unit] = PrimitiveWriter[Unit]()
 given Reader[Unit] = PrimitiveReader[Unit]()
