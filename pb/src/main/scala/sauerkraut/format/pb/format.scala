@@ -65,3 +65,6 @@ given [O <: OutputStream, P <: Protos] as PickleWriterSupport[O, P]
   def writerFor(protos: P, output: O): PickleWriter =
     DescriptorBasedProtoWriter(CodedOutputStream.newInstance(output), protos.repository)
 
+given [I <: InputStream, P <: Protos] as PickleReaderSupport[I, P]
+  def readerFor(protos: P, input: I): PickleReader =
+    ???

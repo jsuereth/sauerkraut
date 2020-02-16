@@ -69,7 +69,8 @@ class RawBinaryStructureWriter(out: CodedOutputStream) extends PickleStructureWr
 class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int) 
     extends PickleWriter with PickleCollectionWriter
   // Writing a collection should simple write a field multiple times.
-  def beginCollection(length: Int): PickleCollectionWriter = this
+  def beginCollection(length: Int): PickleCollectionWriter =
+    this
   def beginStructure(picklee: Any, tag: FastTypeTag[?]): PickleStructureWriter =
     RawBinaryStructureWriter(out)
 

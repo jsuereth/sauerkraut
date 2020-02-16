@@ -55,7 +55,7 @@ class ProtocolBufferFieldWriter(
       case FastTypeTag.FloatTag => out.writeFloat(fieldNum, picklee.asInstanceOf[Float])
       case FastTypeTag.DoubleTag => out.writeDouble(fieldNum, picklee.asInstanceOf[Double])
       case FastTypeTag.StringTag => out.writeString(fieldNum, picklee.asInstanceOf[String])
-      case FastTypeTag.Named(name) => ???
+      case FastTypeTag.Named(name) => throw RuntimeException(s"$name is not a primitive type!")
 
   def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     pickler(this)
