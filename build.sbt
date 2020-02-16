@@ -32,7 +32,10 @@ val compliance = project
 
 val json = project
   .settings(commonSettings:_*)
-  .dependsOn(core)
+  .dependsOn(core, compliance % "test")
+  .settings(
+    libraryDependencies += "org.typelevel" % "jawn-ast_2.13" % "1.0.0"
+  )
 
 val pb = project
   .settings(commonSettings:_*)

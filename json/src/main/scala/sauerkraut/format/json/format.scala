@@ -19,6 +19,7 @@ package format
 package json
 
 import java.io.StringWriter
+import org.typelevel.jawn.ast
 
 object Json extends PickleFormat
 
@@ -26,3 +27,9 @@ object Json extends PickleFormat
 given PickleWriterSupport[StringWriter, Json.type]
   def writerFor(format: Json.type, output: StringWriter): PickleWriter = 
     JsonPickleWriter(output)
+
+given PickleReaderSupport[String, Json.type]
+  def readerFor(format: Json.type, input: String): PickleReader =
+    JsonReader(ast.JParser.parseUnsafe(input))
+
+// TODO - more reader options.
