@@ -17,9 +17,10 @@
 package sauerkraut
 package core
 
-import format.PickleWriter
+import format.{PickleReader,PickleWriter}
+import scala.collection.mutable.Builder
 
-// TODO - make generic for all collections.
+// TODO - make generic for all collections. Maybe codegen?
 class CollectionWriter[T: Writer]() extends Writer[Iterable[T]]
   override def write(value: Iterable[T], pickle: PickleWriter): Unit =
     val c = pickle.beginCollection(value.size)
@@ -33,4 +34,14 @@ given [T](using Writer[T]) as Writer[List[T]] = CollectionWriter[T]().asInstance
 given [T](using Writer[T]) as Writer[Seq[T]] = CollectionWriter[T]().asInstanceOf
 given [T](using Writer[T]) as Writer[Iterable[T]] = CollectionWriter[T]().asInstanceOf
 
-// TODO - Readers
+final class CollectionReader[E: Reader, To](b: () => Builder[E, To])
+    extends Reader[To]
+  def read(pickle: PickleReader): To =
+    pickle.readCollection(b(), summon[Reader[E]].read)
+
+given [T](using Reader[T]) as Reader[List[T]] =
+  CollectionReader[T, List[T]](() => List.newBuilder)
+given [T](using Reader[T]) as Reader[Seq[T]] =
+  CollectionReader[T, Seq[T]](() => Seq.newBuilder)
+given [T](using Reader[T]) as Reader[Iterable[T]] =
+  CollectionReader[T, Iterable[T]](() => Iterable.newBuilder)

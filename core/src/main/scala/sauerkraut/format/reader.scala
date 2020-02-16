@@ -16,6 +16,8 @@
 
 package sauerkraut.format
 
+import scala.collection.mutable.Builder
+
 /** A reader of pickles.  This is the abstract interface we use to span different pickle format. */
 trait PickleReader
   // TODO - error/failures in reading?
@@ -23,8 +25,10 @@ trait PickleReader
   def readStructure[T](p: StructureReader => T): T
   /** Reads a primitive from the pickle.  See [[FastTypeTag]] for definition of primitives. */
   def readPrimitive[T](tag: FastTypeTag[T]): T
-  // TODO - some kind of collection buffering thing.
-  // def readCollection[T](elementReader: PickleReader => T)
+  // TODO - is this an ok interface for all collection-like things?
+  def readCollection[E, To](
+     builder: Builder[E, To],
+     elementReader: PickleReader => E): To
 
 /** A reader of structures within a pickle. */
 trait StructureReader

@@ -9,5 +9,5 @@ import org.junit.Test
 
 /** Ensures collections can be serialized. */
 trait CollectionComplianceTests extends ComplianceTestBase
-//   @Test def writeListOfInt(): Unit =
-//     roundTrip(List(3,4,8))
+   @Test def writeListOfInt(): Unit =
+     roundTrip(List(3,4,8))

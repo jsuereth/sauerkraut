@@ -19,6 +19,7 @@ package format
 package pb
 
 import com.google.protobuf.CodedInputStream
+import scala.collection.mutable.Builder
 
 class RawBinaryPickleReader(in: CodedInputStream)
   extends PickleReader
@@ -37,6 +38,16 @@ class RawBinaryPickleReader(in: CodedInputStream)
     }
   override def readStructure[T](reader: StructureReader => T): T =
     reader(RawBinaryStructureReader(in))
+  override def readCollection[E, To](
+    builder: Builder[E, To],
+    elementReader: PickleReader => E): To =
+    var length = in.readInt32()
+    builder.sizeHint(length)
+    while (length > 0)
+      builder += elementReader(this)
+      length -= 1
+    builder.result 
+
 
 class RawBinaryStructureReader(in: CodedInputStream)
   extends StructureReader
@@ -47,6 +58,8 @@ class RawBinaryStructureReader(in: CodedInputStream)
     if (latestName != name)
       latestName = name
       latestCount += 1
+    // TODO - if this is a collection, we need to ignore the
+    // tag on each element, not here...
     val tag = in.readTag()
     // TODO - figure out what to assert here...
     //assert(latestCount == tag, s"Expected $latestCount, but found $tag")
