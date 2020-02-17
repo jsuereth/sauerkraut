@@ -17,8 +17,9 @@ class TestFastTypeTag
     assertEquals(PrimitiveTag.FloatTag, fastTypeTag[Float]())
     assertEquals(PrimitiveTag.DoubleTag, fastTypeTag[Double]())
     assertEquals(PrimitiveTag.StringTag, fastTypeTag[String]())
-  @Test def findNamed(): Unit =
-    assertEquals(NonPrimitiveTag.Named[Any]("sauerkraut.format.SimpleType"), 
+  @Test def findStructs(): Unit =
+    assertEquals(NonPrimitiveTag.Struct[Any]("sauerkraut.format.SimpleType"), 
                  fastTypeTag[SimpleType]())
-    assertEquals(NonPrimitiveTag.Named[Any]("sauerkraut.format.ParameterizedType[scala.Boolean, sauerkraut.format.SimpleType]"), 
+    assertEquals(NonPrimitiveTag.Struct[Any]("sauerkraut.format.ParameterizedType[scala.Boolean, sauerkraut.format.SimpleType]"), 
                  fastTypeTag[ParameterizedType[Boolean, SimpleType]]())
+  // TODO - Make sure List[T] + Array[T] work.

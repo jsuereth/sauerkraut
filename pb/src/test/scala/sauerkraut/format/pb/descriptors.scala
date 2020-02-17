@@ -45,6 +45,6 @@ class TestProtocolBufferWithDesc
   @Test def writeNested(): Unit =
     assertEquals("089601", binaryStringWithDesc(Nesting(150)))
     assertEquals("1a03089601", binaryStringWithDesc(Nested(Nesting(150))))
-  @Test def roundTrip(): Unit =
-    roundTrip(Nesting(150))
-    roundTrip(Nested(Nesting(150)))
+  // @Test def roundTrip(): Unit =
+  //   roundTrip(Nesting(150))
+  //   roundTrip(Nested(Nesting(150)))

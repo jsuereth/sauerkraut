@@ -49,7 +49,7 @@ enum PrimitiveTag[T] extends FastTypeTag[T]
 // TODO - determine the right mechanism to refrence non-primitive types.
 enum NonPrimitiveTag[T] extends FastTypeTag[T]
   /** A non-primitive type, where we keep the fully-qualified name. */
-  case Named[T](name: String) extends NonPrimitiveTag[T]
+  case Struct[T](name: String) extends NonPrimitiveTag[T]
 
 
 import compiletime.erasedValue
@@ -79,7 +79,9 @@ inline def fastTypeTag[T](): FastTypeTag[T] =
         // TODO - file bug for this not working
         // case _: Unit | Boolean | Char | Short | Int | Long | Float | Double | String => primitiveTag[T]()
         case _ => compiletime.summonFrom {
-          case m: deriving.Mirror.ProductOf[T] => NonPrimitiveTag.Named[T](typeName[T])
+          // TODO - not all products are supported...
+          case m: deriving.Mirror.ProductOf[T] => NonPrimitiveTag.Struct[T](typeName[T])
+          // TODO - if we can find both a Reader + Writer, it's a supported type.
           case _ =>  unsupportedType[T]
         }
 
