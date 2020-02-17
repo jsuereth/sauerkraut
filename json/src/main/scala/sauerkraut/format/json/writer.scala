@@ -37,7 +37,7 @@ class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter
         out.write('"')
         out.write(picklee.toString)
         out.write('"')
-      case PrimitiveTag.ShortTag | PrimitiveTag.IntTag | PrimitiveTag.LongTag =>
+      case PrimitiveTag.ByteTag | PrimitiveTag.ShortTag | PrimitiveTag.IntTag | PrimitiveTag.LongTag =>
         // TODO - appropriate int handling
         out.write(picklee.toString)
       case PrimitiveTag.FloatTag | PrimitiveTag.DoubleTag =>

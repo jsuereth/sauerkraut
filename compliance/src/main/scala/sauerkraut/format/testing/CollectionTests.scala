@@ -27,3 +27,11 @@ import org.junit.Test
 trait CollectionComplianceTests extends ComplianceTestBase
    @Test def writeListOfInt(): Unit =
      roundTrip(List(3,4,8))
+   @Test def writeArrayOfString(): Unit =
+     roundTrip(Array("Hi", "you", "guys", "I", "am", "an", "array"))
+   @Test def writeArrayOfByte(): Unit =
+     roundTrip(Array[Byte](1.toByte, 4.toByte))
+   @Test def writeArrayOfLong(): Unit =
+     roundTrip(Array(5L, 2144215323462462456L))
+   @Test def writeIterableOfChar(): Unit =
+     roundTrip(Iterable('a', 'f', '0'))

@@ -42,6 +42,7 @@ class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with Pi
     tag match
       case PrimitiveTag.UnitTag => ()
       case PrimitiveTag.BooleanTag => out.writeBoolNoTag(picklee.asInstanceOf[Boolean])
+      case PrimitiveTag.ByteTag => out.write(picklee.asInstanceOf[Byte])
       case PrimitiveTag.CharTag => out.writeInt32NoTag(picklee.asInstanceOf[Char].toInt)
       case PrimitiveTag.ShortTag => out.writeInt32NoTag(picklee.asInstanceOf[Short].toInt)
       case PrimitiveTag.IntTag => out.writeInt32NoTag(picklee.asInstanceOf[Int])

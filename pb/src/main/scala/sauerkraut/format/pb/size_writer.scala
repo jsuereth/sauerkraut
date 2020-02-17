@@ -34,6 +34,7 @@ class FieldSizeEstimateWriter(fieldNum: Int,
         size += CodedOutputStream.computeBoolSize(
             fieldNum, 
             picklee.asInstanceOf)
+      case PrimitiveTag.ByteTag => size += 1
       case PrimitiveTag.CharTag =>
         size += CodedOutputStream.computeInt32Size(
             fieldNum, picklee.asInstanceOf[Char].toInt)

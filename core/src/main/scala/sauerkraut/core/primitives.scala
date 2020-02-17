@@ -39,6 +39,8 @@ object PrimitiveReader
 
 given Writer[Unit] = PrimitiveWriter[Unit]()
 given Reader[Unit] = PrimitiveReader[Unit]()
+given Writer[Byte] = PrimitiveWriter[Byte]()
+given Reader[Byte] = PrimitiveReader[Byte]()
 given Writer[Boolean] = PrimitiveWriter[Boolean]()
 given Reader[Boolean] = PrimitiveReader[Boolean]()
 given Writer[Char] = PrimitiveWriter[Char]()

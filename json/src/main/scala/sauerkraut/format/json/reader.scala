@@ -40,6 +40,7 @@ class JsonReader(value: ast.JValue) extends PickleReader
         tag match
           case PrimitiveTag.UnitTag => ()
           case PrimitiveTag.BooleanTag => value.asBoolean
+          case PrimitiveTag.ByteTag => value.asInt.toByte
           case PrimitiveTag.CharTag => value.asString(0)
           case PrimitiveTag.ShortTag => value.asInt.toShort
           case PrimitiveTag.IntTag => value.asInt

@@ -43,8 +43,30 @@ trait ComplianceTestBase
         summon[Writer[A]].write(value, _),
         summon[Reader[A]].read
     )
-    // TODO - error should be the TYPE.
-    assertEquals(s"Failed to roundTrip: ${value}", value, result)
+    // TODO - error should include the TYPE.
+    value match
+      // B.S. to handle all the other array types for JUnit.
+      case _: Array[Object] => assertArrayEquals(s"Failed to roundTrip: ${value}", 
+                                                 value.asInstanceOf[Array[Object]], 
+                                                 result.asInstanceOf[Array[Object]])
+      case _: Array[Byte] => assertArrayEquals(s"Failed to roundTrip: ${value}", 
+                                                 value.asInstanceOf[Array[Byte]], 
+                                                 result.asInstanceOf[Array[Byte]])
+      case _: Array[Char] =>  assertArrayEquals(s"Failed to roundTrip: ${value}", 
+                                                 value.asInstanceOf[Array[Char]], 
+                                                 result.asInstanceOf[Array[Char]])
+      case _: Array[Short] =>  assertArrayEquals(s"Failed to roundTrip: ${value}", 
+                                                 value.asInstanceOf[Array[Short]], 
+                                                 result.asInstanceOf[Array[Short]])
+      case _: Array[Int] =>  assertArrayEquals(s"Failed to roundTrip: ${value}", 
+                                                 value.asInstanceOf[Array[Int]], 
+                                                 result.asInstanceOf[Array[Int]])
+      case _: Array[Long] =>  assertArrayEquals(s"Failed to roundTrip: ${value}", 
+                                                 value.asInstanceOf[Array[Long]], 
+                                                 result.asInstanceOf[Array[Long]])
+      // TODO - special case floating point numbers.
+      case _ => assertEquals(s"Failed to roundTrip: ${value}", value, result)
+
 
   /** A test to ensure that write a value, altering the defintion and reading a new value
    *  should yield a 'conformant' result.

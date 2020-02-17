@@ -21,9 +21,17 @@ import format.{PickleReader,PickleWriter}
 import scala.collection.mutable.Builder
 
 // TODO - make generic for all collections. Maybe codegen?
-class CollectionWriter[T: Writer]() extends Writer[Iterable[T]]
+/** A writer for all collections extending Iterable. */
+final class CollectionWriter[T: Writer]() extends Writer[Iterable[T]]
   override def write(value: Iterable[T], pickle: PickleWriter): Unit =
     pickle.putCollection(value.size)(c =>
+      for item <- value
+      do c.putElement(itemWriter => summon[Writer[T]].write(item, itemWriter))
+    )
+/** A writer for raw array types. */
+final class ArrayWriter[T: Writer : reflect.ClassTag] extends Writer[Array[T]]
+  override def write(value: Array[T], pickle: PickleWriter): Unit =
+    pickle.putCollection(value.length)(c =>
       for item <- value
       do c.putElement(itemWriter => summon[Writer[T]].write(item, itemWriter))
     )
@@ -31,10 +39,12 @@ class CollectionWriter[T: Writer]() extends Writer[Iterable[T]]
 given [T](using Writer[T]) as Writer[List[T]] = CollectionWriter[T]().asInstanceOf
 given [T](using Writer[T]) as Writer[Seq[T]] = CollectionWriter[T]().asInstanceOf
 given [T](using Writer[T]) as Writer[Iterable[T]] = CollectionWriter[T]().asInstanceOf
+given [T](using Writer[T], reflect.ClassTag[T]) as Writer[Array[T]] = ArrayWriter[T]()
 
+/** A reader for all collections that support the builder pattern. */
 final class CollectionReader[E: Reader, To](b: () => Builder[E, To])
     extends Reader[To]
-  def read(pickle: PickleReader): To =
+  override def read(pickle: PickleReader): To =
     pickle.readCollection(b(), summon[Reader[E]].read)
 
 given [T](using Reader[T]) as Reader[List[T]] =
@@ -43,3 +53,5 @@ given [T](using Reader[T]) as Reader[Seq[T]] =
   CollectionReader[T, Seq[T]](() => Seq.newBuilder)
 given [T](using Reader[T]) as Reader[Iterable[T]] =
   CollectionReader[T, Iterable[T]](() => Iterable.newBuilder)
+given [T](using Reader[T], reflect.ClassTag[T]) as Reader[Array[T]] =
+  CollectionReader[T, Array[T]](() => Array.newBuilder[T])

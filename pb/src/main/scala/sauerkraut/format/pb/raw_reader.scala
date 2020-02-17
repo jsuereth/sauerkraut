@@ -28,6 +28,7 @@ class RawBinaryPickleReader(in: CodedInputStream, root: Boolean = true)
     tag match
         case PrimitiveTag.UnitTag => ()
         case PrimitiveTag.BooleanTag => in.readBool()
+        case PrimitiveTag.ByteTag => in.readRawByte()
         case PrimitiveTag.CharTag => in.readInt32().toChar
         case PrimitiveTag.ShortTag => in.readInt32().toShort
         case PrimitiveTag.IntTag => in.readInt32()
