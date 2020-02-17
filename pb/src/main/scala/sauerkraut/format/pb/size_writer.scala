@@ -20,7 +20,7 @@ class FieldSizeEstimateWriter(fieldNum: Int,
     with SizeEstimator
   private var size: Int = 0
   override def finalSize: Int = size
-  def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): Unit =
+  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
     tag match
       case PrimitiveTag.UnitTag => ()
       case PrimitiveTag.BooleanTag => 
@@ -49,9 +49,12 @@ class FieldSizeEstimateWriter(fieldNum: Int,
       case PrimitiveTag.StringTag =>
         size += CodedOutputStream.computeStringSize(
             fieldNum, picklee.asInstanceOf[String])
+    this
   // TODO - Primitives behave differently from messages...
-  def beginCollection(length: Int): PickleCollectionWriter = this
-  def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): Unit = 
+  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter = 
+    work(this)
+    this
+  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter = 
     val descriptor = optDescriptor match
       case Some(d) => d
       case None => RawBinaryTypeDescriptorMapping()
@@ -64,10 +67,10 @@ class FieldSizeEstimateWriter(fieldNum: Int,
     size += CodedOutputStream.computeTagSize(fieldNum)
     size += CodedOutputStream.computeUInt32SizeNoTag(subSize)
     size += subSize
-  def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
+    this
+  override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     pickler(this)
     this
-  def endCollection(): Unit = ()
   def flush(): Unit = ()
 
 /** Estimate the size of sub-structure given a TypeDescriptor. */
@@ -75,7 +78,7 @@ class SizeEstimateStructureWriter(d: TypeDescriptorMapping[?])
     extends PickleStructureWriter
     with SizeEstimator
   private var size = 0
-  def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
+  override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     val idx = d.fieldNumber(name)
     val fieldPickle = FieldSizeEstimateWriter(idx, d.fieldDescriptor(name))
     pickler(fieldPickle)

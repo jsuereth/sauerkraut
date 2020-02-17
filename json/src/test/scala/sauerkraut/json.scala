@@ -12,15 +12,11 @@ import java.io.StringWriter
 case class TestManual(x: Double, b: Int, stuff: Array[Int])
 given Writer[TestManual]
   override def write(value: TestManual, pickle: format.PickleWriter): Unit =
-    pickle.putStructure(value, fastTypeTag[TestManual]()) { w =>
-      w.putField("x", w => w.putPrimitive(value.x, primitiveTag[Double]())).
+    pickle.putStructure(value, fastTypeTag[TestManual]())(
+      _.putField("x", w => w.putPrimitive(value.x, primitiveTag[Double]())).
       putField("b", w => w.putPrimitive(value.b, primitiveTag[Int]())).
-      putField("stuff", w => {
-        val c = w.beginCollection(value.stuff.length)
-        value.stuff.foreach(i => c.putElement(w => w.putPrimitive(i, primitiveTag[Int]())))
-        c.endCollection()
-      })
-    }
+      putField("stuff", _.putCollection(value.stuff.length)(c =>
+        value.stuff.foreach(i => c.putElement(w => w.putPrimitive(i, primitiveTag[Int]()))))))
 
 case class TestDerived(x: Double, b: Int, z: List[String]) derives Writer
 

@@ -17,46 +17,12 @@
 package sauerkraut.format
 
 /**
- * A writer of pickled content.  This is a mutable API, intended to be called in certain specific ways.
- *
- * Here are a few static rules that all picklers must follow when using this interface.
- *
- * 1. There will be one endEntry() for every beginEntry() call.
- * 2. There will be one endCollection() for every beginCollection() call.
- * 3. Every beginCollection()/endCollection() pair will be inside a beginEntry()/endEntry() pair.
- * 4. Every putElement() call must happen within a beginCollection()/endCollection() block.
- * 5. Every putField() call must happen within a beginEntry()/endEntry() block.
- * 6. There is no guarantee that putElement() will be called within a beginCollectoin()/endCollection() pair.
- *    i.e. we can write empty collections.
- * 7. There is no guarantee that putField will be called within a beginEntry()/endEntry() pair.
- *    i.e. if we don't put any fields, this means the entry was for a "primitive" type, at least what
- *    The pickling library considers primitives.
- * 8. The order of putField calls in any pickler will be the exact same ordering when unpickling, if the format
- *    is compatible.
- *
- * Here is a list of all types the auto-generated Picklers considers "primitives" and must be directly supported by
- * any PickleWriter:
- *
- *   - Nothing
- *   - Null
- *   - Unit
- *   - Byte
- *   - Char
- *   - String
- *   - Short
- *   - Int
- *   - Long
- *   - Float
- *   - Double
- *   - Ref  (for circular object graphs)
- *   - ArrayByte
- *   - ArrayShort
- *   - ArrayChar
- *   - ArrayInt
- *   - ArrayLong
- *   - ArrayBoolean
- *   - ArrayFloat
- *   - ArrayDouble
+ * A writer of pickled content.
+ * 
+ * Currently all pickles can store three types of data:
+ * 1. Primitive values (Int, String, etc.)  See [[FastTypeTag]] for definition of primitive.
+ * 2. A structure of key-value pairs.
+ * 3. A collection of other values.
  */
 trait PickleWriter
   /** Called to denote that an structure is about to be serialized.
@@ -69,18 +35,19 @@ trait PickleWriter
     *                The function that will write the picklee to a pickle structure.
     *                Note: this may be called multiple times, e.g. when getting size estimates.
     */
-  def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): Unit
+  def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter
 
   /** Writes a primitive into the pickle. */
-  def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): Unit
+  def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): PickleWriter
   /**
    * Denotes that a collection of elements is about to be pickled.
    *
    * Note: This must be called after beginEntry()
    * @param length   The length of the collection being serialized.
    * @return  A pickler which can serialzie the collection.
+   *          `endCollection()` must be called on this for correct behavior.
    */
-  def beginCollection(length: Int): PickleCollectionWriter
+  def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter
   /** Flush any pending writes down this writer. */
   def flush(): Unit
 
@@ -107,5 +74,3 @@ trait PickleCollectionWriter
    * @return  A pickler which can serialize the next element of the collection.
    */
   def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter
-  /** Denote that we are done serializing the collection. */
-  def endCollection(): Unit

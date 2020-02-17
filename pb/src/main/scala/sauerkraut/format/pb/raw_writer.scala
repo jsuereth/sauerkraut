@@ -27,17 +27,18 @@ import com.google.protobuf.{CodedOutputStream,WireFormat}
  * class/definition skew, but not ok in most serialization applications.
  */
 class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with PickleCollectionWriter
-  def beginCollection(length: Int): PickleCollectionWriter =
+  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
     // When writing 'raw' collections, we just write a length, then each element.
     out.writeInt32NoTag(length)
+    work(this)
     this
-  def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
+  override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     pickler(this)
     this
-  def endCollection(): Unit = ()
-  def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): Unit =
+  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
     work(RawBinaryStructureWriter(out))
-  def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): Unit =
+    this
+  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
     tag match
       case PrimitiveTag.UnitTag => ()
       case PrimitiveTag.BooleanTag => out.writeBoolNoTag(picklee.asInstanceOf[Boolean])
@@ -48,6 +49,7 @@ class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with Pi
       case PrimitiveTag.FloatTag => out.writeFloatNoTag(picklee.asInstanceOf[Float])
       case PrimitiveTag.DoubleTag => out.writeDoubleNoTag(picklee.asInstanceOf[Double])
       case PrimitiveTag.StringTag => out.writeStringNoTag(picklee.asInstanceOf[String])
+    this
   override def flush(): Unit = out.flush()
 
 /** 
@@ -56,7 +58,7 @@ class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with Pi
  */
 class RawBinaryStructureWriter(out: CodedOutputStream) extends PickleStructureWriter
   private var currentFieldIndex = 0
-  def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
+  override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     currentFieldIndex += 1
     pickler(RawBinaryFieldWriter(out, currentFieldIndex))
     this
@@ -66,16 +68,18 @@ class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int)
     extends PickleWriter with PickleCollectionWriter
   // Writing a collection should simple write a field multiple times.
   // TODO - see if we can determine type and use the alternative encoding.
-  def beginCollection(length: Int): PickleCollectionWriter =
+  override def putCollection(length: Int)(work : PickleCollectionWriter => Unit): PickleWriter =
+    work(this)
     this
-  def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): Unit =
+  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
     val sizeEstimate = FieldSizeEstimateWriter(fieldNum, None)
     sizeEstimate.putStructure(picklee, tag)(work)
     out.writeTag(fieldNum, WireFormat.WIRETYPE_LENGTH_DELIMITED)
     out.writeInt32NoTag(sizeEstimate.finalSize)
     work(RawBinaryStructureWriter(out))
+    this
 
-  def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): Unit =
+  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
     tag match
       case PrimitiveTag.UnitTag => ()
       case PrimitiveTag.BooleanTag => out.writeBool(fieldNum, picklee.asInstanceOf[Boolean])
@@ -86,11 +90,10 @@ class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int)
       case PrimitiveTag.FloatTag => out.writeFloat(fieldNum, picklee.asInstanceOf[Float])
       case PrimitiveTag.DoubleTag => out.writeDouble(fieldNum, picklee.asInstanceOf[Double])
       case PrimitiveTag.StringTag => out.writeString(fieldNum, picklee.asInstanceOf[String])
-
-  def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
-    pickler(this)
     this
 
-  def endCollection(): Unit = ()
+  override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
+    pickler(this)
+    this
 
   override def flush(): Unit = out.flush()

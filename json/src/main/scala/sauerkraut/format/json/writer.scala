@@ -23,11 +23,13 @@ import java.io.StringWriter
 type JsonOutputStream = StringWriter
 
 class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter
-  override def beginCollection(length: Int): PickleCollectionWriter =
+  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
     out.write('[')
-    JsonPickleCollectionWriter(out)
+    work(JsonPickleCollectionWriter(out))
+    out.write(']')
+    this
   // TODO - maybe don't rely on toString on primitives...
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): Unit =
+  override def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): PickleWriter =
     tag match
       case PrimitiveTag.UnitTag => out.write("null")
       case PrimitiveTag.BooleanTag => out.write(picklee.asInstanceOf[Boolean].toString)
@@ -41,11 +43,13 @@ class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter
       case PrimitiveTag.FloatTag | PrimitiveTag.DoubleTag =>
         // TODO - appropriate floating point handling
         out.write(picklee.toString)
+    this
 
-  override def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): Unit =
+  override def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter =
     out.write('{')
     work(JsonStructureWriter(out))
     out.write('}')
+    this
 
   override def flush(): Unit = ()
 
@@ -70,4 +74,3 @@ class JsonPickleCollectionWriter(out: JsonOutputStream) extends PickleCollection
     writer(JsonPickleWriter(out))
     needsComma = true
     this
-  def endCollection(): Unit = out.write(']')
