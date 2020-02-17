@@ -6,10 +6,7 @@ import java.io.{ByteArrayInputStream,ByteArrayOutputStream}
 import com.google.protobuf.{CodedInputStream,CodedOutputStream}
 
 // We only do partial complaince, so we opt-in to what we can do.
-class RawBinaryComplianceTests extends testing.ComplianceTestBase
-    with testing.PrimitiveComplianceTests
-    with testing.CollectionComplianceTests
-    with testing.StructureComplianceTests
+class RawBinaryComplianceTests extends testing.ComplianceTests
   override protected def roundTripImpl[T](
        writer: PickleWriter => Unit,
        reader: PickleReader => T): T =

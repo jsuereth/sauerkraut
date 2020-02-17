@@ -51,7 +51,6 @@ class RawBinaryPickleReader(in: CodedInputStream, root: Boolean = true)
       in.readTag()  // TAG
       in.readRawVarint32() // LengthInBytes
     var length = in.readRawVarint32() // LengthOfCollection
-    Console.err.println(s"\n\n-- Debug --\n\nReading collection of size: $length")
     builder.sizeHint(length)
     while (length > 0)
       builder += elementReader(RawBinaryPickleReader(in, true))
