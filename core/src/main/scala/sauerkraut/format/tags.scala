@@ -44,8 +44,10 @@ inline def fastTypeTag[T](): FastTypeTag[T] =
         case _: Float => FastTypeTag.FloatTag.asInstanceOf
         case _: Double => FastTypeTag.DoubleTag.asInstanceOf
         case _: String => FastTypeTag.StringTag.asInstanceOf
-        case _ => FastTypeTag.Named[T](typeName[T])
-
+        case _ => compiletime.summonFrom {
+          case m: deriving.Mirror.ProductOf[T] => FastTypeTag.Named[T](typeName[T])
+          case _ => compiletime.error("Unsupported type!")
+        }
 
 import scala.quoted._
 private def typeNameImpl[T: Type](using QuoteContext): Expr[String] =

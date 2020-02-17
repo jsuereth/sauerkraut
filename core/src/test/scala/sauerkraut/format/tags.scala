@@ -3,8 +3,8 @@ package sauerkraut.format
 import org.junit.Test
 import org.junit.Assert._
 
-class SimpleType
-class ParameterizedType[T, U]
+case class SimpleType()
+case class ParameterizedType[T, U]()
 
 class TestFastTypeTag 
   @Test def findsPrimitives(): Unit =
