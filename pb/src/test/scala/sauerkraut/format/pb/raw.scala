@@ -14,8 +14,6 @@ class TestRawBinaryProto
     val out = java.io.ByteArrayOutputStream()
     pickle(RawBinary).to(out).write(value)
     out.toByteArray()
-  def hexString(buf: Array[Byte]): String =
-    buf.map(b => f"$b%02x").mkString("")
   def binaryString[T: Writer](value: T): String =
     hexString(binary(value))
 

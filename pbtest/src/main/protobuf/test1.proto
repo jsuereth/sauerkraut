@@ -7,3 +7,7 @@ message Test1{
   string more = 3;
   repeated int32 stuff = 5;
 }
+
+message NestedTest2 {
+  Test1 field = 3;
+}

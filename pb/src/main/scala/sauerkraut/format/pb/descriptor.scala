@@ -149,3 +149,20 @@ object TypeDescriptorRepository
       // TODO - specific type error w/ T
       case _ => error("Unable to find type descriptor")
     }
+
+
+/** A type descriptor mapping to use for the raw binary format. 
+ * 
+ * This simply gives every newly visited field name a new number.
+ */
+class RawBinaryTypeDescriptorMapping
+  extends TypeDescriptorMapping[Any]
+  private var lastName: String = null
+  private var lastIndex: Int = 0
+  def fieldNumber(name: String): Int =
+    if (name != lastName)
+      lastName = name
+      lastIndex += 1
+    lastIndex
+  def fieldDescriptor[F](name: String): Option[TypeDescriptorMapping[F]] =
+    Some(RawBinaryTypeDescriptorMapping().asInstanceOf[TypeDescriptorMapping[F]])

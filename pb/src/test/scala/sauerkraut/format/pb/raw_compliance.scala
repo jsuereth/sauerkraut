@@ -9,8 +9,8 @@ import com.google.protobuf.{CodedInputStream,CodedOutputStream}
 class RawBinaryComplianceTests extends testing.ComplianceTestBase
     with testing.PrimitiveComplianceTests
     with testing.CollectionComplianceTests
-    // TODO - Fix structure writing for raw format.
-    //with testing.StructureComplianceTests
+    // TODO - Fix structure writing for raw format w/ collections.
+    with testing.StructureComplianceTests
   override protected def roundTripImpl[T](
        writer: PickleWriter => Unit,
        reader: PickleReader => T): T =
@@ -18,6 +18,7 @@ class RawBinaryComplianceTests extends testing.ComplianceTestBase
     val w = RawBinaryPickleWriter(CodedOutputStream.newInstance(out))
     writer(w)
     w.flush()
+    Console.err.println(s"\n--Debug--\nSerialized Proto: ${hexString(out.toByteArray)}")
     val r = RawBinaryPickleReader(CodedInputStream.newInstance(
         ByteArrayInputStream(out.toByteArray)
     ))

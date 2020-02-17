@@ -18,7 +18,7 @@ package sauerkraut
 package format
 package pb
 
-import com.google.protobuf.CodedOutputStream
+import com.google.protobuf.{CodedOutputStream,WireFormat}
 
 /**
  * A PickleWriter that writes protocol-buffer-like pickles.   This will NOT
@@ -35,10 +35,8 @@ class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with Pi
     pickler(this)
     this
   def endCollection(): Unit = ()
-
-  // TODO - lookup known structure before using this.
-  def beginStructure(picklee: Any, tag: FastTypeTag[?]): PickleStructureWriter =
-    RawBinaryStructureWriter(out)
+  def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): Unit =
+    work(RawBinaryStructureWriter(out))
   def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): Unit =
     tag match
       case PrimitiveTag.UnitTag => ()
@@ -62,16 +60,20 @@ class RawBinaryStructureWriter(out: CodedOutputStream) extends PickleStructureWr
     currentFieldIndex += 1
     pickler(RawBinaryFieldWriter(out, currentFieldIndex))
     this
-  def endStructure(): Unit = ()
 
 
 class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int) 
     extends PickleWriter with PickleCollectionWriter
   // Writing a collection should simple write a field multiple times.
+  // TODO - see if we can determine type and use the alternative encoding.
   def beginCollection(length: Int): PickleCollectionWriter =
     this
-  def beginStructure(picklee: Any, tag: FastTypeTag[?]): PickleStructureWriter =
-    RawBinaryStructureWriter(out)
+  def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): Unit =
+    val sizeEstimate = FieldSizeEstimateWriter(fieldNum, None)
+    sizeEstimate.putStructure(picklee, tag)(work)
+    out.writeTag(fieldNum, WireFormat.WIRETYPE_LENGTH_DELIMITED)
+    out.writeInt32NoTag(sizeEstimate.finalSize)
+    work(RawBinaryStructureWriter(out))
 
   def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): Unit =
     tag match

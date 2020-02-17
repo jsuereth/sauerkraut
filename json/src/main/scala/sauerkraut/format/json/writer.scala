@@ -42,9 +42,10 @@ class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter
         // TODO - appropriate floating point handling
         out.write(picklee.toString)
 
-  override def beginStructure(picklee: Any, tag: FastTypeTag[_]): PickleStructureWriter =
+  override def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): Unit =
     out.write('{')
-    JsonStructureWriter(out)
+    work(JsonStructureWriter(out))
+    out.write('}')
 
   override def flush(): Unit = ()
 
@@ -61,7 +62,6 @@ class JsonStructureWriter(out: JsonOutputStream) extends PickleStructureWriter
     pickler(JsonPickleWriter(out))
     needsComma = true
     this
-  def endStructure(): Unit = out.write('}')
 
 class JsonPickleCollectionWriter(out: JsonOutputStream) extends PickleCollectionWriter
   private var needsComma = false

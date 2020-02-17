@@ -34,6 +34,11 @@ case class TestSimpleStructureOfPrimitives(
     ss: String
 ) derives Writer, Reader
 
+case class StructureOfStructures(
+  a: Int,
+  b: TestSimpleStructureOfPrimitives
+) derives Writer, Reader
+
 case class StructureOfCollections(
     a: Int,
     z: List[String]
@@ -51,7 +56,19 @@ trait StructureComplianceTests extends ComplianceTestBase
       1.0f,
       1.0,
       "Hello"))
-  // Currently broken.
+  @Test def testStructureOfStrucutres(): Unit =
+    roundTrip(StructureOfStructures(
+        4,
+        TestSimpleStructureOfPrimitives(
+        true,
+        'a',
+        2.toShort,
+        5,
+        6L,
+        1.0f,
+        1.0,
+        "Hello")
+    ))
   @Test def testStructureOfCollections(): Unit =
     roundTrip(StructureOfCollections(
         4,

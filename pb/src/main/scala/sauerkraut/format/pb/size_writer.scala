@@ -1,0 +1,84 @@
+package sauerkraut
+package format
+package pb
+
+import com.google.protobuf.CodedOutputStream
+
+trait SizeEstimator
+  def finalSize: Int
+
+/** This is a pickle writer that just tries to recursively
+ * guess the size of a sub message.
+ * 
+ * Note: we currently forget subsizes after we've computed
+ * them.  That's a huge optimisation win if we can fix it.
+ */
+class FieldSizeEstimateWriter(fieldNum: Int,
+  optDescriptor: Option[TypeDescriptorMapping[?]])
+    extends PickleWriter
+    with PickleCollectionWriter
+    with SizeEstimator
+  private var size: Int = 0
+  override def finalSize: Int = size
+  def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): Unit =
+    tag match
+      case PrimitiveTag.UnitTag => ()
+      case PrimitiveTag.BooleanTag => 
+        size += CodedOutputStream.computeBoolSize(
+            fieldNum, 
+            picklee.asInstanceOf)
+      case PrimitiveTag.CharTag =>
+        size += CodedOutputStream.computeInt32Size(
+            fieldNum, picklee.asInstanceOf[Char].toInt)
+      case PrimitiveTag.ShortTag =>
+        size += CodedOutputStream.computeInt32Size(
+            fieldNum, picklee.asInstanceOf[Short].toInt)
+      case PrimitiveTag.IntTag =>
+        size += CodedOutputStream.computeInt32Size(
+            fieldNum, picklee.asInstanceOf[Int])
+      case PrimitiveTag.LongTag =>
+        size += CodedOutputStream.computeInt64Size(
+            fieldNum, picklee.asInstanceOf[Long]
+        )
+      case PrimitiveTag.FloatTag =>
+        size += CodedOutputStream.computeFloatSize(
+            fieldNum, picklee.asInstanceOf[Float])
+      case PrimitiveTag.DoubleTag =>
+        size += CodedOutputStream.computeDoubleSize(
+            fieldNum, picklee.asInstanceOf[Double])
+      case PrimitiveTag.StringTag =>
+        size += CodedOutputStream.computeStringSize(
+            fieldNum, picklee.asInstanceOf[String])
+  // TODO - Primitives behave differently from messages...
+  def beginCollection(length: Int): PickleCollectionWriter = this
+  def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): Unit = 
+    val descriptor = optDescriptor match
+      case Some(d) => d
+      case None => RawBinaryTypeDescriptorMapping()
+    val subSize =
+      val tmp = SizeEstimateStructureWriter(descriptor)
+      work(tmp)
+      tmp.finalSize
+    // Structure are written as follows:
+    // [TAG] [SIZE] [RAW BYTES]
+    size += CodedOutputStream.computeTagSize(fieldNum)
+    size += CodedOutputStream.computeUInt32SizeNoTag(subSize)
+    size += subSize
+  def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
+    pickler(this)
+    this
+  def endCollection(): Unit = ()
+  def flush(): Unit = ()
+
+/** Estimate the size of sub-structure given a TypeDescriptor. */
+class SizeEstimateStructureWriter(d: TypeDescriptorMapping[?]) 
+    extends PickleStructureWriter
+    with SizeEstimator
+  private var size = 0
+  def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
+    val idx = d.fieldNumber(name)
+    val fieldPickle = FieldSizeEstimateWriter(idx, d.fieldDescriptor(name))
+    pickler(fieldPickle)
+    size += fieldPickle.finalSize
+    this
+  override def finalSize = size

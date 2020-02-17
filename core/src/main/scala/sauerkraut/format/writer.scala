@@ -65,10 +65,11 @@ trait PickleWriter
     * @param tag
     *                The tag to use when pickling this entry.   Tags must be serialized/restored, unless
     *                otherwise hinted that it can be elided.
-    * @return
-    *                A pbuilder instance a pickler can use to serialize the picklee, if it's a complex type.
+    * @param work
+    *                The function that will write the picklee to a pickle structure.
+    *                Note: this may be called multiple times, e.g. when getting size estimates.
     */
-  def beginStructure(picklee: Any, tag: FastTypeTag[_]): PickleStructureWriter
+  def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): Unit
 
   /** Writes a primitive into the pickle. */
   def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): Unit
@@ -95,11 +96,6 @@ trait PickleStructureWriter
    * @return A builder for remaining items in the current complex structure being pickled.
    */
   def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter
-
-  /**
-   * Call this to denote that the given primitive, collection or structure being pickled is completed.
-   */
-  def endStructure(): Unit  
 
 /** A writer of collection elements. */
 trait PickleCollectionWriter
