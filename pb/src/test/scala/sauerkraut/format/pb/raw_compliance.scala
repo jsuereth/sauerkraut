@@ -18,7 +18,6 @@ class RawBinaryComplianceTests extends testing.ComplianceTestBase
     val w = RawBinaryPickleWriter(CodedOutputStream.newInstance(out))
     writer(w)
     w.flush()
-    Console.err.println(s"\n--Debug--\nSerialized Proto: ${hexString(out.toByteArray)}")
     val r = RawBinaryPickleReader(CodedInputStream.newInstance(
         ByteArrayInputStream(out.toByteArray)
     ))

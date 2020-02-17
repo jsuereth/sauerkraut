@@ -47,15 +47,14 @@ class RawBinaryPickleReader(in: CodedInputStream, root: Boolean = true)
     elementReader: PickleReader => E): To =
     if (root)
       var length = in.readRawVarint32()
-      Console.err.println(s"\n\n-DEBUG- Reading collection w/ size=$length \n\n")
       builder.sizeHint(length)
       while (length > 0)
         builder += elementReader(this)
         length -= 1
       builder.result
     else
-      Console.err.println(s"\n\n-DEBUG- Reading collection w/ field tags...")
-      ??? 
+      Console.err.println(s"\n\n-DEBUG- Reading collection w/ field tags...\n\n")
+      builder.result
 
 
 class RawBinaryStructureReader(in: CodedInputStream)
