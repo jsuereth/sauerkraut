@@ -24,7 +24,7 @@ trait PickleReader
   /** Reads a struct-like pickle.  This is where fields are stored by-name. */
   def readStructure[T](p: StructureReader => T): T
   /** Reads a primitive from the pickle.  See [[FastTypeTag]] for definition of primitives. */
-  def readPrimitive[T](tag: FastTypeTag[T]): T
+  def readPrimitive[T](tag: PrimitiveTag[T]): T
   // TODO - is this an ok interface for all collection-like things?
   def readCollection[E, To](
      builder: Builder[E, To],

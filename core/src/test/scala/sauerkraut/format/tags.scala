@@ -8,17 +8,17 @@ case class ParameterizedType[T, U]()
 
 class TestFastTypeTag 
   @Test def findsPrimitives(): Unit =
-    assertEquals(FastTypeTag.UnitTag, fastTypeTag[Unit]())
-    assertEquals(FastTypeTag.BooleanTag, fastTypeTag[Boolean]())
-    assertEquals(FastTypeTag.CharTag, fastTypeTag[Char]())
-    assertEquals(FastTypeTag.ShortTag, fastTypeTag[Short]())
-    assertEquals(FastTypeTag.IntTag, fastTypeTag[Int]())
-    assertEquals(FastTypeTag.LongTag, fastTypeTag[Long]())
-    assertEquals(FastTypeTag.FloatTag, fastTypeTag[Float]())
-    assertEquals(FastTypeTag.DoubleTag, fastTypeTag[Double]())
-    assertEquals(FastTypeTag.StringTag, fastTypeTag[String]())
+    assertEquals(PrimitiveTag.UnitTag, fastTypeTag[Unit]())
+    assertEquals(PrimitiveTag.BooleanTag, fastTypeTag[Boolean]())
+    assertEquals(PrimitiveTag.CharTag, fastTypeTag[Char]())
+    assertEquals(PrimitiveTag.ShortTag, fastTypeTag[Short]())
+    assertEquals(PrimitiveTag.IntTag, fastTypeTag[Int]())
+    assertEquals(PrimitiveTag.LongTag, fastTypeTag[Long]())
+    assertEquals(PrimitiveTag.FloatTag, fastTypeTag[Float]())
+    assertEquals(PrimitiveTag.DoubleTag, fastTypeTag[Double]())
+    assertEquals(PrimitiveTag.StringTag, fastTypeTag[String]())
   @Test def findNamed(): Unit =
-    assertEquals(FastTypeTag.Named[Any]("sauerkraut.format.SimpleType"), 
+    assertEquals(NonPrimitiveTag.Named[Any]("sauerkraut.format.SimpleType"), 
                  fastTypeTag[SimpleType]())
-    assertEquals(FastTypeTag.Named[Any]("sauerkraut.format.ParameterizedType[scala.Boolean, sauerkraut.format.SimpleType]"), 
+    assertEquals(NonPrimitiveTag.Named[Any]("sauerkraut.format.ParameterizedType[scala.Boolean, sauerkraut.format.SimpleType]"), 
                  fastTypeTag[ParameterizedType[Boolean, SimpleType]]())

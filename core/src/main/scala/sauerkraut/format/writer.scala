@@ -71,7 +71,7 @@ trait PickleWriter
   def beginStructure(picklee: Any, tag: FastTypeTag[_]): PickleStructureWriter
 
   /** Writes a primitive into the pickle. */
-  def putPrimitive(picklee: Any, tag: FastTypeTag[_]): Unit
+  def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): Unit
   /**
    * Denotes that a collection of elements is about to be pickled.
    *

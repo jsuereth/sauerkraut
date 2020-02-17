@@ -23,18 +23,17 @@ import scala.collection.mutable.Builder
 
 class RawBinaryPickleReader(in: CodedInputStream)
   extends PickleReader
-  override def readPrimitive[T](tag: FastTypeTag[T]): T =
+  override def readPrimitive[T](tag: PrimitiveTag[T]): T =
     tag match
-        case FastTypeTag.UnitTag => ()
-        case FastTypeTag.BooleanTag => in.readBool()
-        case FastTypeTag.CharTag => in.readInt32().toChar
-        case FastTypeTag.ShortTag => in.readInt32().toShort
-        case FastTypeTag.IntTag => in.readInt32()
-        case FastTypeTag.LongTag => in.readInt64()
-        case FastTypeTag.FloatTag => in.readFloat()
-        case FastTypeTag.DoubleTag => in.readDouble()
-        case FastTypeTag.StringTag => in.readString()
-        case FastTypeTag.Named(name) => throw RuntimeException(s"$name is not a primitive type!")
+        case PrimitiveTag.UnitTag => ()
+        case PrimitiveTag.BooleanTag => in.readBool()
+        case PrimitiveTag.CharTag => in.readInt32().toChar
+        case PrimitiveTag.ShortTag => in.readInt32().toShort
+        case PrimitiveTag.IntTag => in.readInt32()
+        case PrimitiveTag.LongTag => in.readInt64()
+        case PrimitiveTag.FloatTag => in.readFloat()
+        case PrimitiveTag.DoubleTag => in.readDouble()
+        case PrimitiveTag.StringTag => in.readString()
   override def readStructure[T](reader: StructureReader => T): T =
     reader(RawBinaryStructureReader(in))
   override def readCollection[E, To](

@@ -17,25 +17,25 @@
 package sauerkraut
 package core
 
-import format.{fastTypeTag,FastTypeTag}
+import format.{primitiveTag,PrimitiveTag}
 
 // A writer of primitive values.
-final class PrimitiveWriter[T](tag: FastTypeTag[T]) extends Writer[T]
+final class PrimitiveWriter[T](tag: PrimitiveTag[T]) extends Writer[T]
   override def write(value: T, pickle: format.PickleWriter): Unit =
     pickle.putPrimitive(value, tag)
 
 object PrimitiveWriter {
   inline def apply[T](): PrimitiveWriter[T] =
-    new PrimitiveWriter[T](fastTypeTag[T]())
+    new PrimitiveWriter[T](primitiveTag[T]())
 }
 
 // A reader of primitive values.
-final class PrimitiveReader[T](tag: FastTypeTag[T]) extends Reader[T]
+final class PrimitiveReader[T](tag: PrimitiveTag[T]) extends Reader[T]
   override def read(pickle: format.PickleReader): T =
     pickle.readPrimitive(tag).asInstanceOf[T]
 object PrimitiveReader
   inline def apply[T](): PrimitiveReader[T] =
-    new PrimitiveReader[T](fastTypeTag[T]())
+    new PrimitiveReader[T](primitiveTag[T]())
 
 given Writer[Unit] = PrimitiveWriter[Unit]()
 given Reader[Unit] = PrimitiveReader[Unit]()

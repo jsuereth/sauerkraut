@@ -4,7 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 import format.json.Json
 import format.json.given
-import format.fastTypeTag
+import format.{fastTypeTag, primitiveTag}
 import core.{Reader, Writer, given}
 import java.io.StringWriter
 
@@ -13,11 +13,11 @@ case class TestManual(x: Double, b: Int, stuff: Array[Int])
 given Writer[TestManual]
   override def write(value: TestManual, pickle: format.PickleWriter): Unit =
     pickle.beginStructure(value, fastTypeTag[TestManual]()).
-      putField("x", w => w.putPrimitive(value.x, fastTypeTag[Double]())).
-      putField("b", w => w.putPrimitive(value.b, fastTypeTag[Int]())).
+      putField("x", w => w.putPrimitive(value.x, primitiveTag[Double]())).
+      putField("b", w => w.putPrimitive(value.b, primitiveTag[Int]())).
       putField("stuff", w => {
         val c = w.beginCollection(value.stuff.length)
-        value.stuff.foreach(i => c.putElement(w => w.putPrimitive(i, fastTypeTag[Int]())))
+        value.stuff.foreach(i => c.putElement(w => w.putPrimitive(i, primitiveTag[Int]())))
         c.endCollection()
       }).
       endStructure()

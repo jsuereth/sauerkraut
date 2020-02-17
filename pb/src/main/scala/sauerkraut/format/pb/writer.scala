@@ -44,18 +44,17 @@ class ProtocolBufferFieldWriter(
       // TODO - Better errors.
       case None => throw RuntimeException(s"Cannot find structure definition for: $tag")
 
-  def putPrimitive(picklee: Any, tag: FastTypeTag[?]): Unit =
+  def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): Unit =
     tag match
-      case FastTypeTag.UnitTag => ()
-      case FastTypeTag.BooleanTag => out.writeBool(fieldNum, picklee.asInstanceOf[Boolean])
-      case FastTypeTag.CharTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Char].toInt)
-      case FastTypeTag.ShortTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Short].toInt)
-      case FastTypeTag.IntTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Int])
-      case FastTypeTag.LongTag => out.writeInt64(fieldNum, picklee.asInstanceOf[Long])
-      case FastTypeTag.FloatTag => out.writeFloat(fieldNum, picklee.asInstanceOf[Float])
-      case FastTypeTag.DoubleTag => out.writeDouble(fieldNum, picklee.asInstanceOf[Double])
-      case FastTypeTag.StringTag => out.writeString(fieldNum, picklee.asInstanceOf[String])
-      case FastTypeTag.Named(name) => throw RuntimeException(s"$name is not a primitive type!")
+      case PrimitiveTag.UnitTag => ()
+      case PrimitiveTag.BooleanTag => out.writeBool(fieldNum, picklee.asInstanceOf[Boolean])
+      case PrimitiveTag.CharTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Char].toInt)
+      case PrimitiveTag.ShortTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Short].toInt)
+      case PrimitiveTag.IntTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Int])
+      case PrimitiveTag.LongTag => out.writeInt64(fieldNum, picklee.asInstanceOf[Long])
+      case PrimitiveTag.FloatTag => out.writeFloat(fieldNum, picklee.asInstanceOf[Float])
+      case PrimitiveTag.DoubleTag => out.writeDouble(fieldNum, picklee.asInstanceOf[Double])
+      case PrimitiveTag.StringTag => out.writeString(fieldNum, picklee.asInstanceOf[String])
 
   def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     pickler(this)
@@ -84,6 +83,6 @@ class DescriptorBasedProtoWriter(
 ) extends PickleWriter
   def beginStructure(picklee: Any, tag: FastTypeTag[?]): PickleStructureWriter =
     DescriptorBasedProtoStructureWriter(out, repository.find(tag))
-  def putPrimitive(picklee: Any, tag: FastTypeTag[?]): Unit = ???
+  def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): Unit = ???
   def beginCollection(length: Int): PickleCollectionWriter = ???
   override def flush(): Unit = out.flush()

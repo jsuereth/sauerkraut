@@ -27,21 +27,20 @@ class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter
     out.write('[')
     JsonPickleCollectionWriter(out)
   // TODO - maybe don't rely on toString on primitives...
-  override def putPrimitive(picklee: Any, tag: FastTypeTag[_]): Unit =
+  override def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): Unit =
     tag match
-      case FastTypeTag.UnitTag => out.write("null")
-      case FastTypeTag.BooleanTag => out.write(picklee.asInstanceOf[Boolean].toString)
-      case FastTypeTag.CharTag | FastTypeTag.StringTag => 
+      case PrimitiveTag.UnitTag => out.write("null")
+      case PrimitiveTag.BooleanTag => out.write(picklee.asInstanceOf[Boolean].toString)
+      case PrimitiveTag.CharTag | PrimitiveTag.StringTag => 
         out.write('"')
         out.write(picklee.toString)
         out.write('"')
-      case FastTypeTag.ShortTag | FastTypeTag.IntTag | FastTypeTag.LongTag =>
+      case PrimitiveTag.ShortTag | PrimitiveTag.IntTag | PrimitiveTag.LongTag =>
         // TODO - appropriate int handling
         out.write(picklee.toString)
-      case FastTypeTag.FloatTag | FastTypeTag.DoubleTag =>
+      case PrimitiveTag.FloatTag | PrimitiveTag.DoubleTag =>
         // TODO - appropriate floating point handling
         out.write(picklee.toString)
-      case _ => ???
 
   override def beginStructure(picklee: Any, tag: FastTypeTag[_]): PickleStructureWriter =
     out.write('{')

@@ -36,18 +36,17 @@ class JsonReader(value: ast.JValue) extends PickleReader
           // TODO - error?
       builder.result
   override def readPrimitive[T](
-      tag: sauerkraut.format.FastTypeTag[T]): T =
+      tag: sauerkraut.format.PrimitiveTag[T]): T =
         tag match
-          case FastTypeTag.UnitTag => ()
-          case FastTypeTag.BooleanTag => value.asBoolean
-          case FastTypeTag.CharTag => value.asString(0)
-          case FastTypeTag.ShortTag => value.asInt.toShort
-          case FastTypeTag.IntTag => value.asInt
-          case FastTypeTag.LongTag => value.asLong
-          case FastTypeTag.FloatTag => value.asDouble.toFloat
-          case FastTypeTag.DoubleTag => value.asDouble
-          case FastTypeTag.StringTag => value.asString
-          case _ => ???
+          case PrimitiveTag.UnitTag => ()
+          case PrimitiveTag.BooleanTag => value.asBoolean
+          case PrimitiveTag.CharTag => value.asString(0)
+          case PrimitiveTag.ShortTag => value.asInt.toShort
+          case PrimitiveTag.IntTag => value.asInt
+          case PrimitiveTag.LongTag => value.asLong
+          case PrimitiveTag.FloatTag => value.asDouble.toFloat
+          case PrimitiveTag.DoubleTag => value.asDouble
+          case PrimitiveTag.StringTag => value.asString
   override def readStructure[T](
       reader: sauerkraut.format.StructureReader => T): T =
       reader(JsonStructureReader(value))
