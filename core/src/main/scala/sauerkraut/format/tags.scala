@@ -46,7 +46,7 @@ inline def fastTypeTag[T](): FastTypeTag[T] =
         case _: String => FastTypeTag.StringTag.asInstanceOf
         case _ => compiletime.summonFrom {
           case m: deriving.Mirror.ProductOf[T] => FastTypeTag.Named[T](typeName[T])
-          case _ => compiletime.error("Unsupported type!")
+          case _ =>  unsupportedType[T]
         }
 
 import scala.quoted._
@@ -54,3 +54,8 @@ private def typeNameImpl[T: Type](using QuoteContext): Expr[String] =
   Expr(summon[Type[T]].show)
 /** Pulls a full-string (unique) name for the given type. */
 inline def typeName[T]: String = ${typeNameImpl[T]}
+
+private inline def unsupportedType[T]: FastTypeTag[T] = ${unsupportedTypeImpl[T]}
+private def unsupportedTypeImpl[T: Type](using qctx: QuoteContext): Expr[FastTypeTag[T]] =
+  qctx.error(s"Unsupported saurekraut pickling type: ${summon[Type[T]].show}")
+  Expr(null)
