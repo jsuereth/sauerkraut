@@ -33,4 +33,8 @@ case class TestPickle1(
   stuff: List[Int] @field(5)) 
   derives Writer, TypeDescriptorMapping
 
-val TestProtos = Protos[TestPickle1 *: Unit]()
+case class NestedTestPickle2(
+  field: TestPickle1 @field(3)
+) derives Writer, TypeDescriptorMapping
+
+val TestProtos = Protos[TestPickle1 *: NestedTestPickle2 *: Unit]()
