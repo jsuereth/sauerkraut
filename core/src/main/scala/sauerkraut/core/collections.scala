@@ -18,7 +18,7 @@ package sauerkraut
 package core
 
 import format.{PickleReader,PickleWriter}
-import scala.collection.mutable.Builder
+import scala.collection.mutable.{Builder => ScalaCollectionBuilder}
 
 // TODO - make generic for all collections. Maybe codegen?
 /** A writer for all collections extending Iterable. */
@@ -42,7 +42,7 @@ given [T](using Writer[T]) as Writer[Iterable[T]] = CollectionWriter[T]().asInst
 given [T](using Writer[T], reflect.ClassTag[T]) as Writer[Array[T]] = ArrayWriter[T]()
 
 /** A reader for all collections that support the builder pattern. */
-final class CollectionReader[E: Reader, To](b: () => Builder[E, To])
+final class CollectionReader[E: Reader, To](b: () => ScalaCollectionBuilder[E, To])
     extends Reader[To]
   override def read(pickle: PickleReader): To =
     pickle.readCollection(b(), summon[Reader[E]].read)
@@ -55,3 +55,31 @@ given [T](using Reader[T]) as Reader[Iterable[T]] =
   CollectionReader[T, Iterable[T]](() => Iterable.newBuilder)
 given [T](using Reader[T], reflect.ClassTag[T]) as Reader[Array[T]] =
   CollectionReader[T, Array[T]](() => Array.newBuilder[T])
+
+final class SimpleCollectionBuilder[E: Buildable, To](
+    b: ScalaCollectionBuilder[E, To])
+    extends CollectionBuilder[E, To]
+  private var tmpBuilder = List.newBuilder[Builder[E]]
+  def putElement(): Builder[E] =
+    val nextElement = summon[Buildable[E]].newBuilder
+    tmpBuilder += nextElement
+    nextElement
+  def result: To =
+    // TODO - make efficient?
+    b ++= (tmpBuilder.result.map(_.result))
+    b.result
+
+final class CollectionBuildable[E: Buildable, To](
+    newColBuilder: () => ScalaCollectionBuilder[E, To])
+    extends Buildable[To]
+  def newBuilder: Builder[To] =
+    SimpleCollectionBuilder[E, To](newColBuilder())
+
+given [T](using Buildable[T]) as Buildable[List[T]] =
+  CollectionBuildable[T, List[T]](() => List.newBuilder)
+given [T](using Buildable[T]) as Buildable[Seq[T]] =
+  CollectionBuildable[T, Seq[T]](() => Seq.newBuilder)
+given [T](using Buildable[T]) as Buildable[Iterable[T]] =
+  CollectionBuildable[T, Iterable[T]](() => Iterable.newBuilder)
+given [T](using Buildable[T], reflect.ClassTag[T]) as Buildable[Array[T]] =
+  CollectionBuildable[T, Array[T]](() => Array.newBuilder[T])

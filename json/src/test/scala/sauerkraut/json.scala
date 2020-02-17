@@ -5,7 +5,7 @@ import org.junit.Assert._
 import format.json.Json
 import format.json.given
 import format.{fastTypeTag, primitiveTag}
-import core.{Reader, Writer, given}
+import core.{Reader, Writer, Buildable, given}
 import java.io.StringWriter
 
 
@@ -18,7 +18,8 @@ given Writer[TestManual]
       putField("stuff", _.putCollection(value.stuff.length)(c =>
         value.stuff.foreach(i => c.putElement(w => w.putPrimitive(i, primitiveTag[Int]()))))))
 
-case class TestDerived(x: Double, b: Int, z: List[String]) derives Writer
+case class TestDerived(x: Double, b: Int, z: List[String]) 
+  derives Writer, Buildable
 
 class TestJson
 

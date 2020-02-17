@@ -22,15 +22,15 @@ package core
  * 
  * This trait is used to ensure a specific type can be both read and written.
  */
-trait Pickler[T] extends Reader[T] with Writer[T]
+trait Pickler[T] extends Buildable[T] with Writer[T]
 
 object Pickler
   // Helper class to combine readers + writers into pickles.
-  private class BuiltPickler[T](r: Reader[T], w: Writer[T]) extends Pickler[T]
-    override def read(pickle: format.PickleReader): T = r.read(pickle)
+  private class BuiltPickler[T](b: Buildable[T], w: Writer[T]) extends Pickler[T]
+    override def newBuilder: Builder[T] = b.newBuilder
     override def write(value: T, pickle: format.PickleWriter): Unit = w.write(value, pickle)
-    override def toString(): String = s"BuiltPickler($r, $w)"
+    override def toString(): String = s"BuiltPickler($b, $w)"
   /** Provides picklers by joining readers + writers. */
-  given [T](using Reader[T], Writer[T]) as Pickler[T] =
-    BuiltPickler(summon[Reader[T]], summon[Writer[T]])
+  given [T](using Buildable[T], Writer[T]) as Pickler[T] =
+    BuiltPickler(summon[Buildable[T]], summon[Writer[T]])
   

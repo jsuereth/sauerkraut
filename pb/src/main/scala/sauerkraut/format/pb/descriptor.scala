@@ -21,6 +21,36 @@ package pb
 /** An annotation for field numbers on a case class. */
 class field(number: Int) extends scala.annotation.StaticAnnotation
 
+/**
+ * A descriptor for a protobuf type.
+ * 
+ * This is used during serialization/deserialization.
+ */
+trait ProtoTypeDescriptor[T]
+  def tag: FastTypeTag[T]
+
+/** A descriptor for a field in a message. */
+final case class FieldDescriptor[T](
+  name: String,
+  number: Int,
+  desc: ProtoTypeDescriptor[T])
+
+/** A marker for a simple type. */
+final case class SimpleTypeDescriptor[T](
+    override val tag: FastTypeTag[T])
+    extends ProtoTypeDescriptor[T]
+
+/** Defines a message (key-value field pairs). */
+final case class MessageTypeDescriptor[T](
+    override val tag: FastTypeTag[T],
+    val fields: List[FieldDescriptor[?]])
+    extends ProtoTypeDescriptor[T]
+  
+  final def fieldByName(name: String): Option[FieldDescriptor[?]] =
+    fields.find(_.name == name)
+  final def fieldByNum(num: Int): Option[FieldDescriptor[?]] =
+    fields.find(_.number == num)
+
 /** 
  * A descriptor for how a Scala case class/enum matches
  * a protocol buffer definitiion.

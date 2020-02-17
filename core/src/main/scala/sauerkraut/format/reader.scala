@@ -60,6 +60,7 @@ trait PickleReader
  *    when reading.
  */
 trait StructureReader 
+
   /** Reads a field with given name, using the lambda provided. */
   def readField[T](name: String, fieldReader: PickleReader => T): T
 
