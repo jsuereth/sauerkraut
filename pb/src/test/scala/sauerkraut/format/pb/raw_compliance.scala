@@ -9,7 +9,6 @@ import com.google.protobuf.{CodedInputStream,CodedOutputStream}
 class RawBinaryComplianceTests extends testing.ComplianceTestBase
     with testing.PrimitiveComplianceTests
     with testing.CollectionComplianceTests
-    // TODO - Fix structure writing for raw format w/ collections.
     with testing.StructureComplianceTests
   override protected def roundTripImpl[T](
        writer: PickleWriter => Unit,

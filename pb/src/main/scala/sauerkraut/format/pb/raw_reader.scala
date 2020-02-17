@@ -43,19 +43,20 @@ class RawBinaryPickleReader(in: CodedInputStream, root: Boolean = true)
       val size = in.readRawVarint32()
     reader(RawBinaryStructureReader(in))
   override def readCollection[E, To](
-    builder: Builder[E, To],
-    elementReader: PickleReader => E): To =
-    if (root)
-      var length = in.readRawVarint32()
-      builder.sizeHint(length)
-      while (length > 0)
-        builder += elementReader(this)
-        length -= 1
-      builder.result
-    else
-      Console.err.println(s"\n\n-DEBUG- Reading collection w/ field tags...\n\n")
-      builder.result
-
+      builder: Builder[E, To],
+      elementReader: PickleReader => E): To =
+    // Collections are written as:
+    // [TAG] [LengthInBytes] [LengthOfCollection] [Element]*
+    if (!root) 
+      in.readTag()  // TAG
+      in.readRawVarint32() // LengthInBytes
+    var length = in.readRawVarint32() // LengthOfCollection
+    Console.err.println(s"\n\n-- Debug --\n\nReading collection of size: $length")
+    builder.sizeHint(length)
+    while (length > 0)
+      builder += elementReader(RawBinaryPickleReader(in, true))
+      length -= 1
+    builder.result
 
 class RawBinaryStructureReader(in: CodedInputStream)
   extends StructureReader
@@ -68,5 +69,6 @@ class RawBinaryStructureReader(in: CodedInputStream)
       latestName = name
       latestCount += 1
     fieldReader(RawBinaryPickleReader(in, root = false))
+
 
 

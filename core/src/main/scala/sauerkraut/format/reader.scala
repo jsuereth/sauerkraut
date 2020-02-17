@@ -32,7 +32,7 @@ import scala.collection.mutable.Builder
  * This uses a `pull` model for reading the pickle.  The [[Reader]]
  * is expected to draw information out of a pickle using this interface.
  * 
- * TODO - We, likely, should push into [[Reader]]
+ * TODO - We, likely, should push into [[Reader]] to improve performance.
  */
 trait PickleReader
   // TODO - error/failures in reading?

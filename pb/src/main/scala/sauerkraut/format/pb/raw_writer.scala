@@ -65,11 +65,20 @@ class RawBinaryStructureWriter(out: CodedOutputStream) extends PickleStructureWr
 
 
 class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int) 
-    extends PickleWriter with PickleCollectionWriter
+    extends PickleWriter
   // Writing a collection should simple write a field multiple times.
   // TODO - see if we can determine type and use the alternative encoding.
   override def putCollection(length: Int)(work : PickleCollectionWriter => Unit): PickleWriter =
-    work(this)
+    // Collections are written as:
+    // [TAG] [LengthInBytes] [LengthOfCollection] [Element]*
+    val sizeEstimate = RawCollectionSizeEstimateWriter()
+    work(sizeEstimate)
+    out.writeTag(fieldNum, WireFormat.WIRETYPE_LENGTH_DELIMITED)
+    out.writeInt32NoTag(
+      CodedOutputStream.computeInt32SizeNoTag(length) +
+      sizeEstimate.finalSize)
+    out.writeInt32NoTag(length)
+    work(RawBinaryPickleWriter(out))
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
     val sizeEstimate = FieldSizeEstimateWriter(fieldNum, None)
@@ -90,10 +99,6 @@ class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int)
       case PrimitiveTag.FloatTag => out.writeFloat(fieldNum, picklee.asInstanceOf[Float])
       case PrimitiveTag.DoubleTag => out.writeDouble(fieldNum, picklee.asInstanceOf[Double])
       case PrimitiveTag.StringTag => out.writeString(fieldNum, picklee.asInstanceOf[String])
-    this
-
-  override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
-    pickler(this)
     this
 
   override def flush(): Unit = out.flush()

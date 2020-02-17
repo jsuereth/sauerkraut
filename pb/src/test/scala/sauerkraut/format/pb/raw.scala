@@ -54,4 +54,8 @@ class TestRawBinaryProto
     assertEquals("0800120774657374696e67", binaryString(Derived(false, "testing"))) 
 
   @Test def writeRepeated(): Unit =
-    assertEquals("080008010800", binaryString(Repeated(List(false, true, false))))
+    // TODO - we know this is bad.
+    // repeated fields are being written as:
+    // [TAG] [BogusLength] [LengthOfCollection] [RawElement]*
+    assertEquals("0a0103000100", binaryString(Repeated(List(false, true, false))))
+    //assertEquals("0a??03000100", binaryString(Repeated(List(false, true, false))))

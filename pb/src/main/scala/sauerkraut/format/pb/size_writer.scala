@@ -7,6 +7,13 @@ import com.google.protobuf.CodedOutputStream
 trait SizeEstimator
   def finalSize: Int
 
+class RawCollectionSizeEstimateWriter extends PickleCollectionWriter with SizeEstimator
+  private var size: Int = 0
+  override def finalSize: Int = size
+  override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
+    // TODO - implement.  We're getting away with bogus data here...
+    this
+
 /** This is a pickle writer that just tries to recursively
  * guess the size of a sub message.
  * 
