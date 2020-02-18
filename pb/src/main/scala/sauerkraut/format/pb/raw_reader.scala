@@ -52,7 +52,6 @@ class RawBinaryPickleReader(in: CodedInputStream)
         case PrimitiveTag.DoubleTag => b.putPrimitive(in.readDouble())
         case PrimitiveTag.StringTag => b.putPrimitive(in.readString())
   private def readStructure[T](struct: core.StructureBuilder[T]): Unit =
-    System.err.println(s"\n[DEBUG] Reading structure: $struct")
     object Field
       def unapply(num: Int): Option[core.Builder[?]] =
         if (num > 0 && num <= struct.knownFieldNames.length)
@@ -67,12 +66,10 @@ class RawBinaryPickleReader(in: CodedInputStream)
         // Special case string (and packed) types so we don't read the length.
         case Tag(WIRETYPE_LENGTH_DELIMITED,
                  fieldNum @ Field(fieldBuilder: core.PrimitiveBuilder[?])) =>
-          System.err.println(s"\n[DEBUG] Reading string: $fieldNum, $fieldBuilder")
           // Don't read the length, string read will do this.
           RawBinaryPickleReader(in).push(fieldBuilder)
         // All other types are somewhat uniform.
         case Tag(wireType, fieldNum @ Field(fieldBuilder)) =>
-          System.err.print(s"\n[DEBUG] Reading $fieldNum, wire: $wireType, builder: $fieldBuilder\n")
           limitByWireType(wireType) {
             // TODO - match over the resulting type and if it's
             // a collection, then push just a single element?
@@ -82,7 +79,6 @@ class RawBinaryPickleReader(in: CodedInputStream)
   inline private def limitByWireType[A](wireType: Int)(f: => A): Unit =
     if (wireType == WIRETYPE_LENGTH_DELIMITED)
       var length = in.readRawVarint32()
-      System.err.println(s"\n[DEBUG] Setting limit to: $length\n")
       val limit = in.pushLimit(length)
       f
       in.popLimit(limit)
@@ -95,6 +91,3 @@ class RawBinaryPickleReader(in: CodedInputStream)
     while (length > 0)
       RawBinaryPickleReader(in).push(c.putElement())
       length -= 1
-
-
-
