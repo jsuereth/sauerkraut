@@ -38,7 +38,9 @@ object PrimitiveReader
     new PrimitiveReader[T](primitiveTag[T]())
 
 // A builder of primitive values.
-final class SimplePrimitiveBuilder[T] extends PrimitiveBuilder[T]
+final class SimplePrimitiveBuilder[T](
+    override val tag: PrimitiveTag[T]) 
+    extends PrimitiveBuilder[T]
   private var value: Option[T] = None
   override def putPrimitive(p: T): Unit =
     value = Some(p)
@@ -46,19 +48,22 @@ final class SimplePrimitiveBuilder[T] extends PrimitiveBuilder[T]
     value match
       case Some(v) => v
       case None => throw RuntimeException("Did not find value for primitive!")
-final class PrimitiveBuildable[T] extends Buildable[T]
-  override def newBuilder: Builder[T] = SimplePrimitiveBuilder[T]()
-
-final class StaticValueBuilder[T](override val result: T) 
+final class PrimitiveBuildable[T](tag: PrimitiveTag[T]) extends Buildable[T]
+  override def newBuilder: Builder[T] = SimplePrimitiveBuilder[T](tag)
+object PrimitiveBuildable
+  inline def apply[T](): Buildable[T] =
+    new PrimitiveBuildable[T](primitiveTag[T]())
+final class StaticValueBuilder[T](
+    override val tag: PrimitiveTag[T],
+    override val result: T) 
     extends PrimitiveBuilder[T]
   override def putPrimitive(value: T): Unit = ()
-
 
 given Writer[Unit] = PrimitiveWriter[Unit]()
 given Reader[Unit] = PrimitiveReader[Unit]()
 given Buildable[Unit]
   override def newBuilder: Builder[Unit] = 
-    StaticValueBuilder(())
+    StaticValueBuilder(PrimitiveTag.UnitTag, ())
 given Writer[Byte] = PrimitiveWriter[Byte]()
 given Reader[Byte] = PrimitiveReader[Byte]()
 given Buildable[Byte] = PrimitiveBuildable[Byte]()

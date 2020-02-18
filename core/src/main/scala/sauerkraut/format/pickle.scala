@@ -24,6 +24,9 @@ trait PickleFormat
 trait PickleReaderSupport[Input, Format]
   def readerFor(format: Format, value: Input): PickleReader
 
+trait PicklePushReaderSupport[Input, Format]
+  def readerFor(format: Format, value: Input): PicklePushReader 
 
 trait PickleWriterSupport[Output, Format]
   def writerFor(format: Format, output: Output): PickleWriter
+

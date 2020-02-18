@@ -16,13 +16,15 @@
 
 package sauerkraut
 
-import core.{Reader,Writer}
+import core.{Reader,Writer,Buildable}
 import format.{
   PickleFormat,
   PickleReader,
   PickleReaderSupport,
   PickleWriter,
-  PickleWriterSupport
+  PickleWriterSupport,
+  PicklePushReader,
+  PicklePushReaderSupport
 }
 
 final class PickleFormatDsl[F <: PickleFormat](format: F)
@@ -31,10 +33,16 @@ final class PickleFormatDsl[F <: PickleFormat](format: F)
     WriterDsl(s.writerFor(format, output))
   def from[I](input: I)(given s: PickleReaderSupport[I, F]): ReaderDsl =
     ReaderDsl(s.readerFor(format, input))
+  def from[I](input: I)(given s: PicklePushReaderSupport[I,F]): PushReaderDsl =
+    PushReaderDsl(s.readerFor(format, input))
 
 final class ReaderDsl(pickle: PickleReader)
   def read[T](given s: Reader[T]): T =
     s.read(pickle)
+
+final class PushReaderDsl(pickle: PicklePushReader)
+  def build[T](given b: Buildable[T]): T =
+    pickle.push(b.newBuilder).result
 
 final class WriterDsl(pickle: PickleWriter)
   /** Writes the given value into a pickle, and flushes the writer. */

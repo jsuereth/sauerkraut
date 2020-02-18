@@ -18,6 +18,12 @@ package sauerkraut
 package format
 
 import scala.collection.mutable.Builder
+/**
+ * A reader of pickles that pushes into a builder of type T.
+ */
+trait PicklePushReader
+  /** Pushes the contents of the pickle into the builder. */
+  def push[T](builder: core.Builder[T]): core.Builder[T]
 
 /** 
  * A reader of pickles.

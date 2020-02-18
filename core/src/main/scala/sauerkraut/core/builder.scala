@@ -40,6 +40,7 @@ trait CollectionBuilder[E, To] extends Builder[To]
   def result: To
 
 trait PrimitiveBuilder[P] extends Builder[P]
+  def tag: format.PrimitiveTag[P]
   def putPrimitive(value: P): Unit
 
 
@@ -80,7 +81,8 @@ object Buildable
           summonLabels[m.MirroredElemLabels]
         // TODO - lookup tuple by index?
         override def putField[F](name: String): Builder[F] =
-          // TODO - FIX THIS TO NOT BE DYNAMIC LOOKUP
+          // TODO - FIX THIS TO NOT BE DYNAMIC LOOKUP, something more like
+          // a pattern match.
           fields.toArray(knownFieldNames.indexOf(name)).asInstanceOf[Builder[F]]
         override def result: T =
           m.fromProduct(
