@@ -61,6 +61,7 @@ class RawBinaryStructureWriter(out: CodedOutputStream) extends PickleStructureWr
   private var currentFieldIndex = 0
   override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     currentFieldIndex += 1
+    System.err.println(s"Writing $name to $currentFieldIndex")
     pickler(RawBinaryFieldWriter(out, currentFieldIndex))
     this
 

@@ -23,11 +23,44 @@ import com.google.protobuf.CodedOutputStream
 trait SizeEstimator
   def finalSize: Int
 
+class RawPickleSizeEstimator extends PickleWriter with SizeEstimator
+  private var size: Int = 0
+  override def finalSize: Int = size
+  override def flush(): Unit = ()
+  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+    size += CodedOutputStream.computeInt32SizeNoTag(length)
+    val estimate = RawCollectionSizeEstimateWriter()
+    work(estimate)
+    size += estimate.finalSize
+    this
+  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
+    val tmp: Int = tag match
+      case PrimitiveTag.UnitTag => 0
+      case PrimitiveTag.ByteTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Byte].toInt)
+      case PrimitiveTag.BooleanTag => CodedOutputStream.computeBoolSizeNoTag(picklee.asInstanceOf[Boolean])
+      case PrimitiveTag.CharTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Char].toInt)     
+      case PrimitiveTag.ShortTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Short].toInt)
+      case PrimitiveTag.IntTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Int])
+      case PrimitiveTag.LongTag => CodedOutputStream.computeInt64SizeNoTag(picklee.asInstanceOf[Long])
+      case PrimitiveTag.FloatTag => CodedOutputStream.computeFloatSizeNoTag(picklee.asInstanceOf[Float])
+      case PrimitiveTag.DoubleTag => CodedOutputStream.computeDoubleSizeNoTag(picklee.asInstanceOf[Double])
+      case PrimitiveTag.StringTag => CodedOutputStream.computeStringSizeNoTag(picklee.asInstanceOf[String])
+    size += tmp
+    this
+  override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter =
+    val estimate = SizeEstimateStructureWriter(RawBinaryTypeDescriptorMapping())
+    pickler(estimate)
+    size += estimate.finalSize
+    this
+
 class RawCollectionSizeEstimateWriter extends PickleCollectionWriter with SizeEstimator
   private var size: Int = 0
   override def finalSize: Int = size
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     // TODO - implement.  We're getting away with bogus data here...
+    val estimate = RawPickleSizeEstimator()
+    pickler(estimate)
+    size += estimate.finalSize
     this
 
 /** This is a pickle writer that just tries to recursively
@@ -76,6 +109,8 @@ class FieldSizeEstimateWriter(fieldNum: Int,
     this
   // TODO - Primitives behave differently from messages...
   override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter = 
+    size += CodedOutputStream.computeTagSize(fieldNum)
+    size += CodedOutputStream.computeInt32SizeNoTag(length)
     work(this)
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter = 

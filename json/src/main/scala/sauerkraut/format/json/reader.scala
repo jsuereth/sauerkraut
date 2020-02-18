@@ -18,40 +18,42 @@ package sauerkraut
 package format
 package json
 
-
+import core.{PrimitiveBuilder, CollectionBuilder, StructureBuilder}
 import org.typelevel.jawn.ast
 
 class JsonReader(value: ast.JValue) extends PickleReader
-  override def readCollection[E, To](
-      builder: scala.collection.mutable.Builder[E, To],
-      elementReader: sauerkraut.format.PickleReader => E): To =
-      value match
+  def push[T](builder: core.Builder[T]): core.Builder[T] =
+    builder match
+      case p: PrimitiveBuilder[T] => readPrimitive(p)
+      case c: CollectionBuilder[?, T] => readCollection(c)
+      case s: StructureBuilder[T] => readStructure(s)
+    builder
+
+  def readCollection[E, To](p: CollectionBuilder[E,To]): Unit =
+    value match
         case ast.JArray(values) =>
-          builder.sizeHint(values.length)
+          // TODO - sizeHint
           var idx = 0
           while (idx < values.length)
-            builder += elementReader(JsonReader(values(idx)))
+            JsonReader(values(idx)).push(p.putElement())
             idx += 1
         case _ =>
-          // TODO - error?
-      builder.result
-  override def readPrimitive[T](
-      tag: sauerkraut.format.PrimitiveTag[T]): T =
-        tag match
-          case PrimitiveTag.UnitTag => ()
-          case PrimitiveTag.BooleanTag => value.asBoolean
-          case PrimitiveTag.ByteTag => value.asInt.toByte
-          case PrimitiveTag.CharTag => value.asString(0)
-          case PrimitiveTag.ShortTag => value.asInt.toShort
-          case PrimitiveTag.IntTag => value.asInt
-          case PrimitiveTag.LongTag => value.asLong
-          case PrimitiveTag.FloatTag => value.asDouble.toFloat
-          case PrimitiveTag.DoubleTag => value.asDouble
-          case PrimitiveTag.StringTag => value.asString
-  override def readStructure[T](
-      reader: sauerkraut.format.StructureReader => T): T =
-      reader(JsonStructureReader(value))
+          // TODO - Allow single values to be treated as an element?
+          ()
+  
+  def readPrimitive[T](p: PrimitiveBuilder[T]): Unit =
+    p.tag match
+      case PrimitiveTag.UnitTag => ()
+      case PrimitiveTag.BooleanTag => p.putPrimitive(value.asBoolean)
+      case PrimitiveTag.ByteTag => p.putPrimitive(value.asInt.toByte)
+      case PrimitiveTag.CharTag => p.putPrimitive(value.asString(0))
+      case PrimitiveTag.ShortTag => p.putPrimitive(value.asInt.toShort)
+      case PrimitiveTag.IntTag => p.putPrimitive(value.asInt)
+      case PrimitiveTag.LongTag => p.putPrimitive(value.asLong)
+      case PrimitiveTag.FloatTag => p.putPrimitive(value.asDouble.toFloat)
+      case PrimitiveTag.DoubleTag => p.putPrimitive(value.asDouble)
+      case PrimitiveTag.StringTag => p.putPrimitive(value.asString)
 
-class JsonStructureReader(value: ast.JValue) extends StructureReader
-  override def readField[T](name: String, fieldReader: PickleReader => T): T =
-    fieldReader(JsonReader(value.get(name)))
+  def readStructure[T](p: StructureBuilder[T]): Unit =
+    for name <- p.knownFieldNames
+    do JsonReader(value.get(name)).push(p.putField(name))

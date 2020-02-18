@@ -18,57 +18,83 @@ package sauerkraut
 package format
 package pb
 
-import com.google.protobuf.CodedInputStream
-import scala.collection.mutable.Builder
+import com.google.protobuf.{
+  CodedInputStream,
+  WireFormat
+}
+import WireFormat.{
+  WIRETYPE_LENGTH_DELIMITED
+}
 
-class RawBinaryPickleReader(in: CodedInputStream, root: Boolean = true)
+object Tag
+  def unapply(tag: Int): (Int, Int) =
+    (WireFormat.getTagWireType(tag), WireFormat.getTagFieldNumber(tag))
+
+class RawBinaryPickleReader(in: CodedInputStream)
   extends PickleReader
-  override def readPrimitive[T](tag: PrimitiveTag[T]): T =
-    if (!root) in.readTag() // Ignore for now...
-    tag match
+  override def push[T](b: core.Builder[T]): core.Builder[T] =
+    b match
+      case p: core.PrimitiveBuilder[T] => readPrimitive(p)
+      case c: core.CollectionBuilder[_, T] => readCollection(c)
+      case s: core.StructureBuilder[T] => readStructure(s)
+    b
+
+  private def readPrimitive[T](b: core.PrimitiveBuilder[T]): Unit =
+    b.tag match
         case PrimitiveTag.UnitTag => ()
-        case PrimitiveTag.BooleanTag => in.readBool()
-        case PrimitiveTag.ByteTag => in.readRawByte()
-        case PrimitiveTag.CharTag => in.readInt32().toChar
-        case PrimitiveTag.ShortTag => in.readInt32().toShort
-        case PrimitiveTag.IntTag => in.readInt32()
-        case PrimitiveTag.LongTag => in.readInt64()
-        case PrimitiveTag.FloatTag => in.readFloat()
-        case PrimitiveTag.DoubleTag => in.readDouble()
-        case PrimitiveTag.StringTag => in.readString()
-  override def readStructure[T](reader: StructureReader => T): T =
-    if (!root)
-      // Structures have a tag
-      val tag = in.readTag()
-      // Structures have a size.  TODO - only read up to that size?
-      val size = in.readRawVarint32()
-    reader(RawBinaryStructureReader(in))
-  override def readCollection[E, To](
-      builder: Builder[E, To],
-      elementReader: PickleReader => E): To =
+        case PrimitiveTag.BooleanTag => b.putPrimitive(in.readBool())
+        case PrimitiveTag.ByteTag => b.putPrimitive(in.readRawByte())
+        case PrimitiveTag.CharTag => b.putPrimitive(in.readInt32().toChar)
+        case PrimitiveTag.ShortTag => b.putPrimitive(in.readInt32().toShort)
+        case PrimitiveTag.IntTag => b.putPrimitive(in.readInt32())
+        case PrimitiveTag.LongTag => b.putPrimitive(in.readInt64())
+        case PrimitiveTag.FloatTag => b.putPrimitive(in.readFloat())
+        case PrimitiveTag.DoubleTag => b.putPrimitive(in.readDouble())
+        case PrimitiveTag.StringTag => b.putPrimitive(in.readString())
+  private def readStructure[T](struct: core.StructureBuilder[T]): Unit =
+    System.err.println(s"\n[DEBUG] Reading structure: $struct")
+    object Field
+      def unapply(num: Int): Option[core.Builder[?]] =
+        if (num > 0 && num <= struct.knownFieldNames.length)
+          Some(struct.putField(struct.knownFieldNames(num-1)))
+        else None
+    // TODO - loopsy
+    var done: Boolean = false
+    while (!done)
+      in.readTag match
+        // TODO - if we hit any field we don't recognize, we quit.
+        case 0 => done = true
+        // Special case string (and packed) types so we don't read the length.
+        case Tag(WIRETYPE_LENGTH_DELIMITED,
+                 fieldNum @ Field(fieldBuilder: core.PrimitiveBuilder[?])) =>
+          System.err.println(s"\n[DEBUG] Reading string: $fieldNum, $fieldBuilder")
+          // Don't read the length, string read will do this.
+          RawBinaryPickleReader(in).push(fieldBuilder)
+        // All other types are somewhat uniform.
+        case Tag(wireType, fieldNum @ Field(fieldBuilder)) =>
+          System.err.print(s"\n[DEBUG] Reading $fieldNum, wire: $wireType, builder: $fieldBuilder\n")
+          limitByWireType(wireType) {
+            // TODO - match over the resulting type and if it's
+            // a collection, then push just a single element?
+            RawBinaryPickleReader(in).push(fieldBuilder)
+          }
+        case _ => done = true
+  inline private def limitByWireType[A](wireType: Int)(f: => A): Unit =
+    if (wireType == WIRETYPE_LENGTH_DELIMITED)
+      var length = in.readRawVarint32()
+      System.err.println(s"\n[DEBUG] Setting limit to: $length\n")
+      val limit = in.pushLimit(length)
+      f
+      in.popLimit(limit)
+    else f
+  private def readCollection[E, To](c: core.CollectionBuilder[E, To]): Unit  =
     // Collections are written as:
     // [TAG] [LengthInBytes] [LengthOfCollection] [Element]*
-    if (!root) 
-      in.readTag()  // TAG
-      in.readRawVarint32() // LengthInBytes
-    var length = in.readRawVarint32() // LengthOfCollection
-    builder.sizeHint(length)
+    var length = in.readRawVarint32()
+    // TODO - sizeHint
     while (length > 0)
-      builder += elementReader(RawBinaryPickleReader(in, true))
+      RawBinaryPickleReader(in).push(c.putElement())
       length -= 1
-    builder.result
-
-class RawBinaryStructureReader(in: CodedInputStream)
-  extends StructureReader
-  private var latestCount = 0
-  private var latestName: String = null
-  // TODO - remember fields we've seen.
-  override def readField[T](name: String, fieldReader: PickleReader => T): T =
-    // TODO - remember the field?
-    if (latestName != name)
-      latestName = name
-      latestCount += 1
-    fieldReader(RawBinaryPickleReader(in, root = false))
 
 
 

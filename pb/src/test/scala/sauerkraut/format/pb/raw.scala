@@ -57,5 +57,4 @@ class TestRawBinaryProto
     // TODO - we know this is bad.
     // repeated fields are being written as:
     // [TAG] [BogusLength] [LengthOfCollection] [RawElement]*
-    assertEquals("0a0103000100", binaryString(Repeated(List(false, true, false))))
-    //assertEquals("0a??03000100", binaryString(Repeated(List(false, true, false))))
+    assertEquals("0a0403000100", binaryString(Repeated(List(false, true, false))))

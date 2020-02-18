@@ -76,6 +76,7 @@ object Buildable
     
   inline def productBuilder[T, M <: Mirror.ProductOf[T]](m: M): Builder[T] = 
     new StructureBuilder[T] {
+        override def toString(): String = s"Builder[${format.typeName[T]}]"
         private var fields = buildersFor[m.MirroredElemTypes]
         override def knownFieldNames: List[String] =
           summonLabels[m.MirroredElemLabels]

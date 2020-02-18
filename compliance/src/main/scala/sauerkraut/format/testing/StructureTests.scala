@@ -18,7 +18,7 @@ package sauerkraut
 package format
 package testing
 
-import core.{Writer, Reader, Buildable, given}
+import core.{Writer, Buildable, given}
 
 import org.junit.Test
 
@@ -32,17 +32,17 @@ case class TestSimpleStructureOfPrimitives(
     f: Float, 
     z: Double,
     ss: String
-) derives Writer, Reader, Buildable
+) derives Writer, Buildable
 
 case class StructureOfStructures(
   a: Int,
   b: TestSimpleStructureOfPrimitives
-) derives Writer, Reader, Buildable
+) derives Writer, Buildable
 
 case class StructureOfCollections(
     a: Int,
     z: List[String]
-) derives Writer, Reader, Buildable
+) derives Writer, Buildable
 
 /** Ensures collections can be serialized. */
 trait StructureComplianceTests extends ComplianceTestBase

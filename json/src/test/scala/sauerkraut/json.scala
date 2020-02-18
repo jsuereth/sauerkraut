@@ -5,7 +5,7 @@ import org.junit.Assert._
 import format.json.Json
 import format.json.given
 import format.{fastTypeTag, primitiveTag}
-import core.{Reader, Writer, Buildable, given}
+import core.{Writer, Buildable, given}
 import java.io.StringWriter
 
 

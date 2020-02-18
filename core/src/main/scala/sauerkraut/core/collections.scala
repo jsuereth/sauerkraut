@@ -41,21 +41,6 @@ given [T](using Writer[T]) as Writer[Seq[T]] = CollectionWriter[T]().asInstanceO
 given [T](using Writer[T]) as Writer[Iterable[T]] = CollectionWriter[T]().asInstanceOf
 given [T](using Writer[T], reflect.ClassTag[T]) as Writer[Array[T]] = ArrayWriter[T]()
 
-/** A reader for all collections that support the builder pattern. */
-final class CollectionReader[E: Reader, To](b: () => ScalaCollectionBuilder[E, To])
-    extends Reader[To]
-  override def read(pickle: PickleReader): To =
-    pickle.readCollection(b(), summon[Reader[E]].read)
-
-given [T](using Reader[T]) as Reader[List[T]] =
-  CollectionReader[T, List[T]](() => List.newBuilder)
-given [T](using Reader[T]) as Reader[Seq[T]] =
-  CollectionReader[T, Seq[T]](() => Seq.newBuilder)
-given [T](using Reader[T]) as Reader[Iterable[T]] =
-  CollectionReader[T, Iterable[T]](() => Iterable.newBuilder)
-given [T](using Reader[T], reflect.ClassTag[T]) as Reader[Array[T]] =
-  CollectionReader[T, Array[T]](() => Array.newBuilder[T])
-
 final class SimpleCollectionBuilder[E: Buildable, To](
     b: ScalaCollectionBuilder[E, To])
     extends CollectionBuilder[E, To]
@@ -68,6 +53,7 @@ final class SimpleCollectionBuilder[E: Buildable, To](
     // TODO - make efficient?
     b ++= (tmpBuilder.result.map(_.result))
     b.result
+  override def toString: String = s"Builder[$b]"
 
 final class CollectionBuildable[E: Buildable, To](
     newColBuilder: () => ScalaCollectionBuilder[E, To])

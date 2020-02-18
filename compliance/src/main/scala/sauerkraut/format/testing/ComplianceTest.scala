@@ -19,7 +19,7 @@ package format
 package testing
 
 import org.junit.Assert._
-import sauerkraut.core.{Reader,Writer,given}
+import sauerkraut.core.{Buildable,Writer,given}
 
 /** Basic tests a format can use to determine if they are
  * in compliance with the base spec.
@@ -38,10 +38,10 @@ trait ComplianceTestBase
                                  reader: PickleReader => T): T
 
   /** A test to make sure a value is read back exactly as it is written. */
-  final def roundTrip[A : Reader : Writer](value: A): Unit =
+  final def roundTrip[A : Buildable : Writer](value: A): Unit =
     val result = roundTripImpl[A](
         summon[Writer[A]].write(value, _),
-        summon[Reader[A]].read
+        (reader) => reader.push(summon[Buildable[A]].newBuilder).result
     )
     // TODO - error should include the TYPE.
     value match
@@ -74,10 +74,10 @@ trait ComplianceTestBase
    * @param output The value you'd like to receive asusming an evolution of the
    *               underlying type occured.
    */
-  final def roundTripEvolution[A : Writer, B: Reader](input: A, output: B): Unit =
+  final def roundTripEvolution[A : Writer, B: Buildable](input: A, output: B): Unit =
      val result = roundTripImpl[B](
          summon[Writer[A]].write(input, _),
-         summon[Reader[B]].read
+         (reader) => reader.push(summon[Buildable[B]].newBuilder).result
      )
      assertEquals(s"Failed to run evolution from $input to $output", output, result)
 
@@ -87,8 +87,8 @@ trait ComplianceTestBase
    * @param writer A hand-written serialization mechanism meant to look like a previous
    *               version.
    */
-  final def advanceRoundTripEvolution[A : Reader](value: A)(writer: PickleWriter => Unit): Unit =
-    val result = roundTripImpl(writer, summon[Reader[A]].read)
+  final def advanceRoundTripEvolution[A : Buildable](value: A)(writer: PickleWriter => Unit): Unit =
+    val result = roundTripImpl(writer,  (reader) => reader.push(summon[Buildable[A]].newBuilder).result)
     assertEquals(s"Failed to run evolution on $value", value, result)
 
 trait ComplianceTests 
