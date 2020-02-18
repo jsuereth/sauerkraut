@@ -53,13 +53,44 @@ object Buildable
         override def newBuilder: Builder[T] =
           inline m match
             case m: Mirror.ProductOf[T] =>
-               productBuilder[T, m.MirroredElemTypes, m.MirroredElemLabels]
+               productBuilder[T, m.type](m)
             case _ => compiletime.error("Cannot derive builder for non-struct classes")
     }
-  inline def productBuilder[T, Fields <: Tuple, Labels <: Tuple]: Builder[T] = 
-    new StructureBuilder[T] {
-        override def knownFieldNames: List[String] =
-          summonLabels[Labels]
-        override def putField[F](name: String): Builder[F] = ???
-        override def result: T = ???
+  /** Summons new builders for a tuple of types. */
+  inline def buildersFor[Elems <: Tuple]: Tuple.Map[Elems,Builder] =
+    inline erasedValue[Elems] match
+      case _: (h *: tail) => (builderFor[h] *: buildersFor[tail]).asInstanceOf[Tuple.Map[Elems, Builder]]
+      case _: Unit => ().asInstanceOf[Tuple.Map[Elems, Builder]]
+  /** Summons a single new builder for a type. */
+  inline def builderFor[T]: Builder[T] =
+    summonFrom {
+      case b: Buildable[T] => b.newBuilder
+      case _ => compiletime.error("Unable to construct builder")
     }
+
+  // Ugly type for tuple match.  
+  type BuiltValue[T] = T match
+    case Builder[t] => t
+    case Unit => Unit
+    
+  inline def productBuilder[T, M <: Mirror.ProductOf[T]](m: M): Builder[T] = 
+    new StructureBuilder[T] {
+        private var fields = buildersFor[m.MirroredElemTypes]
+        override def knownFieldNames: List[String] =
+          summonLabels[m.MirroredElemLabels]
+        // TODO - lookup tuple by index?
+        override def putField[F](name: String): Builder[F] =
+          // TODO - FIX THIS TO NOT BE DYNAMIC LOOKUP
+          fields.toArray(knownFieldNames.indexOf(name)).asInstanceOf[Builder[F]]
+        override def result: T =
+          m.fromProduct(
+              fields
+                .map[BuiltValue]([builder] => 
+                  (b: builder) =>
+                    b.asInstanceOf[Builder[_]]
+                     .result
+                     .asInstanceOf[BuiltValue[builder]]
+                ).asInstanceOf[Product]
+          )
+    }
+  
