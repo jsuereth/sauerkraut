@@ -68,3 +68,21 @@ Formats:
 - PickleReader:  Can load data and push it into a Builder of type T
 - PickleWriter:  Accepts pushed structures/collections/primitives and places it into a Pickle
 
+
+# Current Formats
+
+## Json
+- [X] Jawn Based Reader
+- [X] Simple Writer
+
+## Binary
+- [X] Proto-like Reader
+- [X] Proto-like Writer
+
+## Protocol Buffers
+- [X] Compatible Writer
+- [ ] Compatible Reader
+
+## NBT
+- [ ] Reader
+- [ ] Writer
