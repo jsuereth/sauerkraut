@@ -16,12 +16,24 @@
 
 package sauerkraut
 package format
-package pb
+package nbt
 
-import com.google.protobuf.{CodedInputStream}
-import collection.mutable.Builder
+import java.io.{
+  DataInputStream,
+  DataOutputStream,
+  InputStream,
+  OutputStream
+}
 
-class DescriptorBasedProtoReader(in: CodedInputStream)
-    extends PickleReader
-  def push[T](b: core.Builder[T]): core.Builder[T] = 
-    b
+/**
+ * A binary format used in some java video games.
+ */
+object Nbt extends PickleFormat
+
+given [O <: OutputStream] as PickleWriterSupport[O, Nbt.type]
+  def writerFor(format: Nbt.type, output: O): PickleWriter =
+    NbtPickleWriter(internal.TagOutputStream(DataOutputStream(output)))
+
+given [I <: InputStream] as PickleReaderSupport[I, Nbt.type]
+  def readerFor(format: Nbt.type, input: I): PickleReader =
+    ???

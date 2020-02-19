@@ -56,4 +56,8 @@ val pbtest = project
     }
   )
 
-val root = project.in(file(".")).aggregate(core,compliance,json,pb,pbtest).settings(skip in publish := true)
+val nbt = project
+  .settings(commonSettings:_*)
+  .dependsOn(core, compliance % "test")
+
+val root = project.in(file(".")).aggregate(core,compliance,json,nbt,pb,pbtest).settings(skip in publish := true)

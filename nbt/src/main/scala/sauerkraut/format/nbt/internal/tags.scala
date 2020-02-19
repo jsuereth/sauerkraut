@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-package sauerkraut
-package format
-package pb
+package sauerkraut.format.nbt.internal
 
-import com.google.protobuf.{CodedInputStream}
-import collection.mutable.Builder
-
-class DescriptorBasedProtoReader(in: CodedInputStream)
-    extends PickleReader
-  def push[T](b: core.Builder[T]): core.Builder[T] = 
-    b
+// See: https://minecraft.gamepedia.com/NBT_format
+enum NbtTag(val id: Int)
+  case TagEnd extends NbtTag(0)
+  case TagByte extends NbtTag(1) 
+  case TagShort extends NbtTag(2)
+  case TagInt extends NbtTag(3)
+  case TagLong extends NbtTag(4)
+  case TagFloat extends NbtTag(5)
+  case TagDouble extends NbtTag(6)
+  case TagByteArray extends NbtTag(7) 
+  case TagString extends NbtTag(8)
+  case TagList extends NbtTag(9)
+  case TagCompound extends NbtTag(10)
+  case TagIntArray extends NbtTag(11)
+  case TagLongArray extends NbtTag(12)
