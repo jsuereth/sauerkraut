@@ -44,6 +44,13 @@ case class StructureOfCollections(
     z: List[String]
 ) derives Writer, Buildable
 
+case class Simple(x: String) derives Writer, Buildable
+
+case class StructureOfCollectionOfStructures(
+  a: Int,
+  b: List[Simple]
+) derives Writer, Buildable
+
 /** Ensures collections can be serialized. */
 trait StructureComplianceTests extends ComplianceTestBase
   @Test def testSimpleStructure(): Unit =
@@ -74,3 +81,5 @@ trait StructureComplianceTests extends ComplianceTestBase
         4,
         List("one", "two", "three")
     ))
+  @Test def testStructureOfCollectionOfStructures(): Unit =
+    roundTrip(StructureOfCollectionOfStructures(4, List(Simple("Hi"), Simple("You"))))

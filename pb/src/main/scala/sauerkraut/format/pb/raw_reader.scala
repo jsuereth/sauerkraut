@@ -57,7 +57,6 @@ class RawBinaryPickleReader(in: CodedInputStream)
         if (num > 0 && num <= struct.knownFieldNames.length)
           Some(struct.putField(struct.knownFieldNames(num-1)))
         else None
-    // TODO - loopsy
     var done: Boolean = false
     while (!done)
       in.readTag match
@@ -71,9 +70,13 @@ class RawBinaryPickleReader(in: CodedInputStream)
         // All other types are somewhat uniform.
         case Tag(wireType, fieldNum @ Field(fieldBuilder)) =>
           limitByWireType(wireType) {
-            // TODO - match over the resulting type and if it's
-            // a collection, then push just a single element?
-            RawBinaryPickleReader(in).push(fieldBuilder)
+            // For repeating fields, we just add to a collection.
+            fieldBuilder match {
+              case x: core.CollectionBuilder[?, ?] =>
+                RawBinaryPickleReader(in).push(x.putElement())
+              case y => 
+                RawBinaryPickleReader(in).push(y)
+            }
           }
         case _ => done = true
   inline private def limitByWireType[A](wireType: Int)(f: => A): Unit =

@@ -32,15 +32,18 @@ trait StructureBuilder[T] extends Builder[T]
   /** Returns the resulting built structure after pushing in all pieces of data. */
   def result: T
 
-
+/** Represents a builder of collections from pickles. */
 trait CollectionBuilder[E, To] extends Builder[To]
-  /** Places an element into the collection.   Should be read from the Pickle. */
+  /** Places an element into the collection.   Returns a new builder for the new element. */
   def putElement(): Builder[E]
   /** Returns the built collection of elements. */
   def result: To
 
+/** A builder for primitives.  basically just writes values into their final location. */
 trait PrimitiveBuilder[P] extends Builder[P]
+  /** The tag of the primitive.  Determines how a pickle is read. */
   def tag: format.PrimitiveTag[P]
+  /** Places the primitive into the builder. */
   def putPrimitive(value: P): Unit
 
 
