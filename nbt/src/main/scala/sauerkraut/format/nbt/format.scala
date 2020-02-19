@@ -36,4 +36,4 @@ given [O <: OutputStream] as PickleWriterSupport[O, Nbt.type]
 
 given [I <: InputStream] as PickleReaderSupport[I, Nbt.type]
   def readerFor(format: Nbt.type, input: I): PickleReader =
-    ???
+    NbtPickleReader(internal.TagInputStream(DataInputStream(input)))

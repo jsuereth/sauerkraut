@@ -31,3 +31,22 @@ enum NbtTag(val id: Int)
   case TagCompound extends NbtTag(10)
   case TagIntArray extends NbtTag(11)
   case TagLongArray extends NbtTag(12)
+
+object NbtTag
+  def fromByte(b: Byte): NbtTag =
+    b match
+      case 0 => TagEnd
+      case 1 => TagByte
+      case 2 => TagShort
+      case 3 => TagInt
+      case 4 => TagLong
+      case 5 => TagFloat
+      case 6 => TagDouble
+      case 7 => TagByteArray
+      case 8 => TagString
+      case 9 => TagList
+      case 10 => TagCompound
+      case 11 => TagIntArray
+      case 12 => TagLongArray
+      case _ => TagEnd // TODO - error?
+    

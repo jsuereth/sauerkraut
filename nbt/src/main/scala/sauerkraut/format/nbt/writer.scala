@@ -39,6 +39,7 @@ class NbtPickleWriter(out: TagOutputStream, optName: Option[String] = None)
   override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
     // We defer writing a tag until we know the collection type.
     out.writeRawTag(NbtTag.TagList)
+    optWriteName()
     work(NbtCollectionWriter(out, length))
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
