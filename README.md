@@ -44,6 +44,7 @@ Here's a feature matrix for each format:
 ## Json
 Everyone's favorite non-YAML web data transfer format!   This uses Jawn under the covers for parsing, but
 can write Json without any dependencies.
+
 TODO - Using
 
 ## Binary
@@ -111,3 +112,33 @@ A list of concepts within Scala types that must be supported in the pickler libr
   - [X] Manually written builders/writers.
   - [X] Derived for Product Types
   - [ ] Derived for Sum Types
+
+# Differences from Scala Pickling
+
+There are a few major differences from the old [scala pickling project](http://github.com/scala/pickling).
+
+- The core library is built for 100% static code generation.   While we think that dynamic (i.e. runtime-reflection-based)
+  pickling could be built using this library, it is a non-goal.
+  - Users are expected to rely on typeclass derivation to generate Reader/Writers, rather than using macros
+  - The supported types that can be pickled are limited to the same supported by typeclass derivation or that
+    can have hand-written `Writer[_]`/`Builder[_]` instances.
+- Readers are no longer driven by the Scala type.  Instead we use a new `Buildable[A]`/`Builder[A}` design
+  to allow each `PickleReader` to push value into a `Builder[A]` that will then construct the scala class.
+- There have been no runtime performance optimisations around codegen.   Those will come as we test the
+  limits of Scala 3 / Dotty.
+- Format implementations are separate libraries.
+- The `PickleWriter` contract has been split into several types to avoid misuse.  This places a heavier amount
+  of lambdas in play, but may be offsite with optimisations in modern versions of Scala/JVM.
+- The name is more German.
+
+
+# Benchmarking
+
+TODO - we should get a good set of these.
+
+# Thanks
+
+Thanks to everyone who contributed to the original pickling library for inspiration, with a few callouts.
+
+- Heather Miller + Phillip Haller for the original idea, innovation and motivation for Scala.
+- Havoc Pennington + Eugene Yokota for helping define what's important when pickling a protocol and evolving that protocol.
