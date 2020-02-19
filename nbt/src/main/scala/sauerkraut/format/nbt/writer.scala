@@ -22,6 +22,7 @@ import internal.{
     NbtTag,
     TagOutputStream
 }
+ 
 
 class NbtPickleWriter(out: TagOutputStream, optName: Option[String] = None)
     extends PickleWriter
@@ -31,51 +32,15 @@ class NbtPickleWriter(out: TagOutputStream, optName: Option[String] = None)
       case Some(name) => out.writeStringPayload(name)
       case None => ()
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    import PrimitiveTag._
-    tag match
-      case UnitTag => ()
-      case BooleanTag => 
-        out.writeRawTag(NbtTag.TagByte)
-        optWriteName()
-        out.writeBytePayload(
-            if picklee.asInstanceOf[Boolean] 
-            then 1.toByte 
-            else 0.toByte)
-      case ByteTag =>
-        out.writeRawTag(NbtTag.TagByte)
-        optWriteName()
-        out.writeBytePayload(picklee.asInstanceOf[Byte])
-      case CharTag =>
-        out.writeRawTag(NbtTag.TagShort)
-        optWriteName()
-        out.writeShortPayload(picklee.asInstanceOf[Char].toShort)
-      case ShortTag =>
-        out.writeRawTag(NbtTag.TagShort)
-        optWriteName()
-        out.writeShortPayload(picklee.asInstanceOf[Short])
-      case IntTag =>
-        out.writeRawTag(NbtTag.TagInt)
-        optWriteName()
-        out.writeIntPayload(picklee.asInstanceOf[Int])
-      case LongTag =>
-        out.writeRawTag(NbtTag.TagLong)
-        optWriteName()
-        out.writeLongPayload(picklee.asInstanceOf[Long])
-      case FloatTag =>
-        out.writeRawTag(NbtTag.TagFloat)
-        optWriteName()
-        out.writeFloatPayload(picklee.asInstanceOf[Float])
-      case DoubleTag =>
-        out.writeRawTag(NbtTag.TagDouble)
-        optWriteName()
-        out.writeDoublePayload(picklee.asInstanceOf[Double])
-      case StringTag =>
-        out.writeRawTag(NbtTag.TagString)
-        optWriteName()
-        out.writeStringPayload(picklee.asInstanceOf[String])
+    out.writeTag(tag)
+    optWriteName()
+    out.writePayload[Any](picklee, tag.asInstanceOf)
     this
   override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
-    ???
+    // We defer writing a tag until we know the collection type.
+    out.writeRawTag(NbtTag.TagList)
+    work(NbtCollectionWriter(out, length))
+    this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
     out.writeRawTag(NbtTag.TagCompound)
     optWriteName()
@@ -88,3 +53,34 @@ class NbtPickleWriter(out: TagOutputStream, optName: Option[String] = None)
   override def putField(name: String, fieldWriter: PickleWriter => Unit): PickleStructureWriter =
     fieldWriter(NbtPickleWriter(out, Some(name)))
     this
+
+class NbtCollectionWriter(
+    out: TagOutputStream,
+    length: Int)
+  extends PickleCollectionWriter
+  with PickleWriter
+  private var hasHeader: Boolean = false
+  private def optHeader(writeHeader: => Unit): Unit =
+     if (!hasHeader)
+       writeHeader
+       out.writeIntPayload(length)
+       hasHeader = true
+  override def putElement(work: PickleWriter => Unit): PickleCollectionWriter =
+    work(this)
+    this
+  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
+    optHeader(out.writeTag(tag))
+    out.writePayload[Any](picklee, tag.asInstanceOf)
+    this
+  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+    // We defer writing a tag until we know the collection type.
+    optHeader(out.writeRawTag(NbtTag.TagList))
+    work(NbtCollectionWriter(out, length))
+    this
+  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
+    optHeader(out.writeRawTag(NbtTag.TagCompound))
+    work(NbtPickleWriter(out))
+    out.writeRawTag(NbtTag.TagEnd)
+    this
+  override def flush(): Unit = out.flush()
+  

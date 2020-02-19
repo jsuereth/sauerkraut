@@ -59,3 +59,15 @@ class TestWriter
             "08" + "0004" + "74657374" + "0002" + "6162" +
         "00",
     nbtStringOf(Derived(true, "ab")))
+  @Test def writeListOfBytes(): Unit =
+    // [TagList] [ElementTag] [Length] [Byte]*
+    assertEquals("09" + "01" + "00000002" + "01" + "ff",
+                 nbtStringOf(Array[Byte](1.toByte, 255.toByte)))
+  @Test def writeListOfStructs(): Unit =
+    assertEquals("09" + "0a" + "00000002" +
+                    // Struct 1
+                    // false + empty string + end
+                    "0100017800" + "080004746573740000" + "00"+
+                    // Struct 2
+                    "0100017801" + "080004746573740000" + "00",
+                 nbtStringOf(Array(Derived(false, ""), Derived(true, ""))))
