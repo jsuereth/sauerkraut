@@ -12,10 +12,7 @@ class RawBinaryComplianceTests
        writer: PickleWriter => Unit,
        reader: PickleReader => T): T =
     val out = ByteArrayOutputStream()
-    val w = RawBinaryPickleWriter(CodedOutputStream.newInstance(out))
+    val w = pickle(RawBinary).to(out)
     writer(w)
     w.flush()
-    val r = RawBinaryPickleReader(CodedInputStream.newInstance(
-        ByteArrayInputStream(out.toByteArray)
-    ))
-    reader(r)
+    reader(pickle(RawBinary).from(out.toByteArray))

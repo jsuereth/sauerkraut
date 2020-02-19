@@ -20,10 +20,13 @@ package sauerkraut.format
 // Marker trait for defining pickle formats.
 trait PickleFormat
 
-
+/** A marker that a particular pickle format supports reading from a given input type. */
 trait PickleReaderSupport[Input, Format]
+  /** Constructor something which can read the input type with the given pickle format. */
   def readerFor(format: Format, value: Input): PickleReader
 
+/** A marker that a particular pickle format supports writing to a given output type. */
 trait PickleWriterSupport[Output, Format]
+  /** Constructs a writer of the format instance to the output. */
   def writerFor(format: Format, output: Output): PickleWriter
 

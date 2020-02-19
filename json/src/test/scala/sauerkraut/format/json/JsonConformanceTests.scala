@@ -10,8 +10,6 @@ class JsonConformanceTests extends testing.ComplianceTests
       writer: PickleWriter => Unit,
       reader: PickleReader => T): T =
     val out = java.io.StringWriter()
-    val w = JsonPickleWriter(out)
-    writer(w)
-    w.flush()
-    val in = JsonReader(ast.JParser.parseUnsafe(out.toString))
-    reader(in)
+    writer(pickle(Json).to(out))
+    out.flush()
+    reader(pickle(Json).from(out.toString))

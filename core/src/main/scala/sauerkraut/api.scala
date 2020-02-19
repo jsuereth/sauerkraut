@@ -25,26 +25,31 @@ import format.{
   PickleWriterSupport
 }
 
-final class PickleFormatDsl[F <: PickleFormat](format: F)
-  /** Applies a specific output to the pickle format chosen. */
-  def to[O](output: O)(given s: PickleWriterSupport[O, F]): WriterDsl =
-    WriterDsl(s.writerFor(format, output))
-  def from[I](input: I)(given s: PickleReaderSupport[I, F]): ReaderDsl =
-    ReaderDsl(s.readerFor(format, input))
 
-final class ReaderDsl(pickle: PickleReader)
-  def build[T](given b: Buildable[T]): T =
-    pickle.push(b.newBuilder).result
-
-final class WriterDsl(pickle: PickleWriter)
-  /** Writes the given value into a pickle, and flushes the writer. */
-  def write[T](value: T)(given s: Writer[T]): Unit =
-    s.write(value, pickle)
-    pickle.flush()
-  /** Writes the given value into a pickle. */
-  def lazyWrite[T](value: T)(given s: Writer[T]): Unit =
-    s.write(value, pickle)
-
+/** API for pickling. */
 def pickle[F <: PickleFormat](format: F): PickleFormatDsl[F] = 
   PickleFormatDsl(format)
+
+/** Helper class to simplify lining up a PickleFormat with input/output + values. */
+final class PickleFormatDsl[F <: PickleFormat](format: F)
+  /** Applies a specific output to the pickle format chosen. */
+  def to[O](output: O)(given s: PickleWriterSupport[O, F]): PickleWriter =
+    s.writerFor(format, output)
+  def from[I](input: I)(given s: PickleReaderSupport[I, F]): PickleReader =
+    s.readerFor(format, input)
+
+
+/** Reads type `T` using the PickleReader. */
+def [T](pickle: PickleReader) read(given b: core.Buildable[T]): T =
+  pickle.push(b.newBuilder).result
+
+
+/** Writes the value to a pickle. Note: This flushes the pickle writer. */
+def [T](pickle: PickleWriter) write(value: T)(given s: core.Writer[T]): Unit =
+  s.write(value, pickle)
+  pickle.flush()
+
+/** Writes the value to a pickle.  Note: This does not flush the pickle writer. */
+def [T](pickle: PickleWriter) lazyWrite(value: T)(given s: core.Writer[T]): Unit =
+  s.write(value, pickle)
 

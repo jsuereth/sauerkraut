@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package sauerkraut.format
+package sauerkraut
+package format
 
 /**
  * A writer of pickled content.

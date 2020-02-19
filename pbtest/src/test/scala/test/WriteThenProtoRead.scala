@@ -2,7 +2,7 @@ package test
 
 import org.junit.Test
 import org.junit.Assert._
-import sauerkraut.pickle
+import sauerkraut.{pickle, write}
 import sauerkraut.format.pb.given
 import collection.JavaConverters.asScalaBufferConverter
 

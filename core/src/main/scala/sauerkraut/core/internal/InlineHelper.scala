@@ -29,6 +29,7 @@ object InlineHelper
       inline compiletime.erasedValue[T] match 
         case _: (c *: next) => summonLabel[next](idx-1)
         case _ => compiletime.error(s"Invalid index $idx into tuple")
+  /** Given an input type of string constants, return a runtime string list of the values. */
   inline def summonLabels[T <: Tuple]: List[String] =
     inline compiletime.erasedValue[T] match
       case _: (c *: next) => compiletime.constValue[c].asInstanceOf[String] :: summonLabels[next]

@@ -41,9 +41,17 @@ given PickleWriterSupport[Array[Byte], RawBinary.type]
   def writerFor(format: RawBinary.type, output: Array[Byte]): PickleWriter = 
     RawBinaryPickleWriter(CodedOutputStream.newInstance(output))
 
+given PickleReaderSupport[Array[Byte], RawBinary.type]
+  def readerFor(format: RawBinary.type, input: Array[Byte]): PickleReader =
+    RawBinaryPickleReader(CodedInputStream.newInstance(new java.io.ByteArrayInputStream(input)))
+
 given PickleWriterSupport[ByteBuffer, RawBinary.type]
   def writerFor(format: RawBinary.type, output: ByteBuffer): PickleWriter = 
     RawBinaryPickleWriter(CodedOutputStream.newInstance(output))
+
+given PickleReaderSupport[ByteBuffer, RawBinary.type]
+  def readerFor(format: RawBinary.type, input: ByteBuffer): PickleReader =
+    RawBinaryPickleReader(CodedInputStream.newInstance(input))
 
 /**
  * A binary format that allows the encoding of specific protocol

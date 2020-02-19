@@ -52,6 +52,7 @@ object Buildable
   import deriving._
   import scala.compiletime.{erasedValue,constValue,summonFrom}
   import internal.InlineHelper.summonLabels
+  /** Derives Builders for any product-like class. */
   inline def derived[T](given m: Mirror.Of[T]): Buildable[T] =
     new Buildable[T] {
         override def newBuilder: Builder[T] =
@@ -87,6 +88,7 @@ object Buildable
         override def putField[F](name: String): Builder[F] =
           // TODO - FIX THIS TO NOT BE DYNAMIC LOOKUP, something more like
           // a pattern match.
+          // ALSO fix the error messages if builders are not ready....
           fields.toArray(knownFieldNames.indexOf(name)).asInstanceOf[Builder[F]]
         override def result: T =
           m.fromProduct(

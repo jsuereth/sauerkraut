@@ -2,6 +2,7 @@ package sauerkraut
 package format
 package pb
 
+import sauerkraut.{read,write}
 import org.junit.Test
 import org.junit.Assert._
 import core.{Buildable,Writer,given}
@@ -40,7 +41,7 @@ class TestProtocolBufferWithDesc
     val out = java.io.ByteArrayOutputStream()
     pickle(MyProtos).to(out).write(value)
     val in = java.io.ByteArrayInputStream(out.toByteArray())
-    assertEquals(s"Failed to roundtrip", value, pickle(MyProtos).from(in).build[T])
+    assertEquals(s"Failed to roundtrip", value, pickle(MyProtos).from(in).read[T])
 
   @Test def writeNested(): Unit =
     assertEquals("089601", binaryStringWithDesc(Nesting(150)))

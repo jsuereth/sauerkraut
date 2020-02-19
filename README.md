@@ -10,29 +10,33 @@ A revitalization of Pickling in the Scala 3 world.
 When defining over-the-wire messages, do this:
 
 ```scala
-import sauerkraut.core.{Reader,Writer,given}
+import sauerkraut.core.{Buildable,Writer,given}
 case class MyMessage(field: String, data: Int)
-  derives Reader, Writer
+  derives Buildable, Writer
 ```
 
 Then, when you need to serialize, pick a format and go:
 
 ```scala
 import format.json.{Json,given}
-import sauerkraut.pickle
+import sauerkraut.{pickle,read,write}
 
 val out = StringWriter()
 pickle(Json).to(out).write(MyMessage("test", 1))
 println(out.toString())
+
+val msg = pickle(Json).from(out.toString()).read[MyMessage]
 ```
 
-Or, if you wanted something binary looking
+Or, if you wanted something in binary:
 
 ```scala
 import format.pb.{RawBinary,given}
-import sauerkraut.pickle
+import sauerkraut.{pickle,read,write}
 
-val out: java.io.OutputString =
-   new java.io.ByteArrayOutputStream()
+val out = new java.io.ByteArrayOutputStream()
 pickle(RawBinary).to(out).write(MyMessage("test", 1))
+
+val in = java.io.ByteArrayInputStream(out.toByteArray)
+val msg = pickle(RawBinary).from(in).read[MyMessage]
 ```
