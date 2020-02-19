@@ -28,18 +28,51 @@ println(out.toString())
 val msg = pickle(Json).from(out.toString()).read[MyMessage]
 ```
 
-Or, if you wanted something in binary:
+# Current Formats
 
-```scala
-import format.pb.{RawBinary,given}
-import sauerkraut.{pickle,read,write}
+Here's a feature matrix for each format:
 
-val out = new java.io.ByteArrayOutputStream()
-pickle(RawBinary).to(out).write(MyMessage("test", 1))
+| Format | Reader     | Writer | All Types | Evolution Friendly | Notes                                    |
+| ------ | ---------- | ------ | --------- | ------------------ | ---------------------------------------- |
+| Json   | Yes (jawn) | Yes    | Yes       |                    |                                          |
+| Binary | Yes        | Yes    | Yes       |                    |                                          |
+| Protos | TBD        | Yes    | No        |                    | For bi-directional Protocol Buffer usage |
+| NBT    | Yes        | Yes    | Yes       |                    |                                          |
+| XML    | TBD        | TBD    | TBD       |                    |                                          |
+| Pretty | No         | TBD    | No        |                    | For pretty-printing strings              |
 
-val in = java.io.ByteArrayInputStream(out.toByteArray)
-val msg = pickle(RawBinary).from(in).read[MyMessage]
-```
+## Json
+Everyone's favorite non-YAML web data transfer format!   This uses Jawn under the covers for parsing, but
+can write Json without any dependencies.
+TODO - Using
+
+## Binary
+A binary format loosely based on Protocol-Buffers.   Unlike protocol-buffers, this format can serialize any 
+Scala type.
+
+TODO - Using
+
+## Protos
+A new encoding for protocol buffers within Scala!  This supports a subset of all possible protocol buffer messages
+but allows full definition of the message format within your Scala code.
+
+TODO - Using
+
+# NBT
+Named-Binary-Tags, a format popularized by Minecraft.
+
+TODO - Using
+
+# XML
+Everyone's favorite markup language for data transfer!
+
+TODO - Using
+
+# Pretty
+A format that is solely used to pretty-print object contents to strings.  This does not have
+a [PickleReader] only a [PickleWriter].
+
+TODO - Using
 
 
 # Design
@@ -69,20 +102,12 @@ Formats:
 - PickleWriter:  Accepts pushed structures/collections/primitives and places it into a Pickle
 
 
-# Current Formats
+# Pickling Core Concepts
+A list of concepts within Scala types that must be supported in the pickler library.
 
-## Json
-- [X] Jawn Based Reader
-- [X] Simple Writer
-
-## Binary
-- [X] Proto-like Reader
-- [X] Proto-like Writer
-
-## Protocol Buffers
-- [X] Compatible Writer
-- [ ] Compatible Reader
-
-## NBT
-- [ ] Reader
-- [ ] Writer
+- [X] Builder/Writer
+  - [X] Primitive Types
+  - [X] Collections
+  - [X] Manually written builders/writers.
+  - [X] Derived for Product Types
+  - [ ] Derived for Sum Types
