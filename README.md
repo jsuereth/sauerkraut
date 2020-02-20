@@ -32,14 +32,14 @@ val msg = pickle(Json).from(out.toString()).read[MyMessage]
 
 Here's a feature matrix for each format:
 
-| Format | Reader     | Writer | All Types | Evolution Friendly | Notes                                    |
-| ------ | ---------- | ------ | --------- | ------------------ | ---------------------------------------- |
-| Json   | Yes (jawn) | Yes    | Yes       |                    |                                          |
-| Binary | Yes        | Yes    | Yes       |                    |                                          |
-| Protos | TBD        | Yes    | No        |                    | For bi-directional Protocol Buffer usage |
-| NBT    | Yes        | Yes    | Yes       |                    |                                          |
-| XML    | TBD        | TBD    | TBD       |                    |                                          |
-| Pretty | No         | Yes    | No        |                    | For pretty-printing strings              |
+| Format | Reader | Writer | All Types | Evolution Friendly | Notes                                    |
+| ------ | ------ | ------ | --------- | ------------------ | ---------------------------------------- |
+| Json   | Yes    | Yes    | Yes       |                    | Uses Jawn for parsing                    |
+| Binary | Yes    | Yes    | Yes       |                    |                                          |
+| Protos | TBD    | Yes    | No        |                    | For bi-directional Protocol Buffer usage |
+| NBT    | Yes    | Yes    | Yes       |                    |                                          |
+| XML    | TBD    | TBD    | TBD       |                    |                                          |
+| Pretty | No     | Yes    | No        |                    | For pretty-printing strings              |
 
 ## Json
 Everyone's favorite non-YAML web data transfer format!   This uses Jawn under the covers for parsing, but
@@ -185,24 +185,58 @@ We split Serialization into three layers:
 
 It's the circle of data:
 ```
-< Source >        <format>        <shape> <memory> <shape>      <format>        < Destination >        
+   Source   =>     format    =>  shape => memory =>  shape  =>   format    =>   Destination        
 
 [PickleData] => PickleReader => Builder[T] => T => Writer[T] => PickleWriter => [PickleData]
 ```
 
-Core:
-- Writer[T]:  Can translate a value into write* calls of Primitive, Structure or Collection.
-- Builder[T]:  Accepts values and places them into a Builder for type T.  Can report information used
-               to drive pickler format.
+This, hopefully, means we can reuse a lot of logic betwen various formats with light loss to efficiency.
 
-Formats:
-- PickleReader:  Can load data and push it into a Builder of type T
-- PickleWriter:  Accepts pushed structures/collections/primitives and places it into a Pickle
+*Note:  This library is not measuring performance yet.*
+
+### Shape layer
+The Shape layer is responsible for extracting Scala types into known shapes that can be used for
+serialization.  These shapes, current, are `Collection`, `Structure` and `Primitive`.   Custom
+shapes can be created in terms of these three shapes.
+
+The Shape layer defines these three classes:
+- `sauerkraut.core.Writer[T]`:
+  Can translate a value into write* calls of Primitive, Structure or Collection.
+- `sauerkraut.core.Builder[T]`:  
+  Can accept an incomiing stream of collections/structures/primitives and build a value of T from them.
+- `sauerkraut.core.Buildable[T]`:
+  Can provide a `Builder[T]` when asked.
+
+### Format layer
+The format layer is responsible for mapping sauerkraut shapes (`Collection`, `Structure`, `Primitive`) into
+the underlying format.  Not all shapes in sauerkraut will map exactly to underlying formats, and so each
+format may need to adjust/tweak incoming data as appropriate.
+
+The format layer has these primary classes:
+
+- `sauerkraut.format.PickleReader`:  Can load data and push it into a Builder of type T
+- `sauerkraut.format.PickleWriter`:  Accepts pushed structures/collections/primitives and places it into a Pickle
+
+### Source Layer
+The `source` layer is allowed to be any type that a format wishes to support.   Inputs and outputs are
+provided to the API via these two classes:
+
+- `sauerkraut.format.PickleReaderSupport[Input, Format]`:
+  A given of this instance will allow the `PickleReader` to be constructed from a type of input.
+- `sauerkraut.format.PickleWriterSupport[Output,Format]`:
+  A given of this instance will allow `PickleWriter` to be constructed from a type of output.
+
+This layer is designed to support any type of input and output, not just an in-memory store (like a Json Ast) or
+a streaming input.  Formats can define what types of input/output (or execution environment) they allow.
+
+## Writing a new format.
+
+New formats are expected to provide the "format" + "source" layer implementations they require.
+
+TODO - a bit more here.
 
 
-# Pickling Core Concepts
-A list of concepts within Scala types that must be supported in the pickler library.
-
+## Core Concepts TODO list
 - [X] Builder/Writer
   - [X] Primitive Types
   - [X] Collections
