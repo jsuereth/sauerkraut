@@ -53,3 +53,8 @@ def [T](pickle: PickleWriter) write(value: T)(given s: core.Writer[T]): Unit =
 def [T](pickle: PickleWriter) lazyWrite(value: T)(given s: core.Writer[T]): Unit =
   s.write(value, pickle)
 
+def [T](value: T) prettyPrint(given w: core.Writer[T]): String =
+  import format.pretty.{Pretty,given}
+  val out = java.io.StringWriter()
+  pickle(Pretty).to(out).write(value)
+  out.toString()

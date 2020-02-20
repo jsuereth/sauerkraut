@@ -39,30 +39,117 @@ Here's a feature matrix for each format:
 | Protos | TBD        | Yes    | No        |                    | For bi-directional Protocol Buffer usage |
 | NBT    | Yes        | Yes    | Yes       |                    |                                          |
 | XML    | TBD        | TBD    | TBD       |                    |                                          |
-| Pretty | No         | TBD    | No        |                    | For pretty-printing strings              |
+| Pretty | No         | Yes    | No        |                    | For pretty-printing strings              |
 
 ## Json
 Everyone's favorite non-YAML web data transfer format!   This uses Jawn under the covers for parsing, but
 can write Json without any dependencies.
 
-TODO - Using
+
+Example:
+```scala
+import sauerkraut.{pickle,read,write}
+import sauerkraut.core.{Buildable,Writer, given}
+import sauerkraut.format.json.Json
+
+case class MyWebData(value: Int, someStuff: Array[String])
+    derives Buildable, Writer
+
+def read(in: java.io.InputStream): MyWebData =
+  pickle(Json).from(in).read[MyWebData]
+def write(out: java.io.OutputStream): Unit = 
+  pickle(Json).to(out).write(MyWebData(1214, Array("this", "is", "a", "test")))
+```
+
+sbt build:
+```scala
+libraryDependencies += "com.jsuereth.sauerkraut" %% "json" % "<version>"
+```
+
 
 ## Binary
 A binary format loosely based on Protocol-Buffers.   Unlike protocol-buffers, this format can serialize any 
 Scala type.
 
-TODO - Using
+Example:
+```scala
+import sauerkraut.{pickle,read,write}
+import sauerkraut.core.{Buildable,Writer, given}
+import sauerkraut.format.pb.RawBinary
+
+case class MyFileData(value: Int, someStuff: Array[String])
+    derives Buildable, Writer
+
+def read(in: java.io.InputStream): MyFileData =
+  pickle(RawBinary).from(in).read[MyFileData]
+def write(out: java.io.OutputStream): Unit = 
+  pickle(RawBinary).to(out).write(MyFileData(1214, Array("this", "is", "a", "test")))
+```
+
+sbt build:
+```
+libraryDependencies += "com.jsuereth.sauerkraut" %% "pb" % "<version>"
+```
 
 ## Protos
 A new encoding for protocol buffers within Scala!  This supports a subset of all possible protocol buffer messages
 but allows full definition of the message format within your Scala code.
 
-TODO - Using
+Example:
+```scala
+import sauerkraut.{pickle,write}
+import sauerkraut.core.{Writer, given}
+import sauerkraut.format.pb.{Protos,TypeDescriptorMapping,field,given}
+
+
+case class MyMessageData(value: Int @field(3), someStuff: Array[String] @field(2))
+    derives TypeDescriptorMapping, Writer
+
+val MyProtos = Protos[MyMessageData *: Unit]()
+
+def write(out: java.io.OutputStream): Unit = 
+  pickle(MyProtos).to(out).write(MyMessageData(1214, Array("this", "is", "a", "test")))
+```
+
+This example serializes to the equivalent of the following protocol buffer message:
+
+```proto
+message MyMessageData {
+  int32 value = 3;
+  repeated string someStuff = 2;
+}
+```
+
+
+sbt build:
+```scala
+libraryDependencies += "com.jsuereth.sauerkraut" %% "pb" % "<version>"
+```
+
+
 
 # NBT
 Named-Binary-Tags, a format popularized by Minecraft.
 
-TODO - Using
+Example:
+```scala
+import sauerkraut.{pickle,read,write}
+import sauerkraut.core.{Buildable,Writer, given}
+import sauerkraut.format.nbt.Nbt
+
+case class MyGameData(value: Int, someStuff: Array[String])
+    derives Buildable, Writer
+
+def read(in: java.io.InputStream): MyGameData =
+  pickle(Nbt).from(in).read[MyGameData]
+def write(out: java.io.OutputStream): Unit = 
+  pickle(Nbt).to(out).write(MyGameData(1214, Array("this", "is", "a", "test")))
+```
+
+sbt build:
+```scala
+libraryDependencies += "com.jsuereth.sauerkraut" %% "nbt" % "<version>"
+```
 
 # XML
 Everyone's favorite markup language for data transfer!
@@ -73,7 +160,17 @@ TODO - Using
 A format that is solely used to pretty-print object contents to strings.  This does not have
 a [PickleReader] only a [PickleWriter].
 
-TODO - Using
+Example:
+```scala
+import sauerkraut._, sauerkraut.core.{Writer,given}
+case class MyAwesomeData(theBest: Int, theCoolest: String) derives Writer
+
+scala> MyAwesomeData(1, "The Greatest").prettyPrint
+val res0: String = Struct(rs$line$2.MyAwesomeData) {
+  theBest: 1
+  theCoolest: The Greatest
+}
+```
 
 
 # Design
