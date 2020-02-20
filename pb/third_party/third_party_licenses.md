@@ -3,6 +3,7 @@
 Category | License | Dependency | Notes
 --- | --- | --- | ---
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | ch.epfl.lamp # dotty-library_0.22 # 0.22.0-RC1 | <notextile></notextile>
+Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) | com.jsuereth.sauerkraut # compliance_0.22 # 0.1.0 | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) | com.jsuereth.sauerkraut # core_0.22 # 0.1.0 | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | org.scala-lang # scala-library # 2.13.1 | <notextile></notextile>
 BSD | [3-Clause BSD License](https://opensource.org/licenses/BSD-3-Clause) | com.google.protobuf # protobuf-java # 3.11.3 | <notextile>Google Protocol Buffers</notextile>
