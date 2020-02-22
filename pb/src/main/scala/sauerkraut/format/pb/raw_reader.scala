@@ -37,6 +37,7 @@ class RawBinaryPickleReader(in: CodedInputStream)
       case p: core.PrimitiveBuilder[T] => readPrimitive(p)
       case c: core.CollectionBuilder[_, T] => readCollection(c)
       case s: core.StructureBuilder[T] => readStructure(s)
+      case c: core.ChoiceBuilder[T] => readChoice(c)
     b
 
   private def readPrimitive[T](b: core.PrimitiveBuilder[T]): Unit =
@@ -79,6 +80,15 @@ class RawBinaryPickleReader(in: CodedInputStream)
             }
           }
         case _ => done = true
+  private def readChoice[T](choice: core.ChoiceBuilder[T]): Unit =
+    in.readTag match
+      case 0 => ()
+      case Tag(wireType, ordinal) =>
+        limitByWireType(wireType) {
+          // TODO - We should allow pushing choice by ordinal or name...
+          val name = choice.tag.nameFromOrdinal(ordinal-1)
+          RawBinaryPickleReader(in).push(choice.putChoice(name))
+        }
   inline private def limitByWireType[A](wireType: Int)(f: => A): Unit =
     if (wireType == WIRETYPE_LENGTH_DELIMITED)
       var length = in.readRawVarint32()

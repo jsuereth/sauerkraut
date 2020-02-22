@@ -17,6 +17,8 @@
 package sauerkraut
 package format
 
+import core.internal.InlineHelper
+
 /** 
  * A hierarchy on types that represent how they are pickled/unpickled.
  * 
@@ -49,13 +51,24 @@ enum PrimitiveTag[T] extends FastTypeTag[T]
 // TODO - case ArrayByteTag extends FastTypeTag[Array[Byte]]
 
 // TODO - determine the right mechanism to refrence non-primitive types.
-enum NonPrimitiveTag[T] extends FastTypeTag[T]
-  /** A type representing a structure of key-value pairs. */
-  case Struct[T](name: String) extends NonPrimitiveTag[T]
-  /** A non-primitive type, where the value could be one of several options. */
-  case Option[T](name: String, options: List[FastTypeTag[?]]) extends NonPrimitiveTag[T]
-  /** A Reader + Writer are available in given scope for this type. */
-  case Given[T](name: String) extends NonPrimitiveTag[T]
+sealed trait NonPrimitiveTag[T] extends FastTypeTag[T]
+/** A type representing a structure of key-value pairs. */
+case class Struct[T](name: String) extends NonPrimitiveTag[T]
+/** A non-primitive type, where the value could be one of several options. */
+sealed trait Choice[T] extends NonPrimitiveTag[T]
+  def name: String
+  def options: List[FastTypeTag[?]]
+  def find(name: String): FastTypeTag[?]
+  def ordinal[T](value: T): Int
+  def nameFromOrdinal(ordinal: Int): String
+  final override def equals(other: Any): Boolean = 
+    other match
+      case o: Choice[_] => o.name == name
+      case _ => false
+  final override def toString = s"Choice($name)"
+
+/** A Reader + Writer are available in given scope for this type. */
+case class Given[T](name: String) extends NonPrimitiveTag[T]
 
 import compiletime.erasedValue
 inline def primitiveTag[T](): PrimitiveTag[T] =
@@ -87,13 +100,30 @@ inline def fastTypeTag[T](): FastTypeTag[T] =
         // case _: Unit | Boolean | Char | Short | Int | Long | Float | Double | String => primitiveTag[T]()
         case _ => compiletime.summonFrom {
           // TODO - not all products + sums are supported...
-          case m: deriving.Mirror.ProductOf[T] => NonPrimitiveTag.Struct[T](typeName[T])
+          case m: deriving.Mirror.ProductOf[T] => Struct[T](typeName[T])
           case m: deriving.Mirror.SumOf[T] =>
-            // TODO - figure out everything we'll actually need here...
-            NonPrimitiveTag.Option[T](typeName[T], options[m.MirroredElemTypes])
-          case p: core.Pickler[T] => NonPrimitiveTag.Given[T](typeName[T])
+            new Choice[T] {
+              override def name = typeName[T]
+              override def ordinal[T](value: T): Int = m.ordinal(value.asInstanceOf[m.MirroredMonoType])
+              override def options = format.options[m.MirroredElemTypes]
+              override def nameFromOrdinal(ordinal: Int): String =
+                InlineHelper.summonLabels[m.MirroredElemLabels](ordinal)
+              override def find(name: String): FastTypeTag[?] = 
+                choiceMatcher[Tuple.Zip[m.MirroredElemLabels, m.MirroredElemTypes]](name)
+            }
+          case p: core.Pickler[T] => Given[T](typeName[T])
           case _ =>  unsupportedType[T]
         }
+
+inline def choiceMatcher[NamesAndElems <: Tuple](name: String): FastTypeTag[?] =
+  inline erasedValue[NamesAndElems] match
+    case _: (Tuple2[name, tpe] *: tail) =>
+      if name == compiletime.constValue[name]
+      then fastTypeTag[tpe]()
+      else choiceMatcher[tail](name)
+    // TODO - better errors.
+    case _: Unit => throw RuntimeException(s"Could not find $name")
+
 /** From a tuple of types, pulls all the type tags. */
 inline def options[Elems]: List[FastTypeTag[?]] =
   inline erasedValue[Elems] match

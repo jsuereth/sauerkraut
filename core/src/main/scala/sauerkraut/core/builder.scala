@@ -32,7 +32,11 @@ trait Buildable[T]
  * This is a push API, where read values are pushed into the builder, constructing the type.
  */
 sealed trait Builder[T]
+  /** Returns the result of all the values placed into this builder. */
   def result: T
+
+// TODO:  `object NoBuilder` to use when a field does not exist for compatibility.
+
 
 /** Represents a `builder` that can be used to generate a structure from a pickle. */
 trait StructureBuilder[T] extends Builder[T]
@@ -45,15 +49,21 @@ trait StructureBuilder[T] extends Builder[T]
    * with individual elements.
    */
   def putField[F](name: String): Builder[F]
-  /** Returns the resulting built structure after pushing in all pieces of data. */
-  def result: T
+
+/** 
+ * Represents a `builder` that can be used to generate one of a variety of instances
+ * from a pickle. 
+ */
+trait ChoiceBuilder[T] extends Builder[T]
+  /** The tag of the type being built by this builder. */
+  def tag: format.Choice[T]
+  /** Grabs the builder for a given choice and assigns the result of the current builder to that value. */
+  def putChoice[F](name: String): Builder[F]
 
 /** Represents a builder of collections from pickles. */
 trait CollectionBuilder[E, To] extends Builder[To]
   /** Places an element into the collection.   Returns a new builder for the new element. */
   def putElement(): Builder[E]
-  /** Returns the built collection of elements. */
-  def result: To
 
 /** A builder for primitives.  basically just writes values into their final location. */
 trait PrimitiveBuilder[P] extends Builder[P]
@@ -75,24 +85,24 @@ object Buildable
           inline m match
             case m: Mirror.ProductOf[T] =>
                productBuilder[T, m.type](m)
+            case m: Mirror.SumOf[T] =>
+              sumBuilder[T, m.type](m)
             case _ => compiletime.error("Cannot derive builder for non-struct classes")
     }
   /** Summons new builders for a tuple of types. */
-  inline def buildersFor[Elems <: Tuple]: Tuple.Map[Elems,Builder] =
+  inline def buildersFor[Elems <: Tuple]: List[Builder[_]] =
     inline erasedValue[Elems] match
-      case _: (h *: tail) => (builderFor[h] *: buildersFor[tail]).asInstanceOf[Tuple.Map[Elems, Builder]]
-      case _: Unit => ().asInstanceOf[Tuple.Map[Elems, Builder]]
+      case _: (h *: tail) => (builderFor[h] :: buildersFor[tail])
+      case _: Unit => Nil
   /** Summons a single new builder for a type. */
   inline def builderFor[T]: Builder[T] =
     summonFrom {
       case b: Buildable[T] => b.newBuilder
+      // TODO - this is terrible, figure out a way not to
+      // waste so much compute for this.
+      case m: Mirror.Of[T] => derived[T].newBuilder
       case _ => compiletime.error("Unable to construct builder")
     }
-
-  // Ugly type for tuple match.  
-  type BuiltValue[T] = T match
-    case Builder[t] => t
-    case Unit => Unit
     
   inline def productBuilder[T, M <: Mirror.ProductOf[T]](m: M): Builder[T] = 
     new StructureBuilder[T] {
@@ -100,21 +110,30 @@ object Buildable
         private var fields = buildersFor[m.MirroredElemTypes]
         override def knownFieldNames: List[String] =
           summonLabels[m.MirroredElemLabels]
-        // TODO - lookup tuple by index?
         override def putField[F](name: String): Builder[F] =
           // TODO - FIX THIS TO NOT BE DYNAMIC LOOKUP, something more like
           // a pattern match.
           // ALSO fix the error messages if builders are not ready....
-          fields.toArray(knownFieldNames.indexOf(name)).asInstanceOf[Builder[F]]
+          fields(knownFieldNames.indexOf(name)).asInstanceOf[Builder[F]]
         override def result: T =
           m.fromProduct(
-              fields
-                .map[BuiltValue]([builder] => 
-                  (b: builder) =>
-                    b.asInstanceOf[Builder[_]]
-                     .result
-                     .asInstanceOf[BuiltValue[builder]]
-                ).asInstanceOf[Product]
+              internal.GenericProduct( 
+                fields
+                .map(b =>
+                    b.asInstanceOf[Builder[_]].result.asInstanceOf[Object]
+                ).toArray[Object])
           )
     }
-  
+  inline def sumBuilder[T, M <: Mirror.SumOf[T]](m: M): Builder[T] =
+    new ChoiceBuilder[T] {
+      private var choiceBuilder: Builder[T] = null
+      private val builderLookup: Map[String, Builder[_]] =
+        (summonLabels[m.MirroredElemLabels] zip
+        buildersFor[m.MirroredElemTypes].toArray).toMap.asInstanceOf[Map[String, Builder[_]]]
+      override val tag = format.fastTypeTag[T]().asInstanceOf[format.Choice[T]]
+      // TODO - encode the builder lookup as an inline if/else
+      override def putChoice[F](name: String): Builder[F] =
+        choiceBuilder = builderLookup(name).asInstanceOf[Builder[T]] 
+        choiceBuilder.asInstanceOf[Builder[F]]
+      override def result: T = choiceBuilder.result
+    }

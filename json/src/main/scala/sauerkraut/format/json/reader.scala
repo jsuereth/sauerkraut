@@ -18,7 +18,12 @@ package sauerkraut
 package format
 package json
 
-import core.{PrimitiveBuilder, CollectionBuilder, StructureBuilder}
+import core.{
+  PrimitiveBuilder,
+  CollectionBuilder,
+  StructureBuilder,
+  ChoiceBuilder
+}
 import org.typelevel.jawn.ast
 
 class JsonReader(value: ast.JValue) extends PickleReader
@@ -27,6 +32,7 @@ class JsonReader(value: ast.JValue) extends PickleReader
       case p: PrimitiveBuilder[T] => readPrimitive(p)
       case c: CollectionBuilder[?, T] => readCollection(c)
       case s: StructureBuilder[T] => readStructure(s)
+      case c: ChoiceBuilder[T] => readChoice(c)
     builder
 
   def readCollection[E, To](p: CollectionBuilder[E,To]): Unit =
@@ -57,3 +63,12 @@ class JsonReader(value: ast.JValue) extends PickleReader
   def readStructure[T](p: StructureBuilder[T]): Unit =
     for name <- p.knownFieldNames
     do JsonReader(value.get(name)).push(p.putField(name))
+
+  def readChoice[T](p: ChoiceBuilder[T]): Unit =
+    value match {
+      case ast.JObject(values) if !values.isEmpty =>
+        val (key,value) = values.head
+        JsonReader(value).push(p.putChoice(key))
+      // TODO - better error messages!
+      case _ => // Ignore.
+    }

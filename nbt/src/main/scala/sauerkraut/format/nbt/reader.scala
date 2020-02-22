@@ -41,6 +41,7 @@ class NbtPickleReader(in: TagInputStream)
       case s: core.StructureBuilder[T] => readStructure(s)
       case c: core.CollectionBuilder[_, T] => readCollection(c)
       case p: core.PrimitiveBuilder[T] => readPrimitive(p)
+      case c: core.ChoiceBuilder[T] => readChoice(c)
     b
   private def readPrimitive[T](b: core.PrimitiveBuilder[T]): Unit =
      if (b.tag != PrimitiveTag.UnitTag)
@@ -61,3 +62,10 @@ class NbtPickleReader(in: TagInputStream)
       // TODO - figure out how to supress reading more tags.
       readPayloadFor(p.putField(name))
       currentTag = in.readTag()
+  private def readChoice[T](p: core.ChoiceBuilder[T]): Unit =
+    // Read this exactly like a structure, only with one
+    // named value.
+    val currentTag = in.readTag()
+    val name = in.readName()
+    readPayloadFor(p.putChoice(name))
+    assert(in.readTag() == NbtTag.TagEnd)

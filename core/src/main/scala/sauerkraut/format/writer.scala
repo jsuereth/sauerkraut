@@ -37,7 +37,6 @@ trait PickleWriter
     *                Note: this may be called multiple times, e.g. when getting size estimates.
     */
   def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter
-
   /** Writes a primitive into the pickle. */
   def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): PickleWriter
   /**
@@ -49,6 +48,18 @@ trait PickleWriter
    *          `endCollection()` must be called on this for correct behavior.
    */
   def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter
+  /**
+   * Denotes a 'choice' type that needs to be written.
+   * 
+   * Choices are the serialized equivalent of Sum types.  A choice is where one of several
+   * different things could be serialized.    Formats are able to record the choice in any way
+   * they desire.   See [[NonPrimitiveTag.Choice]] for information that can be used to distinguish
+   * between options.
+   */
+  // TODO - make this less ugly / better design.  Currently this is encoded behind struct, but
+  // we should allow formats to be clever.
+  final def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    putStructure(picklee, tag)(_.putField(choice, work))
   /** Flush any pending writes down this writer. */
   def flush(): Unit
 

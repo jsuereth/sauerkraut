@@ -36,7 +36,9 @@ class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with Pi
     pickler(this)
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
-    work(RawBinaryStructureWriter(out))
+    tag match
+      case ctag: Choice[a] => work(RawBinaryChoiceWriter(ctag.ordinal(picklee.asInstanceOf[a]), out)) 
+      case _ => work(RawBinaryStructureWriter(out))
     this
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
     tag match
@@ -64,6 +66,15 @@ class RawBinaryStructureWriter(out: CodedOutputStream) extends PickleStructureWr
     pickler(RawBinaryFieldWriter(out, currentFieldIndex))
     this
 
+/** 
+ * An unknown protocol buffer structure writer for enums.  It simply looks up the type-level ordinal.
+ */
+class RawBinaryChoiceWriter(ordinal: Int, out: CodedOutputStream) extends PickleStructureWriter
+  private var currentFieldIndex = 0
+  override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
+    pickler(RawBinaryFieldWriter(out, ordinal+1))
+    this
+
 class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int) 
     extends PickleWriter
   // Writing a collection should simple write a field multiple times.
@@ -82,8 +93,11 @@ class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int)
 
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
     tag match
-      case PrimitiveTag.UnitTag => ()
-      case PrimitiveTag.ByteTag => out.write(picklee.asInstanceOf[Byte])
+      case PrimitiveTag.UnitTag =>
+         // We need to make sure we write a tag/wiretype here
+         // TODO - find a less-byte way to do it.
+        out.writeInt32(fieldNum, 0)
+      case PrimitiveTag.ByteTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Byte].toInt)
       case PrimitiveTag.BooleanTag => out.writeBool(fieldNum, picklee.asInstanceOf[Boolean])
       case PrimitiveTag.CharTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Char].toInt)
       case PrimitiveTag.ShortTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Short].toInt)

@@ -8,6 +8,9 @@ import core.{Writer,given}
 
 case class Derived(x: Boolean, test: String) derives Writer
 case class Repeated(x: List[Boolean]) derives Writer
+enum SimpleEnum derives Writer
+  case One
+  case Two
 
 class TestRawBinaryProto
   def binary[T: Writer](value: T): Array[Byte] =
@@ -55,3 +58,7 @@ class TestRawBinaryProto
 
   @Test def writeRepeated(): Unit =
     assertEquals("0a01000a01010a0100", binaryString(Repeated(List(false, true, false))))
+
+  @Test def writeEnum(): Unit =
+    assertEquals("0a02", binaryString(SimpleEnum.One))
+    assertEquals("1202", binaryString(SimpleEnum.Two))

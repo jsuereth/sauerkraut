@@ -78,7 +78,7 @@ class FieldSizeEstimateWriter(fieldNum: Int,
   override def finalSize: Int = size
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
     tag match
-      case PrimitiveTag.UnitTag => ()
+      case PrimitiveTag.UnitTag => size += CodedOutputStream.computeInt32Size(fieldNum, 0)
       case PrimitiveTag.BooleanTag => 
         size += CodedOutputStream.computeBoolSize(
             fieldNum, 

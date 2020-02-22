@@ -44,7 +44,6 @@ class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter
         // TODO - appropriate floating point handling
         out.write(picklee.toString)
     this
-
   override def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter =
     out.write('{')
     work(JsonStructureWriter(out))

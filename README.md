@@ -237,7 +237,7 @@ TODO - a bit more here.
 
 
 ## Core Concepts TODO list
-- [X] Builder/Writer
+  - [X] Builder/Writer
   - [X] Primitive Types
   - [X] Collections
   - [X] Manually written builders/writers.

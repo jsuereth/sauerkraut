@@ -95,6 +95,7 @@ trait ComplianceTests
   extends CollectionComplianceTests
   with PrimitiveComplianceTests
   with StructureComplianceTests
+  with ChoiceComplianceTests
 
 // TODO - evolution compliance tests
 // 1. Field => Option[Field]
