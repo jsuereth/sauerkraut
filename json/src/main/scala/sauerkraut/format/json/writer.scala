@@ -51,7 +51,7 @@ class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter
     out.write('}')
     this
 
-  override def flush(): Unit = ()
+  override def flush(): Unit = out.flush()
 
 
 class JsonStructureWriter(out: JsonOutputStream) extends PickleStructureWriter

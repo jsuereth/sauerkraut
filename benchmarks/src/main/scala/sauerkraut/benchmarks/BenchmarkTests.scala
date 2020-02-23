@@ -16,6 +16,11 @@ case class SimpleMessage(value: Int @field(2), message: String @field(1))
 val EXAMPLE_INT=1124312542
 val EXAMPLE_STRING="This is a test of simple byte serialization for us all"
 
+@State(Scope.Thread)
+@AuxCounters
+class FileSizeCounter
+  var fileSize: Long = 0
+
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -29,10 +34,13 @@ abstract class JmhBenchmarks
     try use(tmp)
     finally tmp.delete()
 
+
+
   @Benchmark
-  def writeAndReadSimpleMessageFromFile(): Unit = 
+  def writeAndReadSimpleMessageFromFile(counter: FileSizeCounter): Unit = 
     withTempFile { file =>
       save(SimpleMessage(EXAMPLE_INT, EXAMPLE_STRING), file)
+      counter.fileSize = file.length()
       load[SimpleMessage](file)
       ()
     }
@@ -55,11 +63,11 @@ class RawBinaryBenchmarks extends JmhBenchmarks
   override def save[T: Writer](value: T, store: File): Unit =
     pickle(RawBinary).to(new FileOutputStream(store)).write(value)
 
-class ProtoBinaryBenchmarks extends JmhBenchmarks
-  val MyProtos = Protos[SimpleMessage *: Unit]()
-  class RawBinaryBenchmarks extends JmhBenchmarks
-  override def load[T: Buildable](store: File): T =
-    pickle(MyProtos).from(new FileInputStream(store)).read[T]
-  override def save[T: Writer](value: T, store: File): Unit =
-    pickle(MyProtos).to(new FileOutputStream(store)).write(value)
+// class ProtoBinaryBenchmarks extends JmhBenchmarks
+//   val MyProtos = Protos[SimpleMessage *: Unit]()
+//   class RawBinaryBenchmarks extends JmhBenchmarks
+//   override def load[T: Buildable](store: File): T =
+//     pickle(MyProtos).from(new FileInputStream(store)).read[T]
+//   override def save[T: Writer](value: T, store: File): Unit =
+//     pickle(MyProtos).to(new FileOutputStream(store)).write(value)
   // TODO - compare to raw PB parsing...
