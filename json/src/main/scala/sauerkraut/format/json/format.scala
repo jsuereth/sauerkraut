@@ -18,18 +18,22 @@ package sauerkraut
 package format
 package json
 
-import java.io.StringWriter
+import java.io.{Reader,Writer, File}
 import org.typelevel.jawn.ast
 
 object Json extends PickleFormat
 
 
-given PickleWriterSupport[StringWriter, Json.type]
-  def writerFor(format: Json.type, output: StringWriter): PickleWriter = 
+given [O <: Writer] as PickleWriterSupport[O, Json.type]
+  override def writerFor(format: Json.type, output: O): PickleWriter = 
     JsonPickleWriter(output)
 
+given PickleReaderSupport[File, Json.type]
+  override def readerFor(format: Json.type, input: File): PickleReader =
+    JsonReader(ast.JParser.parseFromFile(input).get)
+
 given PickleReaderSupport[String, Json.type]
-  def readerFor(format: Json.type, input: String): PickleReader =
+  override def readerFor(format: Json.type, input: String): PickleReader =
     JsonReader(ast.JParser.parseUnsafe(input))
 
 // TODO - more reader options.

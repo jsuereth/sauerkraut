@@ -18,9 +18,9 @@ package sauerkraut
 package format
 package json
 
-import java.io.StringWriter
+import java.io.Writer
 
-type JsonOutputStream = StringWriter
+type JsonOutputStream = Writer
 
 class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter
   override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =

@@ -60,4 +60,14 @@ val nbt = project
   .settings(commonSettings:_*)
   .dependsOn(core, compliance % "test")
 
+val benchmarks = project
+  .enablePlugins(JmhPlugin)
+  .settings(commonSettings:_*)
+  .dependsOn(nbt, pb, json)
+  .settings(
+    fork in run := true,
+    javaOptions in run += "-Xmx6G",
+    libraryDependencies += "org.openjdk.jmh" % "jmh-core" % "1.23"
+  )
+
 val root = project.in(file(".")).aggregate(core,compliance,json,nbt,pb,pbtest).settings(skip in publish := true)
