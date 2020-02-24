@@ -265,7 +265,39 @@ There are a few major differences from the old [scala pickling project](http://g
 
 # Benchmarking
 
-TODO - we should get a good set of these.
+Benchmarking is still being built-out, and is pending the final design on Choice/Sum-Types within the Format/Shape layer.
+
+Here are some early/priliminary numbers:
+
+```
+[info] Benchmark                                                                Mode  Cnt     Score   Error  Units
+[info] JsonBenchmarks.writeAndReadLargeNestedMessageFromFile                    avgt   25     1.447 ▒ 0.117  ms/op
+[info] JsonBenchmarks.writeAndReadLargeNestedMessageFromFile:bytesWritten       avgt   25  5875.000              #
+[info] JsonBenchmarks.writeAndReadSimpleMessageFromFile                         avgt   25     1.860 ▒ 0.324  ms/op
+[info] JsonBenchmarks.writeAndReadSimpleMessageFromFile:bytesWritten            avgt   25  2175.000              #
+[info] NbtBenchmarks.writeAndReadLargeNestedMessageFromFile                     avgt   25     4.684 ▒ 0.819  ms/op
+[info] NbtBenchmarks.writeAndReadLargeNestedMessageFromFile:bytesWritten        avgt   25  7350.000              #
+[info] NbtBenchmarks.writeAndReadSimpleMessageFromFile                          avgt   25     6.371 ▒ 0.431  ms/op
+[info] NbtBenchmarks.writeAndReadSimpleMessageFromFile:bytesWritten             avgt   25  2000.000              #
+[info] RawBinaryBenchmarks.writeAndReadLargeNestedMessageFromFile               avgt   25    10.198 ▒ 1.935  ms/op
+[info] RawBinaryBenchmarks.writeAndReadLargeNestedMessageFromFile:bytesWritten  avgt   25  4675.000              #
+[info] RawBinaryBenchmarks.writeAndReadSimpleMessageFromFile                    avgt   25    17.855 ▒ 1.949  ms/op
+[info] RawBinaryBenchmarks.writeAndReadSimpleMessageFromFile:bytesWritten       avgt   25  1550.000              #
+```
+
+## Benchmarking TODOs
+
+- [X] Basic comparison of all formats
+- [X] Size-oF-Pickle measurement
+- [ ] Well-thought out dataset for reading/writing
+- [ ] Isolated read vs. write testing
+- [ ] Comparison against other frameworks.
+  - [ ] RawBinary + Protos vs. protocol buffer java implementation
+  - [ ] Json Reading vs. raw JAWN to AST (measure overhead)
+  - [ ] Avro
+  - [ ] Thrift?
+- [ ] Automatic well-formatted graph dump in Markdown of results.
+
 
 # Thanks
 
