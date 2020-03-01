@@ -91,6 +91,14 @@ class RawBinaryBenchmarks extends JmhBenchmarks
   override def save[T: Writer](value: T, store: ByteBuffer): Unit =
     pickle(RawBinary).to(store.out).write(value)
 
+class JavaSerializationBenchmarks extends JmhBenchmarks
+  override def load[T: Buildable](store: ByteBuffer): T =
+    java.io.ObjectInputStream(store.in).readObject.asInstanceOf[T]
+  override def save[T: Writer](value: T, store: ByteBuffer): Unit =
+    val out = java.io.ObjectOutputStream(store.out)
+    out.writeObject(value)
+    out.flush()
+
 // class ProtoBinaryBenchmarks extends JmhBenchmarks
 //   val MyProtos = Protos[SimpleMessage *: LargerMessage *: Unit]()
 //   class RawBinaryBenchmarks extends JmhBenchmarks
@@ -98,4 +106,58 @@ class RawBinaryBenchmarks extends JmhBenchmarks
 //     pickle(MyProtos).from(new FileInputStream(store)).read[T]
 //   override def save[T: Writer](value: T, store: File): Unit =
 //     pickle(MyProtos).to(new FileOutputStream(store)).write(value)
-  // TODO - compare to raw PB parsing...
+  
+@State(Scope.Benchmark)
+@BenchmarkMode(Array(Mode.AverageTime))
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+class ProtocolBufferBenchmarks
+  import proto.Bench
+  @Benchmark
+  def writeAndReadSimpleMessage(bytes: Bytes, counter: BytesWritten, bh: Blackhole): Unit =
+    val msg = 
+      Bench.SimpleMessage.newBuilder()
+      .setValue(EXAMPLE_INT)
+      .setMessage(EXAMPLE_STRING)
+      .build()
+    val out = com.google.protobuf.CodedOutputStream.newInstance(bytes.buffer.out)
+    msg.writeTo(out)
+    out.flush()
+    bytes.flip(counter)
+    bh.consume(Bench.SimpleMessage.parseFrom(bytes.buffer))
+
+  @Benchmark
+  def writeAndReadLargeNestedMessage(bytes: Bytes, counter: BytesWritten, bh: Blackhole): Unit =
+    // Note: We include canonical usage of builder pattern for construction
+    // of PB buffers.  This is to offset the simpler construction of Case classes
+    // in Scala given their canonical usage in Scala programs.
+    val msg = Bench.LargerMessage.newBuilder()
+      .addMessages(
+        Bench.SimpleMessage.newBuilder()
+        .setValue(EXAMPLE_INT)
+        .setMessage(EXAMPLE_STRING))
+      .addMessages(
+        Bench.SimpleMessage.newBuilder()
+        .setValue(0)
+        .setMessage(""))
+      .addMessages(Bench.SimpleMessage.newBuilder()
+        .setValue(-1)
+        .setMessage("ANother string"))
+      .addOtherNums(1.0)
+      .addOtherNums(-0.000001)
+      .addOtherNums(1000000000000000.0101010)
+      .addInts(1)
+      .addInts(2)
+      .addInts(3)
+      .addInts(4)
+      .addInts(5)
+      .addInts(-1)
+      .addInts(-2)
+      .addInts(-4)
+      .addInts(1425)
+      .addInts(0)
+      .build()
+    val out = com.google.protobuf.CodedOutputStream.newInstance(bytes.buffer.out)
+    msg.writeTo(out)
+    out.flush()
+    bytes.flip(counter)
+    bh.consume(Bench.LargerMessage.parseFrom(bytes.buffer))

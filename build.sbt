@@ -62,12 +62,24 @@ val nbt = project
 
 val benchmarks = project
   .enablePlugins(JmhPlugin)
+  .enablePlugins(ProtobufPlugin)
   .settings(commonSettings:_*)
   .dependsOn(nbt, pb, json)
   .settings(
     fork in run := true,
     javaOptions in run += "-Xmx6G",
-    libraryDependencies += "org.openjdk.jmh" % "jmh-core" % "1.23"
+    libraryDependencies += "org.openjdk.jmh" % "jmh-core" % "1.23",
+    protobufRunProtoc in ProtobufConfig := { args =>
+      com.github.os72.protocjar.Protoc.runProtoc("-v370" +: args.toArray)
+    }
   )
 
-val root = project.in(file(".")).aggregate(core,compliance,json,nbt,pb,pbtest).settings(skip in publish := true)
+val root = project.in(file(".")).aggregate(
+  core,
+  compliance,
+  json,
+  nbt,
+  pb,
+  pbtest,
+  benchmarks
+).settings(skip in publish := true)

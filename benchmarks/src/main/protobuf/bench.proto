@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package sauerkraut.benchmarks.proto;
+
+message SimpleMessage {
+    int32 value = 2;
+    string message = 1;
+}
+
+message LargerMessage {
+    repeated SimpleMessage messages = 1;
+    repeated double otherNums = 2;
+    repeated int32 ints = 3;
+}
