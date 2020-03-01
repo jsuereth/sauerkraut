@@ -18,7 +18,10 @@ package sauerkraut
 package core
 
 import format.{PickleReader,PickleWriter}
-import scala.collection.mutable.{Builder => ScalaCollectionBuilder}
+import scala.collection.mutable.{
+  Builder => ScalaCollectionBuilder,
+  ArrayBuffer
+}
 
 // TODO - make generic for all collections. Maybe codegen?
 /** A writer for all collections extending Iterable. */
@@ -37,8 +40,10 @@ final class ArrayWriter[T: Writer : reflect.ClassTag] extends Writer[Array[T]]
     )
 
 given [T](using Writer[T]) as Writer[List[T]] = CollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]) as Writer[Vector[T]] = CollectionWriter[T]().asInstanceOf
 given [T](using Writer[T]) as Writer[Seq[T]] = CollectionWriter[T]().asInstanceOf
 given [T](using Writer[T]) as Writer[Iterable[T]] = CollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]) as Writer[collection.mutable.ArrayBuffer[T]] = CollectionWriter[T]().asInstanceOf
 given [T](using Writer[T], reflect.ClassTag[T]) as Writer[Array[T]] = ArrayWriter[T]()
 
 final class SimpleCollectionBuilder[E: Buildable, To](
@@ -67,5 +72,9 @@ given [T](using Buildable[T]) as Buildable[Seq[T]] =
   CollectionBuildable[T, Seq[T]](() => Seq.newBuilder)
 given [T](using Buildable[T]) as Buildable[Iterable[T]] =
   CollectionBuildable[T, Iterable[T]](() => Iterable.newBuilder)
+given [T](using Buildable[T]) as Buildable[Vector[T]] =
+  CollectionBuildable[T, Vector[T]](() => Vector.newBuilder)
 given [T](using Buildable[T], reflect.ClassTag[T]) as Buildable[Array[T]] =
   CollectionBuildable[T, Array[T]](() => Array.newBuilder[T])
+given [T](using Buildable[T], reflect.ClassTag[T]) as Buildable[ArrayBuffer[T]] =
+  CollectionBuildable[T, ArrayBuffer[T]](() => ArrayBuffer.newBuilder[T])

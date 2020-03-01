@@ -2,84 +2,94 @@ package sauerkraut
 package benchmarks
 
 import core.{Writer,Buildable,given}
+import java.nio.ByteBuffer
+import java.io.OutputStreamWriter
 import format.pb.{RawBinary,Protos,TypeDescriptorMapping,field,given}
 import format.json.{Json,given}
 import format.nbt.{Nbt,given}
 import org.openjdk.jmh.annotations._
-import java.io.{File,FileInputStream,FileOutputStream,FileWriter}
+import org.openjdk.jmh.infra.Blackhole
 import java.util.concurrent.TimeUnit
+import scala.collection.mutable.ArrayBuffer
 
 
 case class SimpleMessage(value: Int @field(2), message: String @field(1))
     derives Writer, Buildable, TypeDescriptorMapping
 
 case class LargerMessage(
-  messages: List[SimpleMessage] @field(1),
-  otherNums: List[Double] @field(2),
-  ints: List[Long] @field(3)
+  messages: ArrayBuffer[SimpleMessage] @field(1),
+  otherNums: ArrayBuffer[Double] @field(2),
+  ints: ArrayBuffer[Long] @field(3)
 ) derives Writer, Buildable, TypeDescriptorMapping
 
 val EXAMPLE_INT=1124312542
 val EXAMPLE_STRING="This is a test of simple byte serialization for us all"
 
 @State(Scope.Thread)
-@AuxCounters(AuxCounters.Type.EVENTS)
-class FileSizeCounter
-  var bytesWritten: Long = 0
+class Bytes
+  // We allocate 1M for all serialization tests.
+  val buffer = ByteBuffer.allocate(1024*1024)
+  @Setup(Level.Invocation) def setUp(): Unit =
+    buffer.clear()
 
+  def flip(counter: BytesWritten): Unit =
+    buffer.flip()
+    counter.bytesWritten = buffer.remaining
+
+
+@AuxCounters(AuxCounters.Type.EVENTS)
+@State(Scope.Thread)
+class BytesWritten
+  var bytesWritten: Int = 0
+
+// TODO: Benchmark times are currently dominated by FILE I/O operations....
+//       IF we can simulate file I/O effectively, we could get better numbers.
+//       However, it IS true the JAWN has an advantage over any InputStream inputs due to its architecture.
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 abstract class JmhBenchmarks
   /** Abstract implementation of loading. */
-  protected def load[T: Buildable](store: File): T
-  protected def save[T: Writer](value: T, store: File): Unit
+  protected def load[T: Buildable](store: ByteBuffer): T
+  protected def save[T: Writer](value: T, store: ByteBuffer): Unit
 
-  private inline def withTempFile[T](use: File => T): T =
-    val tmp = File.createTempFile("serialization", ".pickle")
-    try use(tmp)
-    finally tmp.delete()
-
-  private inline def readAndWrite[T : Buildable : Writer](counter: FileSizeCounter)(value: T): Unit =
-    withTempFile { file =>
-      save(value, file)
-      counter.bytesWritten = file.length
-      load[T](file)
-      ()
-    }
+  private inline def readAndWrite[T : Buildable : Writer](bytes: Bytes, counter: BytesWritten)(value: T): T =
+    save(value, bytes.buffer)
+    bytes.flip(counter)
+    load[T](bytes.buffer)
 
 
   @Benchmark
-  def writeAndReadSimpleMessageFromFile(counter: FileSizeCounter): Unit = 
-    readAndWrite(counter)(SimpleMessage(EXAMPLE_INT, EXAMPLE_STRING))
+  def writeAndReadSimpleMessage(bytes: Bytes, counter: BytesWritten, bh: Blackhole): Unit = 
+    bh.consume(readAndWrite(bytes, counter)(SimpleMessage(EXAMPLE_INT, EXAMPLE_STRING)))
 
   @Benchmark
-  def writeAndReadLargeNestedMessageFromFile(counter: FileSizeCounter): Unit =
-    readAndWrite(counter)(LargerMessage(
-      messages = List(
+  def writeAndReadLargeNestedMessage(bytes: Bytes, counter: BytesWritten, bh: Blackhole): Unit =
+    bh.consume(readAndWrite(bytes, counter)(LargerMessage(
+      messages = ArrayBuffer(
         SimpleMessage(EXAMPLE_INT, EXAMPLE_STRING),
         SimpleMessage(0, ""),
         SimpleMessage(-1, "ANother string")),
-      otherNums = List(1.0, -0.000001, 1000000000000000.0101010),
-      ints = List(1,2,3,4,5,-1,-2,-4,1425,0)))
+      otherNums = ArrayBuffer(1.0, -0.000001, 1000000000000000.0101010),
+      ints = ArrayBuffer(1,2,3,4,5,-1,-2,-4,1425,0))))
 
 class JsonBenchmarks extends JmhBenchmarks
-  override def load[T: Buildable](store: File): T =
+  override def load[T: Buildable](store: ByteBuffer): T =
     pickle(Json).from(store).read[T]
-  override def save[T: Writer](value: T, store: File): Unit =
-    pickle(Json).to(FileWriter(store)).write(value)
+  override def save[T: Writer](value: T, store: ByteBuffer): Unit =
+    pickle(Json).to(store.writer).write(value)
 
 class NbtBenchmarks extends JmhBenchmarks
-  override def load[T: Buildable](store: File): T =
-    pickle(Nbt).from(new FileInputStream(store)).read[T]
-  override def save[T: Writer](value: T, store: File): Unit =
-    pickle(Nbt).to(new FileOutputStream(store)).write(value)
+  override def load[T: Buildable](store: ByteBuffer): T =
+    pickle(Nbt).from(store.in).read[T]
+  override def save[T: Writer](value: T, store: ByteBuffer): Unit =
+    pickle(Nbt).to(store.out).write(value)
 
 class RawBinaryBenchmarks extends JmhBenchmarks
-  override def load[T: Buildable](store: File): T =
-    pickle(RawBinary).from(new FileInputStream(store)).read[T]
-  override def save[T: Writer](value: T, store: File): Unit =
-    pickle(RawBinary).to(new FileOutputStream(store)).write(value)
+  override def load[T: Buildable](store: ByteBuffer): T =
+    pickle(RawBinary).from(store.in).read[T]
+  override def save[T: Writer](value: T, store: ByteBuffer): Unit =
+    pickle(RawBinary).to(store.out).write(value)
 
 // class ProtoBinaryBenchmarks extends JmhBenchmarks
 //   val MyProtos = Protos[SimpleMessage *: LargerMessage *: Unit]()

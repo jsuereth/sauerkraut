@@ -19,6 +19,8 @@ package format
 package json
 
 import java.io.{Reader,Writer, File}
+import java.nio.{ByteBuffer}
+import java.nio.channels.ReadableByteChannel
 import org.typelevel.jawn.ast
 
 object Json extends PickleFormat
@@ -31,6 +33,14 @@ given [O <: Writer] as PickleWriterSupport[O, Json.type]
 given PickleReaderSupport[File, Json.type]
   override def readerFor(format: Json.type, input: File): PickleReader =
     JsonReader(ast.JParser.parseFromFile(input).get)
+
+given PickleReaderSupport[ByteBuffer, Json.type]
+  override def readerFor(format: Json.type, input: ByteBuffer): PickleReader =
+    JsonReader(ast.JParser.parseFromByteBuffer(input).get)
+
+given PickleReaderSupport[ReadableByteChannel, Json.type]
+  override def readerFor(format: Json.type, input: ReadableByteChannel): PickleReader =
+    JsonReader(ast.JParser.parseFromChannel(input).get)
 
 given PickleReaderSupport[String, Json.type]
   override def readerFor(format: Json.type, input: String): PickleReader =

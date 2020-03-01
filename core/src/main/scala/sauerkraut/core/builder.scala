@@ -112,7 +112,7 @@ object Buildable
           summonLabels[m.MirroredElemLabels]
         override def putField[F](name: String): Builder[F] =
           // TODO - FIX THIS TO NOT BE DYNAMIC LOOKUP, something more like
-          // a pattern match.
+          // a pattern match.  This appears to be ~2.7% of execution time in benchmarks.
           // ALSO fix the error messages if builders are not ready....
           fields(knownFieldNames.indexOf(name)).asInstanceOf[Builder[F]]
         override def result: T =
