@@ -267,7 +267,7 @@ There are a few major differences from the old [scala pickling project](http://g
 
 Benchmarking is still being built-out, and is pending the final design on Choice/Sum-Types within the Format/Shape layer.
 
-Here are some early/priliminary numbers:
+Here are some early/priliminary numbers, found by running ` benchmarks/jmh:run -rf csv`:
 
 ```
 [info] Benchmark                                                                Mode  Cnt     Score   Error  Units

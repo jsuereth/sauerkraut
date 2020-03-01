@@ -99,7 +99,7 @@ class JavaSerializationBenchmarks extends JmhBenchmarks
     out.writeObject(value)
     out.flush()
 
-// class ProtoBinaryBenchmarks extends JmhBenchmarks
+// class SauerkrautProtocolBufferBenchmarks extends JmhBenchmarks
 //   val MyProtos = Protos[SimpleMessage *: LargerMessage *: Unit]()
 //   class RawBinaryBenchmarks extends JmhBenchmarks
 //   override def load[T: Buildable](store: File): T =
@@ -110,7 +110,7 @@ class JavaSerializationBenchmarks extends JmhBenchmarks
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-class ProtocolBufferBenchmarks
+class JavaProtocolBufferBenchmarks
   import proto.Bench
   @Benchmark
   def writeAndReadSimpleMessage(bytes: Bytes, counter: BytesWritten, bh: Blackhole): Unit =
