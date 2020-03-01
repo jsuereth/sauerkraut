@@ -77,7 +77,7 @@ trait PrimitiveBuilder[P] extends Builder[P]
 object Buildable
   import deriving._
   import scala.compiletime.{erasedValue,constValue,summonFrom}
-  import internal.InlineHelper.summonLabels
+  import internal.InlineHelper.{summonLabels,labelIndexLookup}
   /** Derives Builders for any product-like class. */
   inline def derived[T](given m: Mirror.Of[T]): Buildable[T] =
     new Buildable[T] {
@@ -111,13 +111,13 @@ object Buildable
         override def knownFieldNames: List[String] =
           summonLabels[m.MirroredElemLabels]
         override def putField[F](name: String): Builder[F] =
-          // TODO - FIX THIS TO NOT BE DYNAMIC LOOKUP, something more like
-          // a pattern match.  This appears to be ~2.7% of execution time in benchmarks.
-          // ALSO fix the error messages if builders are not ready....
-          fields(knownFieldNames.indexOf(name)).asInstanceOf[Builder[F]]
+          // TODO - this throws IndexOutOfBoundsException.  We should have better error message. 
+          val idx = labelIndexLookup[m.MirroredElemLabels](name)
+          fields(idx).asInstanceOf[Builder[F]]
         override def result: T =
           m.fromProduct(
-              internal.GenericProduct( 
+              internal.GenericProduct(
+                // TODO - this `map` is now one of the more signficant slowdowns from sauerkraut. 
                 fields
                 .map(b =>
                     b.asInstanceOf[Builder[_]].result.asInstanceOf[Object]
@@ -127,11 +127,12 @@ object Buildable
   inline def sumBuilder[T, M <: Mirror.SumOf[T]](m: M): Builder[T] =
     new ChoiceBuilder[T] {
       private var choiceBuilder: Builder[T] = null
+      // TODO - see if we can encode this as inline function against a pregenerated array of builders.
       private val builderLookup: Map[String, Builder[_]] =
         (summonLabels[m.MirroredElemLabels] zip
         buildersFor[m.MirroredElemTypes].toArray).toMap.asInstanceOf[Map[String, Builder[_]]]
       override val tag = format.fastTypeTag[T]().asInstanceOf[format.Choice[T]]
-      // TODO - encode the builder lookup as an inline if/else
+      // TODO - we should allow by-name *or* by-ordinal rather than reverse engineering that junk.
       override def putChoice[F](name: String): Builder[F] =
         choiceBuilder = builderLookup(name).asInstanceOf[Builder[T]] 
         choiceBuilder.asInstanceOf[Builder[F]]

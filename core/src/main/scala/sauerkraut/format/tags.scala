@@ -107,7 +107,7 @@ inline def fastTypeTag[T](): FastTypeTag[T] =
               override def ordinal[T](value: T): Int = m.ordinal(value.asInstanceOf[m.MirroredMonoType])
               override def options = format.options[m.MirroredElemTypes]
               override def nameFromOrdinal(ordinal: Int): String =
-                InlineHelper.summonLabels[m.MirroredElemLabels](ordinal)
+                InlineHelper.labelLookup[m.MirroredElemLabels](ordinal)
               override def find(name: String): FastTypeTag[?] = 
                 choiceMatcher[Tuple.Zip[m.MirroredElemLabels, m.MirroredElemTypes]](name)
             }

@@ -23,7 +23,7 @@ object InlineHelper
   inline def summonLabel[T <: Tuple](idx: Int): String = 
     inline if(idx == 0) then
       inline compiletime.erasedValue[T] match
-        case _: (c *: next) => compiletime.constValue[c].asInstanceOf[String]
+        case _: (c *: next) => summonString[c]
         case _ => compiletime.error(s"Invalid index $idx into tuple")
     else
       inline compiletime.erasedValue[T] match 
@@ -32,5 +32,23 @@ object InlineHelper
   /** Given an input type of string constants, return a runtime string list of the values. */
   inline def summonLabels[T <: Tuple]: List[String] =
     inline compiletime.erasedValue[T] match
-      case _: (c *: next) => compiletime.constValue[c].asInstanceOf[String] :: summonLabels[next]
+      case _: (c *: next) => summonString[c] :: summonLabels[next]
       case _ => Nil
+  /** Given a type that is a string constant, return a runtime literal string of that constant. */
+  inline def summonString[Label]: String = compiletime.constValue[Label].asInstanceOf[String]
+  /** Given a runtime label value, will write an if/else chain to determine index of the label. */
+  inline def labelIndexLookup[T <: Tuple](label: String): Int =
+    inline compiletime.erasedValue[T] match
+      case _: (c *: next) => 
+        if (summonString[c] == label) 0
+        else 1 + labelIndexLookup[next](label)
+      case _ => throw IndexOutOfBoundsException(s"Cannot find $label")
+
+  /** Given a runtime index, will look over the compile-time constant strings and select one at that index. */
+  inline def labelLookup[T <: Tuple](idx: Int): String =
+    inline compiletime.erasedValue[T] match
+      case _: (c *: next) =>
+         if idx == 0
+         then summonString[c]
+         else labelLookup[next](idx-1)
+      case _ => throw IndexOutOfBoundsException(s"Cannot find label at index: $idx")
