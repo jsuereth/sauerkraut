@@ -270,19 +270,27 @@ Benchmarking is still being built-out, and is pending the final design on Choice
 Here are some early/priliminary numbers, found by running ` benchmarks/jmh:run -rf csv`:
 
 ```
-[info] Benchmark                                                                Mode  Cnt     Score   Error  Units
-[info] JsonBenchmarks.writeAndReadLargeNestedMessageFromFile                    avgt   25     1.447 ▒ 0.117  ms/op
-[info] JsonBenchmarks.writeAndReadLargeNestedMessageFromFile:bytesWritten       avgt   25  5875.000              #
-[info] JsonBenchmarks.writeAndReadSimpleMessageFromFile                         avgt   25     1.860 ▒ 0.324  ms/op
-[info] JsonBenchmarks.writeAndReadSimpleMessageFromFile:bytesWritten            avgt   25  2175.000              #
-[info] NbtBenchmarks.writeAndReadLargeNestedMessageFromFile                     avgt   25     4.684 ▒ 0.819  ms/op
-[info] NbtBenchmarks.writeAndReadLargeNestedMessageFromFile:bytesWritten        avgt   25  7350.000              #
-[info] NbtBenchmarks.writeAndReadSimpleMessageFromFile                          avgt   25     6.371 ▒ 0.431  ms/op
-[info] NbtBenchmarks.writeAndReadSimpleMessageFromFile:bytesWritten             avgt   25  2000.000              #
-[info] RawBinaryBenchmarks.writeAndReadLargeNestedMessageFromFile               avgt   25    10.198 ▒ 1.935  ms/op
-[info] RawBinaryBenchmarks.writeAndReadLargeNestedMessageFromFile:bytesWritten  avgt   25  4675.000              #
-[info] RawBinaryBenchmarks.writeAndReadSimpleMessageFromFile                    avgt   25    17.855 ▒ 1.949  ms/op
-[info] RawBinaryBenchmarks.writeAndReadSimpleMessageFromFile:bytesWritten       avgt   25  1550.000              #
+[info] Benchmark                                                                 Mode  Cnt      Score     Error  Units
+[info] JavaProtocolBufferBenchmarks.writeAndReadLargeNestedMessage               avgt   25   1062.874 ▒  24.593  ns/op
+[info] JavaProtocolBufferBenchmarks.writeAndReadLargeNestedMessage:bytesWritten  avgt   25   4025.000                #
+[info] JavaProtocolBufferBenchmarks.writeAndReadSimpleMessage                    avgt   25    423.420 ▒   3.223  ns/op
+[info] JavaProtocolBufferBenchmarks.writeAndReadSimpleMessage:bytesWritten       avgt   25   1550.000                #
+[info] JavaSerializationBenchmarks.writeAndReadLargeNestedMessage                avgt   25  31522.989 ▒ 471.474  ns/op
+[info] JavaSerializationBenchmarks.writeAndReadLargeNestedMessage:bytesWritten   avgt   25  25600.000                #
+[info] JavaSerializationBenchmarks.writeAndReadSimpleMessage                     avgt   25   3342.000 ▒  67.027  ns/op
+[info] JavaSerializationBenchmarks.writeAndReadSimpleMessage:bytesWritten        avgt   25   3900.000                #
+[info] JsonBenchmarks.writeAndReadLargeNestedMessage                             avgt   25   8207.055 ▒ 123.497  ns/op
+[info] JsonBenchmarks.writeAndReadLargeNestedMessage:bytesWritten                avgt   25   5875.000                #
+[info] JsonBenchmarks.writeAndReadSimpleMessage                                  avgt   25   1552.229 ▒  16.216  ns/op
+[info] JsonBenchmarks.writeAndReadSimpleMessage:bytesWritten                     avgt   25   2175.000                #
+[info] NbtBenchmarks.writeAndReadLargeNestedMessage                              avgt   25   3869.315 ▒  36.619  ns/op
+[info] NbtBenchmarks.writeAndReadLargeNestedMessage:bytesWritten                 avgt   25   7350.000                #
+[info] NbtBenchmarks.writeAndReadSimpleMessage                                   avgt   25    763.427 ▒  11.281  ns/op
+[info] NbtBenchmarks.writeAndReadSimpleMessage:bytesWritten                      avgt   25   2000.000                #
+[info] RawBinaryBenchmarks.writeAndReadLargeNestedMessage                        avgt   25   5629.863 ▒  29.099  ns/op
+[info] RawBinaryBenchmarks.writeAndReadLargeNestedMessage:bytesWritten           avgt   25   4675.000                #
+[info] RawBinaryBenchmarks.writeAndReadSimpleMessage                             avgt   25    903.288 ▒   4.169  ns/op
+[info] RawBinaryBenchmarks.writeAndReadSimpleMessage:bytesWritten                avgt   25   1550.000                #
 ```
 
 ## Benchmarking TODOs

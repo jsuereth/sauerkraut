@@ -47,7 +47,7 @@ class BytesWritten
 //       However, it IS true the JAWN has an advantage over any InputStream inputs due to its architecture.
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
 abstract class JmhBenchmarks
   /** Abstract implementation of loading. */
   protected def load[T: Buildable](store: ByteBuffer): T
@@ -109,7 +109,7 @@ class JavaSerializationBenchmarks extends JmhBenchmarks
   
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
 class JavaProtocolBufferBenchmarks
   import proto.Bench
   @Benchmark
@@ -156,8 +156,6 @@ class JavaProtocolBufferBenchmarks
       .addInts(1425)
       .addInts(0)
       .build()
-    val out = com.google.protobuf.CodedOutputStream.newInstance(bytes.buffer.out)
-    msg.writeTo(out)
-    out.flush()
+    msg.writeTo(bytes.buffer.out)
     bytes.flip(counter)
     bh.consume(Bench.LargerMessage.parseFrom(bytes.buffer))
