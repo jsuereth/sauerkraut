@@ -116,8 +116,12 @@ object Buildable
         override def knownFieldNames: Array[String] = fieldNames
         override def putField[F](name: String): Builder[F] =
           // TODO - this throws IndexOutOfBoundsException.  We should have better error message. 
-          val idx = labelIndexLookup[m.MirroredElemLabels](name)
-          fields(idx).asInstanceOf[Builder[F]]
+          try
+            val idx = labelIndexLookup[m.MirroredElemLabels](name)
+            fields(idx).asInstanceOf[Builder[F]]
+          catch
+            case e: IndexOutOfBoundsException =>
+              throw WriteException(s"Unable to find field $name", e)
         override def result: T =
           m.fromProduct(
               ArrayProduct(

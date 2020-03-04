@@ -39,7 +39,9 @@ final class SimplePrimitiveBuilder[T](
   override def result: T = 
     value match
       case Some(v) => v
-      case None => throw RuntimeException("Did not find value for primitive!")
+      case None =>
+        // TODO - do we use a default here and ALLOW missing primtiive values? 
+        throw WriteException("Did not find value for primitive!", null)
   override def toString(): String =
     s"Builder[$tag]"
 final class PrimitiveBuildable[T](tag: PrimitiveTag[T]) extends Buildable[T]
