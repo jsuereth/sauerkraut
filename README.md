@@ -37,7 +37,7 @@ Here's a feature matrix for each format:
 | Json   | Yes    | Yes    | Yes       |                    | Uses Jawn for parsing                    |
 | Binary | Yes    | Yes    | Yes       |                    |                                          |
 | Protos | TBD    | Yes    | No        |                    | For bi-directional Protocol Buffer usage |
-| NBT    | Yes    | Yes    | Yes       |                    |                                          |
+| NBT    | Yes    | Yes    | Yes       |                    | Fast, but larger footprint than Binary.  |
 | XML    | TBD    | TBD    | TBD       |                    |                                          |
 | Pretty | No     | Yes    | No        |                    | For pretty-printing strings              |
 
@@ -267,31 +267,9 @@ There are a few major differences from the old [scala pickling project](http://g
 
 Benchmarking is still being built-out, and is pending the final design on Choice/Sum-Types within the Format/Shape layer.
 
-Here are some early/priliminary numbers, found by running ` benchmarks/jmh:run -rf csv`:
+You can see benchmark results via: ` benchmarks/jmh:run -rf csv`.
 
-```
-[info] Benchmark                                                                 Mode  Cnt      Score     Error  Units
-[info] JavaProtocolBufferBenchmarks.writeAndReadLargeNestedMessage               avgt   25   1062.874 ▒  24.593  ns/op
-[info] JavaProtocolBufferBenchmarks.writeAndReadLargeNestedMessage:bytesWritten  avgt   25   4025.000                #
-[info] JavaProtocolBufferBenchmarks.writeAndReadSimpleMessage                    avgt   25    423.420 ▒   3.223  ns/op
-[info] JavaProtocolBufferBenchmarks.writeAndReadSimpleMessage:bytesWritten       avgt   25   1550.000                #
-[info] JavaSerializationBenchmarks.writeAndReadLargeNestedMessage                avgt   25  31522.989 ▒ 471.474  ns/op
-[info] JavaSerializationBenchmarks.writeAndReadLargeNestedMessage:bytesWritten   avgt   25  25600.000                #
-[info] JavaSerializationBenchmarks.writeAndReadSimpleMessage                     avgt   25   3342.000 ▒  67.027  ns/op
-[info] JavaSerializationBenchmarks.writeAndReadSimpleMessage:bytesWritten        avgt   25   3900.000                #
-[info] JsonBenchmarks.writeAndReadLargeNestedMessage                             avgt   25   8207.055 ▒ 123.497  ns/op
-[info] JsonBenchmarks.writeAndReadLargeNestedMessage:bytesWritten                avgt   25   5875.000                #
-[info] JsonBenchmarks.writeAndReadSimpleMessage                                  avgt   25   1552.229 ▒  16.216  ns/op
-[info] JsonBenchmarks.writeAndReadSimpleMessage:bytesWritten                     avgt   25   2175.000                #
-[info] NbtBenchmarks.writeAndReadLargeNestedMessage                              avgt   25   3869.315 ▒  36.619  ns/op
-[info] NbtBenchmarks.writeAndReadLargeNestedMessage:bytesWritten                 avgt   25   7350.000                #
-[info] NbtBenchmarks.writeAndReadSimpleMessage                                   avgt   25    763.427 ▒  11.281  ns/op
-[info] NbtBenchmarks.writeAndReadSimpleMessage:bytesWritten                      avgt   25   2000.000                #
-[info] RawBinaryBenchmarks.writeAndReadLargeNestedMessage                        avgt   25   5629.863 ▒  29.099  ns/op
-[info] RawBinaryBenchmarks.writeAndReadLargeNestedMessage:bytesWritten           avgt   25   4675.000                #
-[info] RawBinaryBenchmarks.writeAndReadSimpleMessage                             avgt   25    903.288 ▒   4.169  ns/op
-[info] RawBinaryBenchmarks.writeAndReadSimpleMessage:bytesWritten                avgt   25   1550.000                #
-```
+Latest status/analysis can be found in the [benchamrk directory](benchmarks/latest-results.md).
 
 ## Benchmarking TODOs
 
@@ -300,7 +278,7 @@ Here are some early/priliminary numbers, found by running ` benchmarks/jmh:run -
 - [ ] Well-thought out dataset for reading/writing
 - [ ] Isolated read vs. write testing
 - [ ] Comparison against other frameworks.
-  - [ ] RawBinary + Protos vs. protocol buffer java implementation
+  - [X] RawBinary + Protos vs. protocol buffer java implementation
   - [ ] Json Reading vs. raw JAWN to AST (measure overhead)
   - [ ] Avro
   - [ ] Thrift?

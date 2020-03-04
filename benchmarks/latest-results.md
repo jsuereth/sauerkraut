@@ -15,7 +15,7 @@ Our goal is to:
   code generation for Java *and* conventional/common
   usage does not match Java's usage.
 
-## Full Results
+## Full Results (2020-03-01)
 
 | Benchmark | Format    | ByteSize | ns / op   | error (ns / op) |
 | --------- | --------- | -------- | --------- | --------------- |
@@ -40,7 +40,56 @@ Note: For complex messages our overhead in ByteSize is likely due to not
 treating collections of primitives specially, which also accounts for a
 large runtime overhead.
 
-## Stack Tracing Results
+## Areas to investigate:
+
+- [X] Figure out where immutable.List.length is being called from (22.8%)
+  - `Field.unapply` in RawBinaryReader was the issue.
+  - We were doing validation that tags read MATCH what we see in
+    the type.  May be more efficient just to let it throw and catch
+    later.   We'll figure out more when we update error reporting.
+- [ ] Figure out where `StrictOptimisedLinearSeqOps.drop` is being called.
+- [ ] Split apart `RawBinaryPickleReader.push` (7.4%)
+- [ ] Attempt to remove the crazy amount of boxing/unboxing we have w/ Primitives (2.5%)
+  - [ ] Erase PrimitiveBuilders in codegen of `Buildable.derived[T]`
+  - [ ] Add direct un-boxed signatures for putPrimitive.
+- [ ] Figure out if `Mirror.ProductOf[T]#fromProduct` could be more efficient. (2.9%)
+
+
+## Stack Tracing Results (post-knownFields-opt 2020-03-01)
+
+
+sauerkraut nbt format:
+```
+[info]  16.6%  33.2% java.io.DataOutputStream.write
+[info]   5.8%  11.6% java.io.DataInputStream.readFully
+[info]   5.3%  10.6% java.io.DataInputStream.readUnsignedShort
+[info]   3.8%   7.6% java.io.DataInputStream.readUTF
+[info]   3.6%   7.1% sauerkraut.format.nbt.NbtPickleReader.readPrimitive
+[info]   2.6%   5.1% java.io.DataOutputStream.writeByte
+[info]   2.1%   4.2% sauerkraut.benchmarks.SimpleMessage$$anon$1.write
+[info]   1.5%   3.0% sauerkraut.benchmarks.generated.NbtBenchmarks_writeAndReadSimpleMessage_jmhTest.writeAndReadSimpleMessage_avgt_jmhStub
+[info]   1.2%   2.4% scala.collection.IterableOnceOps.toArray$
+[info]   1.1%   2.2% sauerkraut.format.nbt.NbtPickleReader.readStructure
+[info]   6.5%  13.1% <other>
+```
+
+sauerkraut RawBinary format:
+```
+[info]   8.7%  17.4% scala.collection.StrictOptimizedLinearSeqOps.drop
+[info]   6.8%  13.7% com.google.protobuf.Utf8.encode
+[info]   6.8%  13.6% sauerkraut.format.pb.RawBinaryPickleReader.push
+[info]   5.4%  10.8% com.google.protobuf.CodedOutputStream$ArrayEncoder.writeStringNoTag
+[info]   4.4%   8.8% com.google.protobuf.CodedOutputStream$ArrayEncoder.writeTag
+[info]   3.4%   6.8% sauerkraut.format.pb.RawBinaryFieldWriter.<init>
+[info]   2.4%   4.8% sauerkraut.benchmarks.generated.RawBinaryBenchmarks_writeAndReadSimpleMessage_jmhTest.writeAndReadSimpleMessage_avgt_jmhStub
+[info]   2.2%   4.4% scala.collection.IterableOnceOps.toArray$
+[info]   1.7%   3.4% scala.collection.mutable.Growable.addAll
+[info]   1.5%   3.1% sauerkraut.benchmarks.SimpleMessage$$anon$1.write
+[info]   6.6%  13.3% <other>
+```
+
+
+## Stack Tracing Results (initial 2020-03-01)
 
 This is checking the RawBinary format specifically for
 where slowdown vs. native Java protocol buffers is
@@ -64,12 +113,3 @@ happening.
 [info]   1.1%   2.3% sauerkraut.benchmarks.generated.RawBinaryBenchmarks_writeAndReadSimpleMessage_jmhTest.writeAndReadSimpleMessage_avgt_jmhStub
 [info]   7.7%  15.4% <other>
 ```
-
-Areas to investigate:
-
-- [ ] Figure out where immutable.List.length is being called from (22.8%)
-- [ ] Split apart `RawBinaryPickleReader.push` (7.4%)
-- [ ] Attempt to remove the crazy amount of boxing/unboxing we have w/ Primitives (2.5%)
-  - [ ] Erase PrimitiveBuilders in codegen of `Buildable.derived[T]`
-  - [ ] Add direct un-boxed signatures for putPrimitive.
-- [ ] Figure out if `Mirror.ProductOf[T]#fromProduct` could be more efficient. (2.9%)

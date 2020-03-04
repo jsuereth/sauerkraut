@@ -87,9 +87,9 @@ class NbtBenchmarks extends JmhBenchmarks
 
 class RawBinaryBenchmarks extends JmhBenchmarks
   override def load[T: Buildable](store: ByteBuffer): T =
-    pickle(RawBinary).from(store.in).read[T]
+    pickle(RawBinary).from(store).read[T]
   override def save[T: Writer](value: T, store: ByteBuffer): Unit =
-    pickle(RawBinary).to(store.out).write(value)
+    pickle(RawBinary).to(store).write(value)
 
 class JavaSerializationBenchmarks extends JmhBenchmarks
   override def load[T: Buildable](store: ByteBuffer): T =

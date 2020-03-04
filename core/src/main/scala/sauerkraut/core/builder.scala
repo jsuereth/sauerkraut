@@ -41,7 +41,9 @@ sealed trait Builder[T]
 /** Represents a `builder` that can be used to generate a structure from a pickle. */
 trait StructureBuilder[T] extends Builder[T]
   /** The known field names for this structure. */
-  def knownFieldNames: List[String]
+  // Note: 'length' is used on the result of this, so it needs an
+  // efficient length method.
+  def knownFieldNames: Array[String]
   /** 
    * Puts a field into this builder.
    * 
@@ -81,10 +83,12 @@ object Buildable
   /** Derives Builders for any product-like class. */
   inline def derived[T](given m: Mirror.Of[T]): Buildable[T] =
     new Buildable[T] {
+        private val knownFieldNames: Array[String] =
+          summonLabels[m.MirroredElemLabels].toArray
         override def newBuilder: Builder[T] =
           inline m match
             case m: Mirror.ProductOf[T] =>
-               productBuilder[T, m.type](m)
+               productBuilder[T, m.type](m, knownFieldNames)
             case m: Mirror.SumOf[T] =>
               sumBuilder[T, m.type](m)
             case _ => compiletime.error("Cannot derive builder for non-struct classes")
@@ -104,19 +108,19 @@ object Buildable
       case _ => compiletime.error("Unable to construct builder")
     }
     
-  inline def productBuilder[T, M <: Mirror.ProductOf[T]](m: M): Builder[T] = 
+  inline def productBuilder[T, M <: Mirror.ProductOf[T]](m: M,
+    fieldNames: Array[String]): Builder[T] = 
     new StructureBuilder[T] {
         override def toString(): String = s"Builder[${format.typeName[T]}]"
         private var fields = buildersFor[m.MirroredElemTypes]
-        override def knownFieldNames: List[String] =
-          summonLabels[m.MirroredElemLabels]
+        override def knownFieldNames: Array[String] = fieldNames
         override def putField[F](name: String): Builder[F] =
           // TODO - this throws IndexOutOfBoundsException.  We should have better error message. 
           val idx = labelIndexLookup[m.MirroredElemLabels](name)
           fields(idx).asInstanceOf[Builder[F]]
         override def result: T =
           m.fromProduct(
-              internal.GenericProduct(
+              ArrayProduct(
                 // TODO - this `map` is now one of the more signficant slowdowns from sauerkraut. 
                 fields
                 .map(b =>

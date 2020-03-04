@@ -53,10 +53,12 @@ class RawBinaryPickleReader(in: CodedInputStream)
         case PrimitiveTag.DoubleTag => b.putPrimitive(in.readDouble())
         case PrimitiveTag.StringTag => b.putPrimitive(in.readString())
   private def readStructure[T](struct: core.StructureBuilder[T]): Unit =
+    // Note: This is on the critical read path, and need to be
+    // ultra efficient.  Ideally we hotpath to not use name-based lookup.
     object Field
       def unapply(num: Int): Option[core.Builder[?]] =
-        if (num > 0 && num <= struct.knownFieldNames.length)
-          Some(struct.putField(struct.knownFieldNames(num-1)))
+        if num > 0 && num <= struct.knownFieldNames.length
+        then Some(struct.putField(struct.knownFieldNames(num-1)))
         else None
     var done: Boolean = false
     while (!done)
