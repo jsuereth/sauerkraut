@@ -60,6 +60,8 @@ final case class MessageTypeDescriptor[T](
 trait TypeDescriptorMapping[T]
   /** Looks up a protocol buffer field number from field name. */
   def fieldNumber(name: String): Int
+  /** Looks up the protocol buffer name from a field number. */
+  def fieldName(num: Int): String
   /** Looks up a sub-type descriptor by field name. */
   def fieldDescriptor[F](name: String): Option[TypeDescriptorMapping[F]]
 
@@ -67,9 +69,10 @@ trait TypeDescriptorMapping[T]
 object TypeDescriptorMapping
   inline def derived[T]: TypeDescriptorMapping[T] =
     new TypeDescriptorMapping[T] {
-      def fieldNumber(name: String): Int =
+      override def fieldName(num: Int): String = lookupFieldName[T](num)
+      override def fieldNumber(name: String): Int =
         lookupFieldNum[T](name)
-      def fieldDescriptor[F](name: String): Option[TypeDescriptorMapping[F]] =
+      override def fieldDescriptor[F](name: String): Option[TypeDescriptorMapping[F]] =
         lookupFieldDescriptor[F, T](name)
     }
   import compiletime.{erasedValue,summonFrom}
@@ -82,6 +85,11 @@ object TypeDescriptorMapping
       case m: Mirror.ProductOf[T] =>
         fieldNumCheck[m.type](name)
     }
+  private inline def lookupFieldName[T](num: Int): String =
+    summonFrom {
+      case m: Mirror.ProductOf[T] =>
+        fieldNameCheck[m.type](num)
+    }
   private inline def lookupFieldDescriptor[F, T](name: String): Option[TypeDescriptorMapping[F]] =
     summonFrom {
       case m: Mirror.ProductOf[T] =>
@@ -90,8 +98,25 @@ object TypeDescriptorMapping
   
   private inline def fieldNumCheck[T](name: String): Int =
     ${fieldNumCheckImpl[T]('name)}
+  private inline def fieldNameCheck[T](num: Int): String =
+    ${fieldNameCheckImpl[T]('num)}
   private inline def fieldDescLookup[F, T](name: String): Option[TypeDescriptorMapping[F]] =
     ${fieldDescLookupImpl[F, T]('name)}
+
+  def fieldNameCheckImpl[T](using t: Type[T], qctx: QuoteContext)(id: Expr[Int]): Expr[String] =
+    import qctx.tasty.{_, given _}
+    import qctx._
+    val helper = MacroHelper(qctx)
+    val fieldNamesAndTypesWithNum =
+      helper.fieldNamesTypesAndNumber(t.unseal.tpe.asInstanceOf[helper.qctx.tasty.Type])
+    val cases: Iterable[CaseDef] =
+      fieldNamesAndTypesWithNum map {
+        case (label, (tpe, num)) =>
+          CaseDef(Literal(Constant(num)), None, Literal(Constant(label))).asInstanceOf[qctx.tasty.CaseDef]
+      }      
+    // Effectively a pattern match against all known field names to return
+    // the field numbers.
+    Match(id.unseal, cases.toList).seal.asInstanceOf[Expr[String]]
 
   def fieldNumCheckImpl[T](using t: Type[T], qctx: QuoteContext)(name: Expr[String]): Expr[Int] =
     import qctx.tasty.{_, given _}
@@ -189,6 +214,7 @@ class RawBinaryTypeDescriptorMapping
   extends TypeDescriptorMapping[Any]
   private var lastName: String = null
   private var lastIndex: Int = 0
+  def fieldName(num: Int): String = ???
   def fieldNumber(name: String): Int =
     if (name != lastName)
       lastName = name

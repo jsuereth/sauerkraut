@@ -99,8 +99,9 @@ inline def fastTypeTag[T](): FastTypeTag[T] =
         // TODO - file bug for this not working
         // case _: Unit | Boolean | Char | Short | Int | Long | Float | Double | String => primitiveTag[T]()
         case _ => compiletime.summonFrom {
-          // TODO - not all products + sums are supported...
-          case m: deriving.Mirror.ProductOf[T] => Struct[T](typeName[T])
+          case m: deriving.Mirror.ProductOf[T] =>
+            // TODO - should we encode options/names in the tag?
+            Struct[T](typeName[T])
           case m: deriving.Mirror.SumOf[T] =>
             new Choice[T] {
               override def name = typeName[T]

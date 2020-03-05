@@ -2,7 +2,7 @@ package test
 
 import org.junit.Test
 import org.junit.Assert._
-import sauerkraut.{pickle, write}
+import sauerkraut.{read, pickle, write}
 import sauerkraut.format.pb.given
 import collection.JavaConverters.asScalaBufferConverter
 
@@ -27,3 +27,19 @@ class TestWriteThenRead
     assertEquals(source.field.thing, result.getField.getThing)
     assertEquals(source.field.more, result.getField.getMore)
     assertEquals(source.field.stuff, result.getField.getStuffList.asScala.map(_.intValue))
+
+  @Test def googleWritesSauerReadsNested(): Unit =
+    val source = 
+      Test1OuterClass.NestedTest2.newBuilder
+      .setField(
+        Test1OuterClass.Test1.newBuilder
+        .setThing(2)
+        .setMore("test")
+        .build
+      )
+      .build
+    val out = java.io.ByteArrayOutputStream()
+    source.writeTo(out)
+    val in = java.io.ByteArrayInputStream(out.toByteArray)
+    val result = pickle(TestProtos).from(in).read[NestedTestPickle2]
+    assertEquals(source.getField.getThing, result.field.thing)

@@ -40,9 +40,12 @@ sealed trait Builder[T]
 
 /** Represents a `builder` that can be used to generate a structure from a pickle. */
 trait StructureBuilder[T] extends Builder[T]
+  /** The tag used for this structure. */
+  def tag: format.Struct[T]
   /** The known field names for this structure. */
   // Note: 'length' is used on the result of this, so it needs an
   // efficient length method.
+  // TODO - should this be on that tag?
   def knownFieldNames: Array[String]
   /** 
    * Puts a field into this builder.
@@ -111,6 +114,7 @@ object Buildable
   inline def productBuilder[T, M <: Mirror.ProductOf[T]](m: M,
     fieldNames: Array[String]): Builder[T] = 
     new StructureBuilder[T] {
+        override val tag: format.Struct[T] = format.fastTypeTag[T]().asInstanceOf
         override def toString(): String = s"Builder[${format.typeName[T]}]"
         private var fields = buildersFor[m.MirroredElemTypes]
         override def knownFieldNames: Array[String] = fieldNames
@@ -121,7 +125,7 @@ object Buildable
             fields(idx).asInstanceOf[Builder[F]]
           catch
             case e: IndexOutOfBoundsException =>
-              throw WriteException(s"Unable to find field $name", e)
+              throw BuildException(s"Unable to find field $name", e)
         override def result: T =
           m.fromProduct(
               ArrayProduct(
