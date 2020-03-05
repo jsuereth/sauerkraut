@@ -99,14 +99,14 @@ class JavaSerializationBenchmarks extends JmhBenchmarks
     out.writeObject(value)
     out.flush()
 
-// class SauerkrautProtocolBufferBenchmarks extends JmhBenchmarks
-//   val MyProtos = Protos[SimpleMessage *: LargerMessage *: Unit]()
-//   class RawBinaryBenchmarks extends JmhBenchmarks
-//   override def load[T: Buildable](store: File): T =
-//     pickle(MyProtos).from(new FileInputStream(store)).read[T]
-//   override def save[T: Writer](value: T, store: File): Unit =
-//     pickle(MyProtos).to(new FileOutputStream(store)).write(value)
-  
+class SauerkrautProtocolBufferBenchmarks extends JmhBenchmarks
+  val MyProtos = Protos[SimpleMessage *: LargerMessage *: Unit]()
+  override def load[T: Buildable](store: ByteBuffer): T =
+    pickle(MyProtos).from(store).read[T]
+  override def save[T: Writer](value: T, store: ByteBuffer): Unit =
+    pickle(MyProtos).to(store).write(value)
+
+
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)

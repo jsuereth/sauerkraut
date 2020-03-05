@@ -36,7 +36,7 @@ Here's a feature matrix for each format:
 | ------ | ------ | ------ | --------- | ------------------ | ---------------------------------------- |
 | Json   | Yes    | Yes    | Yes       |                    | Uses Jawn for parsing                    |
 | Binary | Yes    | Yes    | Yes       |                    |                                          |
-| Protos | TBD    | Yes    | No        |                    | For bi-directional Protocol Buffer usage |
+| Protos | Yes    | Yes    | No        |                    | For bi-directional Protocol Buffer usage |
 | NBT    | Yes    | Yes    | Yes       |                    | Fast, but larger footprint than Binary.  |
 | XML    | TBD    | TBD    | TBD       |                    |                                          |
 | Pretty | No     | Yes    | No        |                    | For pretty-printing strings              |
@@ -97,13 +97,13 @@ but allows full definition of the message format within your Scala code.
 
 Example:
 ```scala
-import sauerkraut.{pickle,write}
-import sauerkraut.core.{Writer, given}
+import sauerkraut.{pickle,write,read}
+import sauerkraut.core.{Writer, Buildable, given}
 import sauerkraut.format.pb.{Protos,TypeDescriptorMapping,field,given}
 
 
 case class MyMessageData(value: Int @field(3), someStuff: Array[String] @field(2))
-    derives TypeDescriptorMapping, Writer
+    derives TypeDescriptorMapping, Writer, Buildable
 
 val MyProtos = Protos[MyMessageData *: Unit]()
 
@@ -236,14 +236,6 @@ New formats are expected to provide the "format" + "source" layer implementation
 TODO - a bit more here.
 
 
-## Core Concepts TODO list
-  - [X] Builder/Writer
-  - [X] Primitive Types
-  - [X] Collections
-  - [X] Manually written builders/writers.
-  - [X] Derived for Product Types
-  - [ ] Derived for Sum Types
-
 # Differences from Scala Pickling
 
 There are a few major differences from the old [scala pickling project](http://github.com/scala/pickling).
@@ -280,6 +272,7 @@ Latest status/analysis can be found in the [benchamrk directory](benchmarks/late
 - [ ] Comparison against other frameworks.
   - [X] RawBinary + Protos vs. protocol buffer java implementation
   - [ ] Json Reading vs. raw JAWN to AST (measure overhead)
+  - [ ] Jackson?
   - [ ] Avro
   - [ ] Thrift?
 - [ ] Automatic well-formatted graph dump in Markdown of results.

@@ -15,20 +15,21 @@ Our goal is to:
   code generation for Java *and* conventional/common
   usage does not match Java's usage.
 
-## Full Results (2020-03-01)
+## Full Results (2020-03-05)
 
 | Benchmark | Format    | ByteSize | ns / op   | error (ns / op) |
 | --------- | --------- | -------- | --------- | --------------- |
-| simple    | JavaProto |	1550     | 423.42    | 3.223           |
-| simple    | nbt       | 2000     | 763.427   | 11.281          |
-| simple    | raw       | 1550     | 903.28    | 4.169           |
-| simple    | json      | 2175     | 1552.229  | 16.216          |
-| simple    | JavaSer   | 3900     | 3342      | 67.027          |
-| complex   | JavaProto | 4025     | 1062.874  | 24.593          |
-| complex   | nbt       | 7350     | 3869.315  | 36.619          |
-| complex   | raw       | 4675     | 5629.863  | 29.099          |
-| complex   | json      | 5875     | 8207.055  | 123.497         |
-| complex   | JavaSer   | 25600    | 31522.989 | 471.474         |
+| simple    | JavaProto |	1550     | 418.020   | 3.331           |
+| simple    | proto     | 1550     | 433.677   | 5.477           |
+| simple    | raw       | 1550     | 438.455   | 5.477           |
+| simple    | nbt       | 2000     | 769.165   | 6.660           |
+| simple    | json      | 2175     | 1549.602  | 19.495          |
+| simple    | JavaSer   | 3900     | 3307.685  | 63.739          |
+| complex   | JavaProto | 4025     | 898.24    | 15.171          |
+| complex   | nbt       | 7350     | 3870.567  | 11.001          |
+| complex   | raw       | 4675     | 4578.324  | 11.537          |
+| complex   | json      | 5875     | 7574.817  | 71.808          |
+| complex   | JavaSer   | 25600    | 31651.601 | 563.957         |
 
 Currently there's a bit too much overhead in Sauerkraut vs. Java's protocol
 buffers. It still beats Java Serialization on all counts, but that's
