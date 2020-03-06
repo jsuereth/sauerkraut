@@ -60,11 +60,16 @@ val nbt = project
   .settings(commonSettings:_*)
   .dependsOn(core, compliance % "test")
 
+val xml = project
+  .settings(commonSettings:_*)
+  .dependsOn(core, compliance % "test")
+
+
 val benchmarks = project
   .enablePlugins(JmhPlugin)
   .enablePlugins(ProtobufPlugin)
   .settings(commonSettings:_*)
-  .dependsOn(nbt, pb, json)
+  .dependsOn(nbt, pb, json, xml)
   .settings(
     fork in run := true,
     javaOptions in run += "-Xmx6G",
@@ -80,6 +85,7 @@ val root = project.in(file(".")).aggregate(
   json,
   nbt,
   pb,
+  xml,
   pbtest,
   benchmarks
 ).settings(skip in publish := true)

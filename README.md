@@ -38,7 +38,7 @@ Here's a feature matrix for each format:
 | Binary | Yes    | Yes    | Yes       |                    |                                          |
 | Protos | Yes    | Yes    | No        |                    | For bi-directional Protocol Buffer usage |
 | NBT    | Yes    | Yes    | Yes       |                    | Fast, but larger footprint than Binary.  |
-| XML    | TBD    | TBD    | TBD       |                    |                                          |
+| XML    | Yes    | Yes    | Yes       |                    | Inefficient prototype.                   |
 | Pretty | No     | Yes    | No        |                    | For pretty-printing strings              |
 
 ## Json
@@ -154,7 +154,26 @@ libraryDependencies += "com.jsuereth.sauerkraut" %% "nbt" % "<version>"
 # XML
 Everyone's favorite markup language for data transfer!
 
-TODO - Using
+Example:
+```scala
+import sauerkraut.{pickle,read,write}
+import sauerkraut.core.{Buildable,Writer, given}
+import sauerkraut.format.xml.{Xml, given}
+
+case class MySlowWebData(value: Int, someStuff: Array[String])
+    derives Buildable, Writer
+
+def read(in: java.io.InputStream): MySlowWebData =
+  pickle(Xml).from(in).read[MySlowWebData]
+def write(out: java.io.Writer): Unit = 
+  pickle(Xml).to(out).write(MySlowWebData(1214, Array("this", "is", "a", "test")))
+```
+
+sbt build:
+```scala
+libraryDependencies += "com.jsuereth.sauerkraut" %% "xml" % "<version>"
+```
+
 
 # Pretty
 A format that is solely used to pretty-print object contents to strings.  This does not have

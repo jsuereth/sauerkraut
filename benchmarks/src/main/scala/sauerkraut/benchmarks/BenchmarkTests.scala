@@ -7,6 +7,7 @@ import java.io.OutputStreamWriter
 import format.pb.{RawBinary,Protos,TypeDescriptorMapping,field,given}
 import format.json.{Json,given}
 import format.nbt.{Nbt,given}
+import format.xml.{Xml,given}
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 import java.util.concurrent.TimeUnit
@@ -72,6 +73,12 @@ abstract class JmhBenchmarks
         SimpleMessage(-1, "ANother string")),
       otherNums = ArrayBuffer(1.0, -0.000001, 1000000000000000.0101010),
       ints = ArrayBuffer(1,2,3,4,5,-1,-2,-4,1425,0))))
+
+class XmlBenchmarks extends JmhBenchmarks
+  override def load[T: Buildable](store: ByteBuffer): T =
+    pickle(Xml).from(store.in).read[T]
+  override def save[T: Writer](value: T, store: ByteBuffer): Unit =
+    pickle(Xml).to(store.writer).write(value)
 
 class JsonBenchmarks extends JmhBenchmarks
   override def load[T: Buildable](store: ByteBuffer): T =
