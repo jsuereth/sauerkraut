@@ -19,14 +19,6 @@ class TestRawBinaryProto
     out.toByteArray()
   def binaryString[T: Writer](value: T): String =
     hexString(binary(value))
-
-  def binaryWithDesc[T: Writer : TypeDescriptorMapping](value: T): Array[Byte] =
-    val out = java.io.ByteArrayOutputStream()
-    pickle(MyProtos).to(out).write(value)
-    out.toByteArray()
-  def binaryStringWithDesc[T : Writer : TypeDescriptorMapping](value: T): String =
-    hexString(binaryWithDesc(value))
-
   @Test def writeUnit(): Unit =
     assertEquals("", binaryString(()))
   @Test def writeBoolean(): Unit =

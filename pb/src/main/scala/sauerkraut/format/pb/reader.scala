@@ -31,42 +31,42 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
   def push[T](b: core.Builder[T]): core.Builder[T] = 
     b match
       case b: core.StructureBuilder[T] =>
-        readStructure(b, repo.find(b.tag)) 
+        repo.find(b.tag) match
+          case s: MessageProtoDescriptor[_] => readStructure(b, s)
+          case _ => throw BuildException(s"Unable to find proto descriptor for $b", null)
         b
       case _ => throw BuildException(s"Unable to deserialize proto to $b", null)
 
-  def readStructure[T](struct: core.StructureBuilder[T], mapping: TypeDescriptorMapping[T]): Unit =
+  def readStructure[T](struct: core.StructureBuilder[T], mapping: MessageProtoDescriptor[T]): Unit =
     object FieldName
       def unapply(num: Int): Option[String] = 
         try Some(mapping.fieldName(num))
         catch 
           case _: MatchError => None
-    def readField(field: String): Unit =
-      // TODO - unify field descriptor....
-      mapping.fieldDescriptor(field) match
-        case Some(fd) =>
-          // Push a nested structure/enum type.
-          // TODO - handle enums
-          struct.putField(field) match
-            case x: core.StructureBuilder[?] =>
+    def readField(field: String, fieldNum: Int): Unit =
+      struct.putField(field) match
+        case choice: core.ChoiceBuilder[_] =>
+          ???
+        case struct: core.StructureBuilder[_] =>
+          mapping.fieldDesc(fieldNum) match
+            case msg: MessageProtoDescriptor[_] =>
               limitByWireType(WIRETYPE_LENGTH_DELIMITED) {
-                readStructure(x, fd)
+                readStructure(struct, msg)
               }
-            case y => throw BuildException(s"Cannot read structure $field in ${struct.tag} as $y", null)
-        case None => 
-          // Push a raw type.
-          // TODO - does this belong in this class?
-          struct.putField(field) match 
-            case x: core.CollectionBuilder[_,_] => 
-              RawBinaryPickleReader(in).push(x.putElement())
-            case y: core.Builder[_] => RawBinaryPickleReader(in).push(y)
+            case other => throw BuildException(s"Unable to find descriptor for ${struct.tag}, found $other", null)
+        case col: core.CollectionBuilder[_,_] =>
+          // TODO - this is WRONG, we need to lookup the descriptor of
+          // the field.
+          RawBinaryPickleReader(in).push(col.putElement())
+        case prim: core.PrimitiveBuilder[_] =>
+          RawBinaryPickleReader(in).push(prim)
         
     var done: Boolean = false
     while !done do
       in.readTag match
         case 0 => done = true
-        case Tag(wireType, FieldName(field)) =>
-          readField(field)
+        case Tag(wireType, num @ FieldName(field)) =>
+          readField(field, num)
   inline private def limitByWireType[A](wireType: Int)(f: => A): Unit =
     // TODO - if field is a STRING we do not limit by length.
     if wireType == WIRETYPE_LENGTH_DELIMITED

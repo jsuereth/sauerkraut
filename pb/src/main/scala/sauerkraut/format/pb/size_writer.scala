@@ -48,7 +48,7 @@ class RawPickleSizeEstimator extends PickleWriter with SizeEstimator
     size += tmp
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter =
-    val estimate = SizeEstimateStructureWriter(RawBinaryTypeDescriptorMapping())
+    val estimate = SizeEstimateStructureWriter(RawBinaryMessageDescriptor())
     pickler(estimate)
     size += estimate.finalSize
     this
@@ -70,7 +70,7 @@ class RawCollectionSizeEstimateWriter extends PickleCollectionWriter with SizeEs
  * them.  That's a huge optimisation win if we can fix it.
  */
 class FieldSizeEstimateWriter(fieldNum: Int,
-  optDescriptor: Option[TypeDescriptorMapping[?]])
+  optDescriptor: Option[ProtoTypeDescriptor[?]])
     extends PickleWriter
     with PickleCollectionWriter
     with SizeEstimator
@@ -115,8 +115,8 @@ class FieldSizeEstimateWriter(fieldNum: Int,
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter = 
     val descriptor = optDescriptor match
-      case Some(d) => d
-      case None => RawBinaryTypeDescriptorMapping()
+      case Some(d: MessageProtoDescriptor[_]) => d
+      case _ => RawBinaryMessageDescriptor()
     val subSize =
       val tmp = SizeEstimateStructureWriter(descriptor)
       work(tmp)
@@ -133,14 +133,29 @@ class FieldSizeEstimateWriter(fieldNum: Int,
   def flush(): Unit = ()
 
 /** Estimate the size of sub-structure given a TypeDescriptor. */
-class SizeEstimateStructureWriter(d: TypeDescriptorMapping[?]) 
+class SizeEstimateStructureWriter(d: MessageProtoDescriptor[?]) 
     extends PickleStructureWriter
     with SizeEstimator
   private var size = 0
   override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     val idx = d.fieldNumber(name)
-    val fieldPickle = FieldSizeEstimateWriter(idx, d.fieldDescriptor(name))
+    val fieldPickle = FieldSizeEstimateWriter(idx, Some(d.fieldDesc(idx)))
     pickler(fieldPickle)
     size += fieldPickle.finalSize
     this
   override def finalSize = size
+
+
+
+// Used to estimate write-size of protos.  Note: this assumes fields
+// are only looked up once, per `putField` call.
+class RawBinaryMessageDescriptor[T] extends MessageProtoDescriptor[T]
+  private var currentIdx = 0
+  override def fieldDesc[F](num: Int): sauerkraut.format.pb.ProtoTypeDescriptor[F] =
+    RawBinaryMessageDescriptor[F]()
+  override def fieldNumber(name: String): Int =
+    currentIdx += 1
+    currentIdx
+  // We don't call these methods, normally used in reading.
+  override def fieldName(num: Int): String = ???
+  override def tag: FastTypeTag[T] = ???

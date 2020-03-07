@@ -14,7 +14,7 @@ import core.{Buildable,Writer,given}
 // }
 // ```
 case class Nesting(a: Int @field(1))
-  derives Buildable, Writer, TypeDescriptorMapping
+  derives Buildable, Writer, ProtoTypeDescriptor
 
 // ```
 // message Test3 {
@@ -22,7 +22,7 @@ case class Nesting(a: Int @field(1))
 // }
 // ```
 case class Nested(c: Nesting @field(3))
-  derives Buildable, Writer, TypeDescriptorMapping
+  derives Buildable, Writer, ProtoTypeDescriptor
 
 val MyProtos = Protos[(Nested, Nesting)]()
       
@@ -30,11 +30,11 @@ val MyProtos = Protos[(Nested, Nesting)]()
 class TestProtocolBufferWithDesc
   def hexString(buf: Array[Byte]): String =
     buf.map(b => f"$b%02x").mkString("")
-  def binaryWithDesc[T: Writer : TypeDescriptorMapping](value: T): Array[Byte] =
+  def binaryWithDesc[T: Writer : ProtoTypeDescriptor](value: T): Array[Byte] =
     val out = java.io.ByteArrayOutputStream()
     pickle(MyProtos).to(out).write(value)
     out.toByteArray()
-  def binaryStringWithDesc[T : Writer : TypeDescriptorMapping](value: T): String =
+  def binaryStringWithDesc[T : Writer : ProtoTypeDescriptor](value: T): String =
     hexString(binaryWithDesc(value))
 
   def roundTrip[T : Buildable : Writer](value: T): Unit =
