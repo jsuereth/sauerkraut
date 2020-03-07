@@ -43,9 +43,9 @@ class JsonReader(value: ast.JValue) extends PickleReader
           while (idx < values.length)
             JsonReader(values(idx)).push(p.putElement())
             idx += 1
-        case _ =>
-          // TODO - Allow single values to be treated as an element?
-          ()
+        // We attempt to push a single element into the collection, assuming
+        // the user has migrated the previous version from T => Collection[T].
+        case other => push(p.putElement())
   
   def readPrimitive[T](p: PrimitiveBuilder[T]): Unit =
     p.tag match

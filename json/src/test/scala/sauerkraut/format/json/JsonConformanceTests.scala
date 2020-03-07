@@ -6,6 +6,7 @@ package json
 import org.typelevel.jawn.ast
 
 class JsonConformanceTests extends testing.ComplianceTests
+    with testing.FieldToCollectionEvolution
   override protected def roundTripImpl[T](
       writer: PickleWriter => Unit,
       reader: PickleReader => T): T =
