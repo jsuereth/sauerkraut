@@ -3,7 +3,8 @@
 The library for those cabbage lovers out there who want
 to send data over the wire.
 
-A revitalization of Pickling in the Scala 3 world.
+A revitalization of [Pickling](http://github.com/scala/pickling) in the
+[Scala 3](https://dotty.epfl.ch/docs/index.html) world.
 
 ## Usage
 
