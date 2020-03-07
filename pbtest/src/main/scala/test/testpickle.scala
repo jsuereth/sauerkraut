@@ -23,7 +23,7 @@ import sauerkraut.core.{
 }
 import sauerkraut.format.pb.{
   Protos,
-  TypeDescriptorMapping,
+  ProtoTypeDescriptor,
   field,
   given
 }
@@ -32,10 +32,10 @@ case class TestPickle1(
   thing: Long @field(1),
   more: String @field(3),
   stuff: List[Int] @field(5)) 
-  derives Writer, Buildable, TypeDescriptorMapping
+  derives Writer, Buildable, ProtoTypeDescriptor
 
 case class NestedTestPickle2(
   field: TestPickle1 @field(3)
-) derives Writer, Buildable, TypeDescriptorMapping
+) derives Writer, Buildable, ProtoTypeDescriptor
 
 val TestProtos = Protos[TestPickle1 *: NestedTestPickle2 *: Unit]()

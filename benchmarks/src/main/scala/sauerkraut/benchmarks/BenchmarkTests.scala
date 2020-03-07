@@ -20,7 +20,7 @@ package benchmarks
 import core.{Writer,Buildable,given}
 import java.nio.ByteBuffer
 import java.io.OutputStreamWriter
-import format.pb.{RawBinary,Protos,TypeDescriptorMapping,field,given}
+import format.pb.{RawBinary,Protos,ProtoTypeDescriptor,field,given}
 import format.json.{Json,given}
 import format.nbt.{Nbt,given}
 import format.xml.{Xml,given}
@@ -31,13 +31,13 @@ import scala.collection.mutable.ArrayBuffer
 
 
 case class SimpleMessage(value: Int @field(2), message: String @field(1))
-    derives Writer, Buildable, TypeDescriptorMapping
+    derives Writer, Buildable, ProtoTypeDescriptor
 
 case class LargerMessage(
   messages: ArrayBuffer[SimpleMessage] @field(1),
   otherNums: ArrayBuffer[Double] @field(2),
   ints: ArrayBuffer[Long] @field(3)
-) derives Writer, Buildable, TypeDescriptorMapping
+) derives Writer, Buildable, ProtoTypeDescriptor
 
 val EXAMPLE_INT=1124312542
 val EXAMPLE_STRING="This is a test of simple byte serialization for us all"

@@ -45,6 +45,10 @@ trait MessageProtoDescriptor[T]
 case class PrimitiveTypeDescriptor[T](tag: FastTypeTag[T])
   extends ProtoTypeDescriptor[T]
 
+/** A descriptor for collections. */
+case class CollectionTypeDescriptor[Col, T](tag: FastTypeTag[Col], element: ProtoTypeDescriptor[T])
+  extends ProtoTypeDescriptor[Col]
+
 object ProtoTypeDescriptor
   inline def derived[T]: ProtoTypeDescriptor[T] =
     new MessageProtoDescriptor[T] {
@@ -55,10 +59,15 @@ object ProtoTypeDescriptor
       override def fieldNumber(name: String): Int =
         lookupFieldNum[T](name)
       override def fieldDesc[F](num: Int): ProtoTypeDescriptor[F] =
-        fieldDescriptors(fieldNumToIndex[T](num)).asInstanceOf
+        try fieldDescriptors(fieldNumToIndex[T](num)).asInstanceOf[ProtoTypeDescriptor[F]]
+        catch
+          case e: java.lang.ArrayIndexOutOfBoundsException =>
+            throw RuntimeException(s"Failed with [$tag] to find ${fieldName(num)}($num) at ${fieldNumToIndex[T](num)} in ${fieldDescriptors.mkString("[", ",", "]")}")
     }
   inline def primitive[T]: ProtoTypeDescriptor[T] =
     PrimitiveTypeDescriptor(fastTypeTag[T]())
+  inline def collection[Col, T]: ProtoTypeDescriptor[Col] =
+    CollectionTypeDescriptor[Col, T](fastTypeTag[Col](), summonFieldDescriptor[T])
 
   import compiletime.{erasedValue,summonFrom}
   inline private def summonFieldDescriptors[T]: Array[ProtoTypeDescriptor[?]] =
@@ -67,7 +76,8 @@ object ProtoTypeDescriptor
         summonFieldDescriptorsImpl[m.MirroredElemTypes]
       case _ => Array()
     }
-  // TODO - This should handle collections...
+  // TODO - This should handle all collections...
+  import scala.collection.mutable.ArrayBuffer
   inline private def summonFieldDescriptor[T]: ProtoTypeDescriptor[T] =
     inline erasedValue[T] match
         case _: Unit => primitive[T]
@@ -80,12 +90,14 @@ object ProtoTypeDescriptor
         case _: Float => primitive[T]
         case _: Double => primitive[T]
         case _: String => primitive[T]
+        case _: List[t] => collection[List[t],t].asInstanceOf[ProtoTypeDescriptor[T]]
+        case _: ArrayBuffer[t] => collection[ArrayBuffer[t], t].asInstanceOf[ProtoTypeDescriptor[T]]
         case _ => derived[T]
     
   inline private def summonFieldDescriptorsImpl[T <: Tuple]: Array[ProtoTypeDescriptor[?]] =
     inline erasedValue[T] match
       case _: (field *: rest) =>
-        summonFieldDescriptor[field] +: summonFieldDescriptors[rest]
+        summonFieldDescriptor[field] +: summonFieldDescriptorsImpl[rest]
       case _: Unit => Array()
 
   // ENTER THE MACROS
