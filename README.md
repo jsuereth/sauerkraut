@@ -37,7 +37,7 @@ Here's a feature matrix for each format:
 | Json   | Yes    | Yes    | Yes       |                    | Uses Jawn for parsing                    |
 | Binary | Yes    | Yes    | Yes       |                    |                                          |
 | Protos | Yes    | Yes    | No        |                    | For bi-directional Protocol Buffer usage |
-| NBT    | Yes    | Yes    | Yes       |                    | Fast, but larger footprint than Binary.  |
+| NBT    | Yes    | Yes    | Yes       |                    | For the kids.                            |
 | XML    | Yes    | Yes    | Yes       |                    | Inefficient prototype.                   |
 | Pretty | No     | Yes    | No        |                    | For pretty-printing strings              |
 
@@ -227,7 +227,7 @@ The Shape layer defines these three classes:
   Can provide a `Builder[T]` when asked.
 
 ### Format layer
-The format layer is responsible for mapping sauerkraut shapes (`Collection`, `Structure`, `Primitive`) into
+The format layer is responsible for mapping sauerkraut shapes (`Collection`, `Structure`, `Primitive`, `Choice`) into
 the underlying format.  Not all shapes in sauerkraut will map exactly to underlying formats, and so each
 format may need to adjust/tweak incoming data as appropriate.
 
@@ -280,20 +280,22 @@ Benchmarking is still being built-out, and is pending the final design on Choice
 
 You can see benchmark results via: ` benchmarks/jmh:run -rf csv`.
 
-Latest status/analysis can be found in the [benchamrk directory](benchmarks/latest-results.md).
+Latest status/analysis can be found in the [benchmarks directory](benchmarks/latest-results.md).
 
 ## Benchmarking TODOs
 
 - [X] Basic comparison of all formats
-- [X] Size-oF-Pickle measurement
+- [X] Size-of-Pickle measurement
 - [ ] Well-thought out dataset for reading/writing
 - [ ] Isolated read vs. write testing
 - [ ] Comparison against other frameworks.
   - [X] RawBinary + Protos vs. protocol buffer java implementation
   - [ ] Json Reading vs. raw JAWN to AST (measure overhead)
-  - [ ] Jackson?
+  - [ ] Jackson
   - [ ] Avro
-  - [ ] Thrift?
+  - [ ] Thrift
+  - [ ] Circe
+  - [ ] uPickle
 - [ ] Automatic well-formatted graph dump in Markdown of results.
 
 
