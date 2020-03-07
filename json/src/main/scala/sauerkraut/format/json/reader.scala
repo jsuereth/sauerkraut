@@ -61,7 +61,7 @@ class JsonReader(value: ast.JValue) extends PickleReader
       case PrimitiveTag.StringTag => p.putPrimitive(value.asString)
 
   def readStructure[T](p: StructureBuilder[T]): Unit =
-    for name <- p.knownFieldNames
+    for name <- p.tag.fields
     do JsonReader(value.get(name)).push(p.putField(name))
 
   def readChoice[T](p: ChoiceBuilder[T]): Unit =

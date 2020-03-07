@@ -23,10 +23,16 @@ class TestFastTypeTag
     assertEquals(PrimitiveTag.DoubleTag, fastTypeTag[Double]())
     assertEquals(PrimitiveTag.StringTag, fastTypeTag[String]())
   @Test def findStructs(): Unit =
-    assertEquals(Struct[Any]("sauerkraut.format.SimpleType"), 
-                 fastTypeTag[SimpleType]())
-    assertEquals(Struct[Any]("sauerkraut.format.ParameterizedType[scala.Boolean, sauerkraut.format.SimpleType]"), 
-                 fastTypeTag[ParameterizedType[Boolean, SimpleType]]())
+    fastTypeTag[SimpleType]() match
+      case s: Struct[_] =>
+        assertEquals(s.name, "sauerkraut.format.SimpleType")
+        assertEquals(s.fields.length, 0)
+      case other => fail(s"$other is not a Struct!")
+    fastTypeTag[ParameterizedType[Boolean, SimpleType]]() match
+      case s: Struct[_] =>
+        assertEquals(s.name, "sauerkraut.format.ParameterizedType[scala.Boolean, sauerkraut.format.SimpleType]")
+        assertEquals(s.fields.length, 0)
+      case other => fail(s"$other is not a Struct!")
   @Test def findSums(): Unit =
     fastTypeTag[Adt]() match
       case c: Choice[_] => assertEquals(c.name, "sauerkraut.format.Adt")

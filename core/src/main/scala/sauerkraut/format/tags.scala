@@ -53,7 +53,15 @@ enum PrimitiveTag[T] extends FastTypeTag[T]
 // TODO - determine the right mechanism to refrence non-primitive types.
 sealed trait NonPrimitiveTag[T] extends FastTypeTag[T]
 /** A type representing a structure of key-value pairs. */
-case class Struct[T](name: String) extends NonPrimitiveTag[T]
+sealed trait Struct[T] extends NonPrimitiveTag[T]
+  def name: String
+  def fields: Array[String]
+  final override def hashCode: Int = name.hashCode
+  final override def equals(other: Any): Boolean =
+    other match
+      case o: Struct[_] => o.name == name
+      case _ => false
+  final override def toString = s"Struct($name)"
 /** A non-primitive type, where the value could be one of several options. */
 sealed trait Choice[T] extends NonPrimitiveTag[T]
   def name: String
@@ -61,6 +69,7 @@ sealed trait Choice[T] extends NonPrimitiveTag[T]
   def find(name: String): FastTypeTag[?]
   def ordinal[T](value: T): Int
   def nameFromOrdinal(ordinal: Int): String
+  final override def hashCode: Int = name.hashCode
   final override def equals(other: Any): Boolean = 
     other match
       case o: Choice[_] => o.name == name
@@ -101,7 +110,10 @@ inline def fastTypeTag[T](): FastTypeTag[T] =
         case _ => compiletime.summonFrom {
           case m: deriving.Mirror.ProductOf[T] =>
             // TODO - should we encode options/names in the tag?
-            Struct[T](typeName[T])
+            new Struct[T] {
+              override def name = typeName[T]
+              override val fields = InlineHelper.summonLabels[m.MirroredElemLabels].toArray
+            }
           case m: deriving.Mirror.SumOf[T] =>
             new Choice[T] {
               override def name = typeName[T]

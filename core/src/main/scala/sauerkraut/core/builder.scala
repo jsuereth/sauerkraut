@@ -42,11 +42,6 @@ sealed trait Builder[T]
 trait StructureBuilder[T] extends Builder[T]
   /** The tag used for this structure. */
   def tag: format.Struct[T]
-  /** The known field names for this structure. */
-  // Note: 'length' is used on the result of this, so it needs an
-  // efficient length method.
-  // TODO - should this be on that tag?
-  def knownFieldNames: Array[String]
   /** 
    * Puts a field into this builder.
    * 
@@ -86,6 +81,7 @@ object Buildable
   /** Derives Builders for any product-like class. */
   inline def derived[T](given m: Mirror.Of[T]): Buildable[T] =
     new Buildable[T] {
+        // TODO - use the FastTypeTag for this.
         private val knownFieldNames: Array[String] =
           summonLabels[m.MirroredElemLabels].toArray
         override def newBuilder: Builder[T] =
@@ -117,7 +113,6 @@ object Buildable
         override val tag: format.Struct[T] = format.fastTypeTag[T]().asInstanceOf
         override def toString(): String = s"Builder[${format.typeName[T]}]"
         private var fields = buildersFor[m.MirroredElemTypes]
-        override def knownFieldNames: Array[String] = fieldNames
         override def putField[F](name: String): Builder[F] =
           // TODO - this throws IndexOutOfBoundsException.  We should have better error message. 
           try

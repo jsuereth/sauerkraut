@@ -57,8 +57,8 @@ class RawBinaryPickleReader(in: CodedInputStream)
     // ultra efficient.  Ideally we hotpath to not use name-based lookup.
     object Field
       def unapply(num: Int): Option[core.Builder[?]] =
-        if num > 0 && num <= struct.knownFieldNames.length
-        then Some(struct.putField(struct.knownFieldNames(num-1)))
+        if num > 0 && num <= struct.tag.fields.length
+        then Some(struct.putField(struct.tag.fields(num-1)))
         else None
     var done: Boolean = false
     while (!done)
