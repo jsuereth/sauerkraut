@@ -34,12 +34,14 @@ Here's a feature matrix for each format:
 
 | Format | Reader | Writer | All Types | Evolution Friendly | Notes                                    |
 | ------ | ------ | ------ | --------- | ------------------ | ---------------------------------------- |
-| Json   | Yes    | Yes    | Yes       |                    | Uses Jawn for parsing                    |
+| Json   | Yes    | Yes    | Yes       | Yes                | Uses Jawn for parsing                    |
 | Binary | Yes    | Yes    | Yes       |                    |                                          |
 | Protos | Yes    | Yes    | No        |                    | For bi-directional Protocol Buffer usage |
 | NBT    | Yes    | Yes    | Yes       |                    | For the kids.                            |
 | XML    | Yes    | Yes    | Yes       |                    | Inefficient prototype.                   |
 | Pretty | No     | Yes    | No        |                    | For pretty-printing strings              |
+
+See [Compliance](compliance/README.md) for more details on what this means.
 
 ## Json
 Everyone's favorite non-YAML web data transfer format!   This uses Jawn under the covers for parsing, but
@@ -66,6 +68,7 @@ sbt build:
 libraryDependencies += "com.jsuereth.sauerkraut" %% "json" % "<version>"
 ```
 
+See [json project](json/README.md) for more information.
 
 ## Binary
 A binary format loosely based on Protocol-Buffers.   Unlike protocol-buffers, this format can serialize any 
@@ -90,6 +93,9 @@ sbt build:
 ```
 libraryDependencies += "com.jsuereth.sauerkraut" %% "pb" % "<version>"
 ```
+
+
+See [pb project](pb/README.md) for more information.
 
 ## Protos
 A new encoding for protocol buffers within Scala!  This supports a subset of all possible protocol buffer messages
@@ -126,6 +132,7 @@ sbt build:
 libraryDependencies += "com.jsuereth.sauerkraut" %% "pb" % "<version>"
 ```
 
+See [pb project](pb/README.md) for more information.
 
 
 # NBT
@@ -151,6 +158,10 @@ sbt build:
 libraryDependencies += "com.jsuereth.sauerkraut" %% "nbt" % "<version>"
 ```
 
+
+See [nbt project](nbt/README.md) for more information.
+
+
 # XML
 Everyone's favorite markup language for data transfer!
 
@@ -173,6 +184,9 @@ sbt build:
 ```scala
 libraryDependencies += "com.jsuereth.sauerkraut" %% "xml" % "<version>"
 ```
+
+
+See [xml project](xml/README.md) for more information.
 
 
 # Pretty
