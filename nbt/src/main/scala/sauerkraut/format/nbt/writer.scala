@@ -26,7 +26,7 @@ import internal.{
 
 class NbtPickleWriter(out: TagOutputStream, optName: Option[String] = None)
     extends PickleWriter
-    with PickleStructureWriter
+    with PickleStructureWriter:
   private def optWriteName(): Unit =
     optName match
       case Some(name) => out.writeStringPayload(name)
@@ -59,7 +59,7 @@ class NbtCollectionWriter(
     out: TagOutputStream,
     length: Int)
   extends PickleCollectionWriter
-  with PickleWriter
+  with PickleWriter:
   private var hasHeader: Boolean = false
   private def optHeader(writeHeader: => Unit): Unit =
      if (!hasHeader)

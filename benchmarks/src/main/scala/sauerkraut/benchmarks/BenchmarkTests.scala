@@ -17,13 +17,13 @@
 package sauerkraut
 package benchmarks
 
-import core.{Writer,Buildable,given}
+import core.{Writer,Buildable,given _}
 import java.nio.ByteBuffer
 import java.io.OutputStreamWriter
-import format.pb.{RawBinary,Protos,ProtoTypeDescriptor,field,given}
-import format.json.{Json,given}
-import format.nbt.{Nbt,given}
-import format.xml.{Xml,given}
+import format.pb.{RawBinary,Protos,ProtoTypeDescriptor,field,given _}
+import format.json.{Json,given _}
+import format.nbt.{Nbt,given _}
+import format.xml.{Xml,given _}
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 import java.util.concurrent.TimeUnit
@@ -43,7 +43,7 @@ val EXAMPLE_INT=1124312542
 val EXAMPLE_STRING="This is a test of simple byte serialization for us all"
 
 @State(Scope.Thread)
-class Bytes
+class Bytes:
   // We allocate 1M for all serialization tests.
   val buffer = ByteBuffer.allocate(1024*1024)
   @Setup(Level.Invocation) def setUp(): Unit =
@@ -56,7 +56,7 @@ class Bytes
 
 @AuxCounters(AuxCounters.Type.EVENTS)
 @State(Scope.Thread)
-class BytesWritten
+class BytesWritten:
   var bytesWritten: Int = 0
 
 // TODO: Benchmark times are currently dominated by FILE I/O operations....
@@ -65,7 +65,7 @@ class BytesWritten
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
-abstract class JmhBenchmarks
+abstract class JmhBenchmarks:
   /** Abstract implementation of loading. */
   protected def load[T: Buildable](store: ByteBuffer): T
   protected def save[T: Writer](value: T, store: ByteBuffer): Unit
@@ -90,31 +90,31 @@ abstract class JmhBenchmarks
       otherNums = ArrayBuffer(1.0, -0.000001, 1000000000000000.0101010),
       ints = ArrayBuffer(1,2,3,4,5,-1,-2,-4,1425,0))))
 
-class XmlBenchmarks extends JmhBenchmarks
+class XmlBenchmarks extends JmhBenchmarks:
   override def load[T: Buildable](store: ByteBuffer): T =
     pickle(Xml).from(store.in).read[T]
   override def save[T: Writer](value: T, store: ByteBuffer): Unit =
     pickle(Xml).to(store.writer).write(value)
 
-class JsonBenchmarks extends JmhBenchmarks
+class JsonBenchmarks extends JmhBenchmarks:
   override def load[T: Buildable](store: ByteBuffer): T =
     pickle(Json).from(store).read[T]
   override def save[T: Writer](value: T, store: ByteBuffer): Unit =
     pickle(Json).to(store.writer).write(value)
 
-class NbtBenchmarks extends JmhBenchmarks
+class NbtBenchmarks extends JmhBenchmarks:
   override def load[T: Buildable](store: ByteBuffer): T =
     pickle(Nbt).from(store.in).read[T]
   override def save[T: Writer](value: T, store: ByteBuffer): Unit =
     pickle(Nbt).to(store.out).write(value)
 
-class RawBinaryBenchmarks extends JmhBenchmarks
+class RawBinaryBenchmarks extends JmhBenchmarks:
   override def load[T: Buildable](store: ByteBuffer): T =
     pickle(RawBinary).from(store).read[T]
   override def save[T: Writer](value: T, store: ByteBuffer): Unit =
     pickle(RawBinary).to(store).write(value)
 
-class JavaSerializationBenchmarks extends JmhBenchmarks
+class JavaSerializationBenchmarks extends JmhBenchmarks:
   override def load[T: Buildable](store: ByteBuffer): T =
     java.io.ObjectInputStream(store.in).readObject.asInstanceOf[T]
   override def save[T: Writer](value: T, store: ByteBuffer): Unit =
@@ -122,7 +122,7 @@ class JavaSerializationBenchmarks extends JmhBenchmarks
     out.writeObject(value)
     out.flush()
 
-class SauerkrautProtocolBufferBenchmarks extends JmhBenchmarks
+class SauerkrautProtocolBufferBenchmarks extends JmhBenchmarks:
   val MyProtos = Protos[SimpleMessage *: LargerMessage *: Unit]()
   override def load[T: Buildable](store: ByteBuffer): T =
     pickle(MyProtos).from(store).read[T]
@@ -133,7 +133,7 @@ class SauerkrautProtocolBufferBenchmarks extends JmhBenchmarks
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
-class JavaProtocolBufferBenchmarks
+class JavaProtocolBufferBenchmarks:
   import proto.Bench
   @Benchmark
   def writeAndReadSimpleMessage(bytes: Bytes, counter: BytesWritten, bh: Blackhole): Unit =

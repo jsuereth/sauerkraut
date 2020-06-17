@@ -22,7 +22,7 @@ import java.io.Writer
 
 type JsonOutputStream = Writer
 
-class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter
+class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter:
   override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
     out.write('[')
     work(JsonPickleCollectionWriter(out))
@@ -53,7 +53,7 @@ class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter
   override def flush(): Unit = out.flush()
 
 
-class JsonStructureWriter(out: JsonOutputStream) extends PickleStructureWriter
+class JsonStructureWriter(out: JsonOutputStream) extends PickleStructureWriter:
   private var needsComma = false
   def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     if (needsComma) out.write(',')
@@ -66,7 +66,7 @@ class JsonStructureWriter(out: JsonOutputStream) extends PickleStructureWriter
     needsComma = true
     this
 
-class JsonPickleCollectionWriter(out: JsonOutputStream) extends PickleCollectionWriter
+class JsonPickleCollectionWriter(out: JsonOutputStream) extends PickleCollectionWriter:
   private var needsComma = false
   def putElement(writer: PickleWriter => Unit): PickleCollectionWriter =
     if (needsComma) out.write(',')

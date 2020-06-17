@@ -31,30 +31,30 @@ def pickle[F <: PickleFormat](format: F): PickleFormatDsl[F] =
   PickleFormatDsl(format)
 
 /** Helper class to simplify lining up a PickleFormat with input/output + values. */
-final class PickleFormatDsl[F <: PickleFormat](format: F)
+final class PickleFormatDsl[F <: PickleFormat](format: F):
   /** Applies a specific output to the pickle format chosen. */
-  def to[O](output: O)(given s: PickleWriterSupport[O, F]): PickleWriter =
+  def to[O](output: O)(using s: PickleWriterSupport[O, F]): PickleWriter =
     s.writerFor(format, output)
-  def from[I](input: I)(given s: PickleReaderSupport[I, F]): PickleReader =
+  def from[I](input: I)(using s: PickleReaderSupport[I, F]): PickleReader =
     s.readerFor(format, input)
 
 
 /** Reads type `T` using the PickleReader. */
-def [T](pickle: PickleReader) read(given b: core.Buildable[T]): T =
+def [T](pickle: PickleReader) read(using b: core.Buildable[T]): T =
   pickle.push(b.newBuilder).result
 
 
 /** Writes the value to a pickle. Note: This flushes the pickle writer. */
-def [T](pickle: PickleWriter) write(value: T)(given s: core.Writer[T]): Unit =
+def [T](pickle: PickleWriter) write(value: T)(using s: core.Writer[T]): Unit =
   s.write(value, pickle)
   pickle.flush()
 
 /** Writes the value to a pickle.  Note: This does not flush the pickle writer. */
-def [T](pickle: PickleWriter) lazyWrite(value: T)(given s: core.Writer[T]): Unit =
+def [T](pickle: PickleWriter) lazyWrite(value: T)(using s: core.Writer[T]): Unit =
   s.write(value, pickle)
 
-def [T](value: T) prettyPrint(given w: core.Writer[T]): String =
-  import format.pretty.{Pretty,given}
+def [T](value: T) prettyPrint(using w: core.Writer[T]): String =
+  import format.pretty.{Pretty, given _}
   val out = java.io.StringWriter()
   pickle(Pretty).to(out).write(value)
   out.toString()

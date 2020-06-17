@@ -22,6 +22,6 @@ import scala.collection.mutable.Builder
  * A reader of pickles.  This should be able to handle the possible
  * [[core.Builder]] types.
  */
-trait PickleReader
+trait PickleReader:
   /** Pushes the contents of the pickle into the builder. */
   def push[T](builder: core.Builder[T]): core.Builder[T]

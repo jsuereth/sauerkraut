@@ -20,7 +20,7 @@ package core
 import format.{primitiveTag,PrimitiveTag}
 
 // A writer of primitive values.
-final class PrimitiveWriter[T](tag: PrimitiveTag[T]) extends Writer[T]
+final class PrimitiveWriter[T](tag: PrimitiveTag[T]) extends Writer[T]:
   override def write(value: T, pickle: format.PickleWriter): Unit =
     pickle.putPrimitive(value, tag)
 
@@ -32,7 +32,7 @@ object PrimitiveWriter {
 // A builder of primitive values.
 final class SimplePrimitiveBuilder[T](
     override val tag: PrimitiveTag[T]) 
-    extends PrimitiveBuilder[T]
+    extends PrimitiveBuilder[T]:
   private var value: Option[T] = None
   override def putPrimitive(p: T): Unit =
     value = Some(p)
@@ -44,19 +44,22 @@ final class SimplePrimitiveBuilder[T](
         throw WriteException("Did not find value for primitive!", null)
   override def toString(): String =
     s"Builder[$tag]"
-final class PrimitiveBuildable[T](tag: PrimitiveTag[T]) extends Buildable[T]
+
+final class PrimitiveBuildable[T](tag: PrimitiveTag[T]) extends Buildable[T]:
   override def newBuilder: Builder[T] = SimplePrimitiveBuilder[T](tag)
-object PrimitiveBuildable
+
+object PrimitiveBuildable:
   inline def apply[T](): Buildable[T] =
     new PrimitiveBuildable[T](primitiveTag[T]())
+
 final class StaticValueBuilder[T](
     override val tag: PrimitiveTag[T],
     override val result: T) 
-    extends PrimitiveBuilder[T]
+    extends PrimitiveBuilder[T]:
   override def putPrimitive(value: T): Unit = ()
 
 given Writer[Unit] = PrimitiveWriter[Unit]()
-given Buildable[Unit]
+given Buildable[Unit]:
   override def newBuilder: Builder[Unit] = 
     StaticValueBuilder(PrimitiveTag.UnitTag, ())
 given Writer[Byte] = PrimitiveWriter[Byte]()

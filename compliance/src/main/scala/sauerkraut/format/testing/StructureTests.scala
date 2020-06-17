@@ -18,7 +18,7 @@ package sauerkraut
 package format
 package testing
 
-import core.{Writer, Buildable, given}
+import core.{Writer, Buildable, given _}
 
 import org.junit.Test
 
@@ -52,7 +52,7 @@ case class StructureOfCollectionOfStructures(
 ) derives Writer, Buildable
 
 /** Ensures collections can be serialized. */
-trait StructureComplianceTests extends ComplianceTestBase
+trait StructureComplianceTests extends ComplianceTestBase:
   @Test def testSimpleStructure(): Unit =
     roundTrip(TestSimpleStructureOfPrimitives(
       true,

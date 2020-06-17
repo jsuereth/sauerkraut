@@ -45,12 +45,12 @@ def inputStreamSaxReader(in: InputStream)(handler: DefaultHandler): Unit =
   val saxParser = spf.newSAXParser()
   saxParser.parse(in, handler)
 
-class XmlReader(reader: DefaultHandler => Unit) extends PickleReader
+class XmlReader(reader: DefaultHandler => Unit) extends PickleReader:
   override def push[T](builder: Builder[T]): Builder[T] =
     reader(XmlContentHandler(builder))
     builder
 
-class XmlContentHandler(b: Builder[?]) extends DefaultHandler
+class XmlContentHandler(b: Builder[?]) extends DefaultHandler:
   private var currentBuilder: Builder[?] = b
   private val stack: Stack[Builder[?]] = Stack()
 

@@ -17,7 +17,7 @@
 package sauerkraut.format.nbt.internal
 
 // See: https://minecraft.gamepedia.com/NBT_format
-enum NbtTag(val id: Int)
+enum NbtTag(val id: Int):
   case TagEnd extends NbtTag(0)
   case TagByte extends NbtTag(1) 
   case TagShort extends NbtTag(2)
@@ -32,7 +32,7 @@ enum NbtTag(val id: Int)
   case TagIntArray extends NbtTag(11)
   case TagLongArray extends NbtTag(12)
 
-object NbtTag
+object NbtTag:
   def fromByte(b: Byte): NbtTag =
     b match
       case 0 => TagEnd

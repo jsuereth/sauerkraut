@@ -7,7 +7,7 @@ import java.io.{
   ByteArrayOutputStream
 }
 
-class NbtComplianceTests extends testing.ComplianceTests
+class NbtComplianceTests extends testing.ComplianceTests:
   override protected def roundTripImpl[T](
       writer: PickleWriter => Unit,
       reader: PickleReader => T

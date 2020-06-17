@@ -21,7 +21,7 @@ package xml
 import java.io.Writer
 
 
-class XmlPickleWriter(out: Writer) extends PickleWriter with PickleCollectionWriter with PickleStructureWriter
+class XmlPickleWriter(out: Writer) extends PickleWriter with PickleCollectionWriter with PickleStructureWriter:
   override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
     out.write("<collection>")
     work(this)

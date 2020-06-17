@@ -5,7 +5,7 @@ package pb
 import sauerkraut.{read,write}
 import org.junit.Test
 import org.junit.Assert._
-import core.{Buildable,Writer,given}
+import core.{Buildable,Writer,given _}
 
 // Example from: https://developers.google.com/protocol-buffers/docs/encoding
 // ```
@@ -27,7 +27,7 @@ case class Nested(c: Nesting @field(3))
 val MyProtos = Protos[(Nested, Nesting)]()
       
 
-class TestProtocolBufferWithDesc
+class TestProtocolBufferWithDesc:
   def hexString(buf: Array[Byte]): String =
     buf.map(b => f"$b%02x").mkString("")
   def binaryWithDesc[T: Writer : ProtoTypeDescriptor](value: T): Array[Byte] =

@@ -19,15 +19,15 @@ package core
 
 
 /** A Writer from some format of objects of the type T. */
-trait Writer[T]
+trait Writer[T]:
   def write(value: T, pickle: format.PickleWriter): Unit
 
-object Writer
+object Writer:
   import scala.compiletime.{constValue,erasedValue,summonFrom}
   import deriving._
   import internal.InlineHelper.summonLabel
   /** Derives writers of type T. */
-  inline def derived[T](given m: Mirror.Of[T]): Writer[T] =
+  inline def derived[T](using m: Mirror.Of[T]): Writer[T] =
     new Writer[T] {
       override def write(value: T, pickle: format.PickleWriter): Unit =
         inline m match
@@ -80,7 +80,7 @@ object Writer
       // TODO - this is terrible.  We need to figure out a way to
       // manifest sub-writers for Enums/coproduct/sum types without
       // directly embedding them in the write method of the parent enum.
-      case m: Mirror.ProductOf[A] => 
+      case m: Mirror.ProductOf[A] =>
         writeStruct[m.MirroredElemTypes, m.MirroredElemLabels](
           value,
           pickle,

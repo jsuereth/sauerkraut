@@ -18,12 +18,12 @@ package sauerkraut
 package format
 package testing
 
-import core.{given}
+import core.{given _}
 
 import org.junit.Test
 
 /** Tests round-trips on primitives within a format. */
-trait PrimitiveComplianceTests extends ComplianceTestBase
+trait PrimitiveComplianceTests extends ComplianceTestBase:
   @Test def writeUnit(): Unit =
     roundTrip(())
   @Test def writeBoolean(): Unit =

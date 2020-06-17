@@ -26,12 +26,12 @@ import WireFormat.{
   WIRETYPE_LENGTH_DELIMITED
 }
 
-object Tag
+object Tag:
   def unapply(tag: Int): (Int, Int) =
     (WireFormat.getTagWireType(tag), WireFormat.getTagFieldNumber(tag))
 
 class RawBinaryPickleReader(in: CodedInputStream)
-  extends PickleReader
+  extends PickleReader:
   override def push[T](b: core.Builder[T]): core.Builder[T] =
     b match
       case p: core.PrimitiveBuilder[T] => readPrimitive(p)
@@ -55,7 +55,7 @@ class RawBinaryPickleReader(in: CodedInputStream)
   private def readStructure[T](struct: core.StructureBuilder[T]): Unit =
     // Note: This is on the critical read path, and need to be
     // ultra efficient.  Ideally we hotpath to not use name-based lookup.
-    object Field
+    object Field:
       def unapply(num: Int): Option[core.Builder[?]] =
         if num > 0 && num <= struct.tag.fields.length
         then Some(struct.putField(struct.tag.fields(num-1)))

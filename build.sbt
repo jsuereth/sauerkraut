@@ -1,6 +1,6 @@
 import com.typesafe.sbt.license.{DepModuleInfo}
 
-val dottyVersion = "0.22.0-RC1"
+val dottyVersion = "0.24.0"
 
 val commonSettings: Seq[Setting[_]] = Seq(
   organization := "com.jsuereth.sauerkraut",

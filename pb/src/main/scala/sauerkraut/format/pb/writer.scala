@@ -25,7 +25,7 @@ class ProtocolBufferFieldWriter(
     fieldNum: Int,
     // TODO - only allow this for primitives.
     desc: ProtoTypeDescriptor[?]) 
-    extends PickleWriter with PickleCollectionWriter
+    extends PickleWriter with PickleCollectionWriter:
   // Writing a collection should simple write a field multiple times.
   override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
     work(this)
@@ -68,7 +68,7 @@ class ProtocolBufferFieldWriter(
 /** This class can write out a proto structure given a TypeDescriptorMapping of field name to number. */
 class DescriptorBasedProtoStructureWriter(
     out: CodedOutputStream,
-    mapping: MessageProtoDescriptor[?]) extends PickleStructureWriter
+    mapping: MessageProtoDescriptor[?]) extends PickleStructureWriter:
   override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     val idx = mapping.fieldNumber(name)
     pickler(ProtocolBufferFieldWriter(out, idx, mapping.fieldDesc(idx)))
@@ -78,7 +78,7 @@ class DescriptorBasedProtoStructureWriter(
 class DescriptorBasedProtoWriter(
     out: CodedOutputStream,
     repository: TypeDescriptorRepository
-) extends PickleWriter
+) extends PickleWriter:
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
     repository.find(tag) match
       case msg: MessageProtoDescriptor[_] =>

@@ -25,7 +25,7 @@ package format
  * 2. A structure of key-value pairs.
  * 3. A collection of other values.
  */
-trait PickleWriter
+trait PickleWriter:
   /** Called to denote that an structure is about to be serialized.
     * @param picklee
     *                The structure to be serialized.
@@ -66,7 +66,7 @@ trait PickleWriter
 /** A mechanism to write a 'structure' to the pickle. 
  *  Structures are key-value pairs of 'fields'.
  */
-trait PickleStructureWriter
+trait PickleStructureWriter:
   /**
    * Serialize a "field" in a complex structure/object being pickled.
    * @param name  The name of the field to serialize.
@@ -77,7 +77,7 @@ trait PickleStructureWriter
   def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter
 
 /** A writer of collection elements. */
-trait PickleCollectionWriter
+trait PickleCollectionWriter:
    /**
    * Places the next element in the serialized collection.
    *

@@ -22,7 +22,7 @@ package testing
 
 import org.junit.Test
 import scala.collection.mutable.ArrayBuffer
-import sauerkraut.core.{Buildable,Writer,given}
+import sauerkraut.core.{Buildable,Writer,given _}
 
 
 
@@ -38,6 +38,6 @@ case class FieldToCollectionEnd(
  * This test determines whether it is safe in a given format to convert a field from a specific type into
  * a collection of that type.
  */
-trait FieldToCollectionEvolution extends ComplianceTestBase
-   @Test def testReadsCollectionForSingle(): Unit =
+trait FieldToCollectionEvolution extends ComplianceTestBase:
+   @Test def testReadsCollectionForSingleEvolution(): Unit =
      roundTripEvolution(FieldToCollectionStart(true), FieldToCollectionEnd(ArrayBuffer(true)))

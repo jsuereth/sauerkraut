@@ -18,7 +18,7 @@ package sauerkraut
 package core
 package internal
 
-object InlineHelper
+object InlineHelper:
   /** Given an input type of string constants, pulls the string at a given index. */
   inline def summonLabel[T <: Tuple](idx: Int): String = 
     inline if(idx == 0) then

@@ -27,18 +27,24 @@ import WireFormat.{
 }
 
 class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepository)
-    extends PickleReader
-  def push[T](b: core.Builder[T]): core.Builder[T] = 
+    extends PickleReader:
+  def push[T](b: core.Builder[T]): core.Builder[T] =
+    // TODO - put ".tag" on Builder? 
     b match
       case b: core.StructureBuilder[T] =>
-        repo.find(b.tag) match
-          case s: MessageProtoDescriptor[_] => readStructure(b, s)
-          case _ => throw BuildException(s"Unable to find proto descriptor for $b", null)
-        b
+        pushWithDesc(b, repo.find(b.tag))
       case _ => throw BuildException(s"Unable to deserialize proto to $b", null)
 
+  private def pushWithDesc[T](b: core.Builder[T], desc: ProtoTypeDescriptor[T]): core.Builder[T] =
+    (b, desc) match
+      case (b: core.StructureBuilder[T], s: MessageProtoDescriptor[_]) => readStructure(b, s)
+      case (b: core.CollectionBuilder[_,_], s: CollectionTypeDescriptor[_,_]) => pushWithDesc(b.putElement(), s.element.asInstanceOf)
+      case _ => throw BuildException(s"Unable to find proto descriptor for $b", null)
+    b
+      
+
   def readStructure[T](struct: core.StructureBuilder[T], mapping: MessageProtoDescriptor[T]): Unit =
-    object FieldName
+    object FieldName:
       def unapply(num: Int): Option[String] = 
         try Some(mapping.fieldName(num))
         catch 

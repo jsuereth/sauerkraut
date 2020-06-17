@@ -6,13 +6,13 @@ package xml
 import org.junit.Test
 import org.junit.Assert._
 import format.{fastTypeTag, primitiveTag}
-import core.{Writer, Buildable, given}
+import core.{Writer, Buildable, given _}
 import java.io.StringWriter
 
 case class TestDerived(x: Double, b: Int, z: List[String]) 
   derives Writer, Buildable
 
-class TestJson
+class TestJson:
 
   def xml[T: Writer](value: T): String =
      val out = StringWriter()

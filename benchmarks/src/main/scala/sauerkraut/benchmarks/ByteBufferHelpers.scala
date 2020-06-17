@@ -28,7 +28,7 @@ import java.io.{
 import java.nio.ByteBuffer
 
 
-class ByteBufferOutputStream(buffer: ByteBuffer) extends OutputStream
+class ByteBufferOutputStream(buffer: ByteBuffer) extends OutputStream:
   override def write(i: Int): Unit =
     try buffer.put(i.toByte)
     catch
@@ -40,7 +40,7 @@ class ByteBufferOutputStream(buffer: ByteBuffer) extends OutputStream
       case _: java.nio.BufferOverflowException =>
         throw RuntimeException(s"Reached the limit of $buffer")
 
-class ByteBufferInputStream(buffer: ByteBuffer) extends InputStream
+class ByteBufferInputStream(buffer: ByteBuffer) extends InputStream:
   override def read(): Int =
     if !buffer.hasRemaining() 
     then -1

@@ -26,23 +26,23 @@ import org.typelevel.jawn.ast
 object Json extends PickleFormat
 
 
-given [O <: Writer] as PickleWriterSupport[O, Json.type]
+given [O <: Writer] as PickleWriterSupport[O, Json.type]:
   override def writerFor(format: Json.type, output: O): PickleWriter = 
     JsonPickleWriter(output)
 
-given PickleReaderSupport[File, Json.type]
+given PickleReaderSupport[File, Json.type]:
   override def readerFor(format: Json.type, input: File): PickleReader =
     JsonReader(ast.JParser.parseFromFile(input).get)
 
-given PickleReaderSupport[ByteBuffer, Json.type]
+given PickleReaderSupport[ByteBuffer, Json.type]:
   override def readerFor(format: Json.type, input: ByteBuffer): PickleReader =
     JsonReader(ast.JParser.parseFromByteBuffer(input).get)
 
-given PickleReaderSupport[ReadableByteChannel, Json.type]
+given PickleReaderSupport[ReadableByteChannel, Json.type]:
   override def readerFor(format: Json.type, input: ReadableByteChannel): PickleReader =
     JsonReader(ast.JParser.parseFromChannel(input).get)
 
-given PickleReaderSupport[String, Json.type]
+given PickleReaderSupport[String, Json.type]:
   override def readerFor(format: Json.type, input: String): PickleReader =
     JsonReader(ast.JParser.parseUnsafe(input))
 

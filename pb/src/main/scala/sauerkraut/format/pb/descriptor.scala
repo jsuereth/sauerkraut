@@ -27,13 +27,13 @@ class field(number: Int) extends scala.annotation.StaticAnnotation
  * 
  * This is used during serialization/deserialization.
  */
-sealed trait ProtoTypeDescriptor[T]
+sealed trait ProtoTypeDescriptor[T]:
   /** The type being serialized. */
   def tag: FastTypeTag[T]
 
 /** A descriptor about a protocol buffer message. */
 trait MessageProtoDescriptor[T]
-    extends ProtoTypeDescriptor[T]
+    extends ProtoTypeDescriptor[T]:
   /** Lookup the name for a field number. */
   def fieldName(num: Int): String
   /** Lookup the number for a field name. */
@@ -49,7 +49,7 @@ case class PrimitiveTypeDescriptor[T](tag: FastTypeTag[T])
 case class CollectionTypeDescriptor[Col, T](tag: FastTypeTag[Col], element: ProtoTypeDescriptor[T])
   extends ProtoTypeDescriptor[Col]
 
-object ProtoTypeDescriptor
+object ProtoTypeDescriptor:
   inline def derived[T]: ProtoTypeDescriptor[T] =
     new MessageProtoDescriptor[T] {
       override val tag: FastTypeTag[T] = fastTypeTag[T]()
@@ -176,16 +176,16 @@ object ProtoTypeDescriptor
  * A repository for type descriptors mappings that will be used
  * in serialization/deserialization.
  */ 
-trait TypeDescriptorRepository
+trait TypeDescriptorRepository:
   def find[T](tag: FastTypeTag[T]): ProtoTypeDescriptor[T]
 
 private class TypeDescriptorRepositoryImpl(values: Map[FastTypeTag[?], ProtoTypeDescriptor[?]]) 
-    extends TypeDescriptorRepository
+    extends TypeDescriptorRepository:
   override def find[T](tag: FastTypeTag[T]): ProtoTypeDescriptor[T] =
      // TODO - better eerrors
      values(tag).asInstanceOf[ProtoTypeDescriptor[T]]
 
-object TypeDescriptorRepository
+object TypeDescriptorRepository:
   /** Construct a type descriptor via a hash-map lookup. */
   def apply(lookups: Map[FastTypeTag[?], ProtoTypeDescriptor[?]]): TypeDescriptorRepository =
     TypeDescriptorRepositoryImpl(lookups)

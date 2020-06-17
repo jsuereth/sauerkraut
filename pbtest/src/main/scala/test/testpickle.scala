@@ -19,13 +19,13 @@ package test
 import sauerkraut.core.{
   Buildable,
   Writer,
-  given
+  given _
 }
 import sauerkraut.format.pb.{
   Protos,
   ProtoTypeDescriptor,
   field,
-  given
+  given _
 }
 
 case class TestPickle1(

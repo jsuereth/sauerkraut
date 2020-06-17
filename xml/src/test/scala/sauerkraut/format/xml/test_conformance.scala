@@ -3,7 +3,7 @@ package format
 package xml
 
 
-class JsonConformanceTests extends testing.ComplianceTests
+class JsonConformanceTests extends testing.ComplianceTests:
   override protected def roundTripImpl[T](
       writer: PickleWriter => Unit,
       reader: PickleReader => T): T =

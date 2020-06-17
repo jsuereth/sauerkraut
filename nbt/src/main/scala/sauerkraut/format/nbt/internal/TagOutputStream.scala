@@ -22,7 +22,7 @@ package internal
 import java.io.DataOutputStream
 import NbtTag._
 
-class TagOutputStream(out: DataOutputStream)
+class TagOutputStream(out: DataOutputStream):
   /** Writes a raw tag-id, with no paylod. */
   def writeRawTag(tag: NbtTag): Unit =
     out.writeByte(tag.id)

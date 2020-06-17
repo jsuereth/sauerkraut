@@ -26,7 +26,7 @@ import com.google.protobuf.{CodedOutputStream,WireFormat}
  * it sees them as 1->N. This is ok for ephemeral serialization where there is no
  * class/definition skew, but not ok in most serialization applications.
  */
-class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with PickleCollectionWriter
+class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with PickleCollectionWriter:
   override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
     // When writing 'raw' collections, we just write a length, then each element.
     out.writeInt32NoTag(length)
@@ -59,7 +59,7 @@ class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with Pi
  * An unknown protocol buffer structure writer.  It simply gives all new fields
  * a new index, starting with 1 and moving up.
  */
-class RawBinaryStructureWriter(out: CodedOutputStream) extends PickleStructureWriter
+class RawBinaryStructureWriter(out: CodedOutputStream) extends PickleStructureWriter:
   private var currentFieldIndex = 0
   override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     currentFieldIndex += 1
@@ -69,14 +69,14 @@ class RawBinaryStructureWriter(out: CodedOutputStream) extends PickleStructureWr
 /** 
  * An unknown protocol buffer structure writer for enums.  It simply looks up the type-level ordinal.
  */
-class RawBinaryChoiceWriter(ordinal: Int, out: CodedOutputStream) extends PickleStructureWriter
+class RawBinaryChoiceWriter(ordinal: Int, out: CodedOutputStream) extends PickleStructureWriter:
   private var currentFieldIndex = 0
   override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     pickler(RawBinaryFieldWriter(out, ordinal+1))
     this
 
 class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int) 
-    extends PickleWriter
+    extends PickleWriter:
   // Writing a collection should simple write a field multiple times.
   // TODO - see if we can determine type and use the alternative encoding.
   override def putCollection(length: Int)(work : PickleCollectionWriter => Unit): PickleWriter =
@@ -111,7 +111,7 @@ class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int)
   override def flush(): Unit = out.flush()
 
 class RawBinaryCollectionInFieldWriter(out: CodedOutputStream, fieldNum: Int)
-    extends PickleCollectionWriter
+    extends PickleCollectionWriter:
   override def putElement(work: PickleWriter => Unit): PickleCollectionWriter =
     // TODO - we need to know what we're writing here...
     out.writeTag(fieldNum, WireFormat.WIRETYPE_LENGTH_DELIMITED)

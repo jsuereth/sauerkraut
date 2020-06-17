@@ -7,7 +7,7 @@ import com.google.protobuf.{CodedInputStream,CodedOutputStream}
 
 // We only do partial complaince, so we opt-in to what we can do.
 class RawBinaryComplianceTests 
-    extends testing.ComplianceTests
+    extends testing.ComplianceTests:
   override protected def roundTripImpl[T](
        writer: PickleWriter => Unit,
        reader: PickleReader => T): T =

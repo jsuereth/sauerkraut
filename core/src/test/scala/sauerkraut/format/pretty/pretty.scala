@@ -3,7 +3,7 @@ package format
 package pretty
 package testing
 
-import core.{Writer,given}
+import core.{Writer,given _}
 import org.junit.Test
 import org.junit.Assert._
 
@@ -16,7 +16,7 @@ case class StructOfStruct(
     value: TestStruct
 ) derives Writer
 
-enum SimpleAdt derives Writer
+enum SimpleAdt derives Writer:
   case One
   case Two(x: Int)
 

@@ -26,7 +26,7 @@ import core.{
 }
 import org.typelevel.jawn.ast
 
-class JsonReader(value: ast.JValue) extends PickleReader
+class JsonReader(value: ast.JValue) extends PickleReader:
   def push[T](builder: core.Builder[T]): core.Builder[T] =
     builder match
       case p: PrimitiveBuilder[T] => readPrimitive(p)

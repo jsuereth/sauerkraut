@@ -25,14 +25,14 @@ import scala.collection.mutable.{
 
 // TODO - make generic for all collections. Maybe codegen?
 /** A writer for all collections extending Iterable. */
-final class CollectionWriter[T: Writer]() extends Writer[Iterable[T]]
+final class CollectionWriter[T: Writer]() extends Writer[Iterable[T]]:
   override def write(value: Iterable[T], pickle: PickleWriter): Unit =
     pickle.putCollection(value.size)(c =>
       for item <- value
       do c.putElement(itemWriter => summon[Writer[T]].write(item, itemWriter))
     )
 /** A writer for raw array types. */
-final class ArrayWriter[T: Writer : reflect.ClassTag] extends Writer[Array[T]]
+final class ArrayWriter[T: Writer : reflect.ClassTag] extends Writer[Array[T]]:
   override def write(value: Array[T], pickle: PickleWriter): Unit =
     pickle.putCollection(value.length)(c =>
       for item <- value
@@ -48,7 +48,7 @@ given [T](using Writer[T], reflect.ClassTag[T]) as Writer[Array[T]] = ArrayWrite
 
 final class SimpleCollectionBuilder[E: Buildable, To](
     b: ScalaCollectionBuilder[E, To])
-    extends CollectionBuilder[E, To]
+    extends CollectionBuilder[E, To]:
   private var tmpBuilder = List.newBuilder[Builder[E]]
   def putElement(): Builder[E] =
     val nextElement = summon[Buildable[E]].newBuilder
@@ -62,7 +62,7 @@ final class SimpleCollectionBuilder[E: Buildable, To](
 
 final class CollectionBuildable[E: Buildable, To](
     newColBuilder: () => ScalaCollectionBuilder[E, To])
-    extends Buildable[To]
+    extends Buildable[To]:
   def newBuilder: Builder[To] =
     SimpleCollectionBuilder[E, To](newColBuilder())
 

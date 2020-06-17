@@ -3,10 +3,10 @@ package test
 import org.junit.Test
 import org.junit.Assert._
 import sauerkraut.{read, pickle, write}
-import sauerkraut.format.pb.given
+import sauerkraut.format.pb.{given _}
 import collection.JavaConverters.asScalaBufferConverter
 
-class TestWriteThenRead
+class TestWriteThenRead:
   @Test def sauerWritesGoogleReadsSimple(): Unit =
     val source = TestPickle1(2, "test", List(3,5))
     val out = java.io.ByteArrayOutputStream()

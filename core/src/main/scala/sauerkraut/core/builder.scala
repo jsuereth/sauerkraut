@@ -22,7 +22,7 @@ import format.FastTypeTag
 /** 
  * Represents something that we can construct a builder for. 
  */
-trait Buildable[T]
+trait Buildable[T]:
   /** Construct a new builder that can generate type T. */
   def newBuilder: Builder[T]
 
@@ -31,7 +31,7 @@ trait Buildable[T]
  * 
  * This is a push API, where read values are pushed into the builder, constructing the type.
  */
-sealed trait Builder[T]
+sealed trait Builder[T]:
   /** Returns the result of all the values placed into this builder. */
   def result: T
 
@@ -39,7 +39,7 @@ sealed trait Builder[T]
 
 
 /** Represents a `builder` that can be used to generate a structure from a pickle. */
-trait StructureBuilder[T] extends Builder[T]
+trait StructureBuilder[T] extends Builder[T]:
   /** The tag used for this structure. */
   def tag: format.Struct[T]
   /** 
@@ -54,19 +54,19 @@ trait StructureBuilder[T] extends Builder[T]
  * Represents a `builder` that can be used to generate one of a variety of instances
  * from a pickle. 
  */
-trait ChoiceBuilder[T] extends Builder[T]
+trait ChoiceBuilder[T] extends Builder[T]:
   /** The tag of the type being built by this builder. */
   def tag: format.Choice[T]
   /** Grabs the builder for a given choice and assigns the result of the current builder to that value. */
   def putChoice[F](name: String): Builder[F]
 
 /** Represents a builder of collections from pickles. */
-trait CollectionBuilder[E, To] extends Builder[To]
+trait CollectionBuilder[E, To] extends Builder[To]:
   /** Places an element into the collection.   Returns a new builder for the new element. */
   def putElement(): Builder[E]
 
 /** A builder for primitives.  basically just writes values into their final location. */
-trait PrimitiveBuilder[P] extends Builder[P]
+trait PrimitiveBuilder[P] extends Builder[P]:
   /** The tag of the primitive.  Determines how a pickle is read. */
   def tag: format.PrimitiveTag[P]
   /** Places the primitive into the builder. */
@@ -74,12 +74,12 @@ trait PrimitiveBuilder[P] extends Builder[P]
 
 
 // Now we attempt to derive a builder.
-object Buildable
+object Buildable:
   import deriving._
   import scala.compiletime.{erasedValue,constValue,summonFrom}
   import internal.InlineHelper.{summonLabels,labelIndexLookup}
   /** Derives Builders for any product-like class. */
-  inline def derived[T](given m: Mirror.Of[T]): Buildable[T] =
+  inline def derived[T](using m: Mirror.Of[T]): Buildable[T] =
     new Buildable[T] {
         // TODO - use the FastTypeTag for this.
         private val knownFieldNames: Array[String] =

@@ -21,7 +21,7 @@ package pretty
 import java.io.Writer
 
 /** Pretty prints to a character stream. */
-class PrettyPrintPickleWriter(out: Writer, indent: Int = 0) extends PickleWriter
+class PrettyPrintPickleWriter(out: Writer, indent: Int = 0) extends PickleWriter:
   private def indentSpace: String = (0 until indent).map(_ => ' ').mkString("")
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
     out.write(picklee.toString)
@@ -43,7 +43,7 @@ class PrettyPrintPickleWriter(out: Writer, indent: Int = 0) extends PickleWriter
     this
   override def flush(): Unit = out.flush()
 
-class PrettyPrintStructureWriter(out: Writer, indent: Int) extends PickleStructureWriter
+class PrettyPrintStructureWriter(out: Writer, indent: Int) extends PickleStructureWriter:
   private var first = true
   private def indentSpace(n: Int = indent): Unit = 
       (0 until n).foreach(_ => out.write("  "))
@@ -64,7 +64,7 @@ class PrettyPrintStructureWriter(out: Writer, indent: Int) extends PickleStructu
     writer(PrettyPrintPickleWriter(out, indent))
     writePostFix()
     this
-class PrettyPrintCollectionWriter(out: Writer, indent: Int) extends PickleCollectionWriter
+class PrettyPrintCollectionWriter(out: Writer, indent: Int) extends PickleCollectionWriter:
   var first = true
   // TODO - Determine when to roll over to new line
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =

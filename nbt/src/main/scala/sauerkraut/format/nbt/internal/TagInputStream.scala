@@ -21,7 +21,7 @@ package internal
 
 import java.io.DataInputStream
 
-class TagInputStream(in: DataInputStream)
+class TagInputStream(in: DataInputStream):
   /** Reads the next NBT tag.
    * Note: This returns TagEnd on failure.
    */

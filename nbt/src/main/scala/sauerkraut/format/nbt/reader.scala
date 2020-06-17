@@ -22,7 +22,7 @@ import internal.TagInputStream
 import internal.NbtTag
 
 class NbtPickleReader(in: TagInputStream)
-    extends PickleReader
+    extends PickleReader:
   override def push[T](b: core.Builder[T]): core.Builder[T] =
     // We ignore tags and rely on types to figure stuff out.
     b match

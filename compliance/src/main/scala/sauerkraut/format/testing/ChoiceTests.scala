@@ -18,20 +18,20 @@ package sauerkraut
 package format
 package testing
 
-import core.{Writer, Buildable, given}
+import core.{Writer, Buildable, given _}
 
 import org.junit.Test
 
 
-enum Color derives Writer, Buildable
+enum Color derives Writer, Buildable:
   case Red,Green,Blue
 
-enum HasStuff derives Writer, Buildable
+enum HasStuff derives Writer, Buildable:
   case One(x: Int)
   case Two(y: String)
 
 /** Ensures choice/enums can be serialized. */
-trait ChoiceComplianceTests extends ComplianceTestBase
+trait ChoiceComplianceTests extends ComplianceTestBase:
   @Test def testSimpleEnum(): Unit =
     roundTrip(Color.Red)
     roundTrip(Color.Green)

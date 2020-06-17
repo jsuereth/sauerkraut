@@ -1,17 +1,17 @@
 package sauerkraut.format
 
-import sauerkraut.core.{given}
+import sauerkraut.core.{given _}
 import org.junit.Test
 import org.junit.Assert._
 
 case class SimpleType()
 case class ParameterizedType[T, U]()
 
-enum Adt
+enum Adt:
   case Expr(x: Int)
   case Op
 
-class TestFastTypeTag 
+class TestFastTypeTag: 
   @Test def findsPrimitives(): Unit =
     assertEquals(PrimitiveTag.UnitTag, fastTypeTag[Unit]())
     assertEquals(PrimitiveTag.BooleanTag, fastTypeTag[Boolean]())

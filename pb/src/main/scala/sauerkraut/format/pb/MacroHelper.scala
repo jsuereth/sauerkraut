@@ -20,8 +20,8 @@ import deriving._
 import scala.tasty._
 import scala.quoted._
 
-class MacroHelper(val qctx: QuoteContext)
-  import qctx.tasty.{_,given}
+class MacroHelper(val qctx: QuoteContext):
+  import qctx.tasty.{_,given _}
   given QuoteContext = qctx
   /** 
    * Extracts the refinement + label bounds added
@@ -29,7 +29,7 @@ class MacroHelper(val qctx: QuoteContext)
    * 
    * Note: This is INCREDIBLY tied to the current impl.
    */
-  object ProductOfRefinement
+  object ProductOfRefinement:
       def unapply(t: Type): Option[(Type, Type)] =
         t.widen match
             case Refinement(
@@ -40,7 +40,7 @@ class MacroHelper(val qctx: QuoteContext)
                 TypeBounds(labels,_)) =>
               Some(elems, labels)
             case _ => None
-  object TupleCons
+  object TupleCons:
     def unapply(t: Type): Option[(Type, Type)] =
       t match
         case AppliedType(TypeRef(_, "*:"),List(head : Type, cons: Type)) => 
@@ -62,7 +62,7 @@ class MacroHelper(val qctx: QuoteContext)
       case _ => Map.empty
 
   /** Extracts the string from any constnat type.  This just toString's the value. */
-  object ConstantString
+  object ConstantString:
     def unapply(t: Type): Option[String] =
       t match
         case ConstantType(c) => Some(c.value.toString)

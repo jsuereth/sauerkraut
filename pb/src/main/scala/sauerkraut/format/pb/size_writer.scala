@@ -20,10 +20,10 @@ package pb
 
 import com.google.protobuf.CodedOutputStream
 
-trait SizeEstimator
+trait SizeEstimator:
   def finalSize: Int
 
-class RawPickleSizeEstimator extends PickleWriter with SizeEstimator
+class RawPickleSizeEstimator extends PickleWriter with SizeEstimator:
   private var size: Int = 0
   override def finalSize: Int = size
   override def flush(): Unit = ()
@@ -53,7 +53,7 @@ class RawPickleSizeEstimator extends PickleWriter with SizeEstimator
     size += estimate.finalSize
     this
 
-class RawCollectionSizeEstimateWriter extends PickleCollectionWriter with SizeEstimator
+class RawCollectionSizeEstimateWriter extends PickleCollectionWriter with SizeEstimator:
   private var size: Int = 0
   override def finalSize: Int = size
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
@@ -73,7 +73,7 @@ class FieldSizeEstimateWriter(fieldNum: Int,
   optDescriptor: Option[ProtoTypeDescriptor[?]])
     extends PickleWriter
     with PickleCollectionWriter
-    with SizeEstimator
+    with SizeEstimator:
   private var size: Int = 0
   override def finalSize: Int = size
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
@@ -135,7 +135,7 @@ class FieldSizeEstimateWriter(fieldNum: Int,
 /** Estimate the size of sub-structure given a TypeDescriptor. */
 class SizeEstimateStructureWriter(d: MessageProtoDescriptor[?]) 
     extends PickleStructureWriter
-    with SizeEstimator
+    with SizeEstimator:
   private var size = 0
   override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     val idx = d.fieldNumber(name)
@@ -149,7 +149,7 @@ class SizeEstimateStructureWriter(d: MessageProtoDescriptor[?])
 
 // Used to estimate write-size of protos.  Note: this assumes fields
 // are only looked up once, per `putField` call.
-class RawBinaryMessageDescriptor[T] extends MessageProtoDescriptor[T]
+class RawBinaryMessageDescriptor[T] extends MessageProtoDescriptor[T]:
   private var currentIdx = 0
   override def fieldDesc[F](num: Int): sauerkraut.format.pb.ProtoTypeDescriptor[F] =
     RawBinaryMessageDescriptor[F]()

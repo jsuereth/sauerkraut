@@ -19,12 +19,12 @@ package format
 package testing
 
 import org.junit.Assert._
-import sauerkraut.core.{Buildable,Writer,given}
+import sauerkraut.core.{Buildable,Writer,given _}
 
 /** Basic tests a format can use to determine if they are
  * in compliance with the base spec.
  */
-trait ComplianceTestBase
+trait ComplianceTestBase:
   /**
    * This method should:
    * - Instantiate a format-specific [[PickleWriter]]

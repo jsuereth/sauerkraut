@@ -4,15 +4,15 @@ package pb
 
 import org.junit.Test
 import org.junit.Assert._
-import core.{Writer,given}
+import core.{Writer,given _}
 
 case class Derived(x: Boolean, test: String) derives Writer
 case class Repeated(x: List[Boolean]) derives Writer
-enum SimpleEnum derives Writer
+enum SimpleEnum derives Writer:
   case One
   case Two
 
-class TestRawBinaryProto
+class TestRawBinaryProto:
   def binary[T: Writer](value: T): Array[Byte] =
     val out = java.io.ByteArrayOutputStream()
     pickle(RawBinary).to(out).write(value)

@@ -37,7 +37,7 @@ import core.internal.InlineHelper
  */ 
 sealed trait FastTypeTag[T]
 object FastTypeTag
-enum PrimitiveTag[T] extends FastTypeTag[T]
+enum PrimitiveTag[T] extends FastTypeTag[T]:
   case UnitTag extends PrimitiveTag[Unit]
   case BooleanTag extends PrimitiveTag[Boolean]
   case ByteTag extends PrimitiveTag[Byte]
@@ -53,7 +53,7 @@ enum PrimitiveTag[T] extends FastTypeTag[T]
 // TODO - determine the right mechanism to refrence non-primitive types.
 sealed trait NonPrimitiveTag[T] extends FastTypeTag[T]
 /** A type representing a structure of key-value pairs. */
-sealed trait Struct[T] extends NonPrimitiveTag[T]
+sealed trait Struct[T] extends NonPrimitiveTag[T]:
   def name: String
   def fields: Array[String]
   final override def hashCode: Int = name.hashCode
@@ -63,7 +63,7 @@ sealed trait Struct[T] extends NonPrimitiveTag[T]
       case _ => false
   final override def toString = s"Struct($name)"
 /** A non-primitive type, where the value could be one of several options. */
-sealed trait Choice[T] extends NonPrimitiveTag[T]
+sealed trait Choice[T] extends NonPrimitiveTag[T]:
   def name: String
   def options: List[FastTypeTag[?]]
   def find(name: String): FastTypeTag[?]
@@ -93,6 +93,7 @@ inline def primitiveTag[T](): PrimitiveTag[T] =
         case _: Double => PrimitiveTag.DoubleTag.asInstanceOf[PrimitiveTag[T]]
         case _: String => PrimitiveTag.StringTag.asInstanceOf[PrimitiveTag[T]]
         case _ => notPrimitiveError[T]
+
 inline def fastTypeTag[T](): FastTypeTag[T] =
     inline erasedValue[T] match
         case _: Unit => primitiveTag[T]()

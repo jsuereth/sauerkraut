@@ -4,7 +4,7 @@ package nbt
 
 import org.junit.Test
 import org.junit.Assert._
-import core.{Writer,given}
+import core.{Writer,given _}
 
 def hexString(buf: Array[Byte]): String =
   buf.map(b => f"$b%02x").mkString("")
@@ -16,7 +16,7 @@ case class Derived(x: Boolean, test: String)
  * Complicated behaviors + reading is
  * tested via ComplianceTests.
  */
-class TestWriter
+class TestWriter:
   def nbtOf[T: Writer](value: T): Array[Byte] =
     val out = java.io.ByteArrayOutputStream()
     pickle(Nbt).to(out).write(value)

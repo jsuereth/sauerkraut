@@ -7,11 +7,11 @@ import org.junit.Assert._
 case class EmptyMessage() derives Buildable
 case class SimpleStruct(x: Int, y: String) derives Buildable
 
-enum SimpleChoice derives Buildable
+enum SimpleChoice derives Buildable:
   case Test
   case SomethingOfValue(x: Int)
 
-class TestBuildableBuiltInsAndDerived
+class TestBuildableBuiltInsAndDerived:
 
   private inline def testPrimitive[T: Buildable](value: T): Unit =
     val b = summon[Buildable[T]].newBuilder
