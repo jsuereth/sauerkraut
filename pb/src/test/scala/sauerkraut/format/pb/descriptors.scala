@@ -6,6 +6,7 @@ import sauerkraut.{read,write}
 import org.junit.Test
 import org.junit.Assert._
 import core.{Buildable,Writer,given}
+import scala.collection.mutable.ArrayBuffer
 
 // Example from: https://developers.google.com/protocol-buffers/docs/encoding
 // ```
@@ -24,8 +25,16 @@ case class Nesting(a: Int @field(1))
 case class Nested(c: Nesting @field(3))
   derives Buildable, Writer, ProtoTypeDescriptor
 
-val MyProtos = Protos[(Nested, Nesting)]()
+
+case class NestedCollections(
+  messages: ArrayBuffer[Nesting] @field(1),
+  otherNums: ArrayBuffer[Double] @field(2),
+  ints: ArrayBuffer[Long] @field(3)
+) derives Writer, Buildable, ProtoTypeDescriptor
+
+val MyProtos = Protos[(Nested, Nesting, NestedCollections)]()
       
+
 
 class TestProtocolBufferWithDesc:
   def hexString(buf: Array[Byte]): String =
@@ -49,3 +58,4 @@ class TestProtocolBufferWithDesc:
   @Test def roundTrip(): Unit =
     roundTrip(Nesting(150))
     roundTrip(Nested(Nesting(150)))
+    roundTrip(NestedCollections(ArrayBuffer(Nesting(1)), ArrayBuffer(2.0, 3.0), ArrayBuffer(1L, 4L)))

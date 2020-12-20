@@ -28,6 +28,7 @@ class ProtocolBufferFieldWriter(
     extends PickleWriter with PickleCollectionWriter:
   // Writing a collection should simple write a field multiple times.
   override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+    // This does NOT work for primitive collections.
     work(this)
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
@@ -41,6 +42,41 @@ class ProtocolBufferFieldWriter(
         work(DescriptorBasedProtoStructureWriter(tmpOut, msg))
         tmpOut.flush()
         out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
+      // TODO - We the following in benchmarks:
+      /* 
+[info] java.lang.RuntimeException: Cannot find structure definition from: CollectionTypeDescriptor(Given(scala.collection.mutable.ArrayBuffer[scala.Long]),PrimitiveTypeDescriptor(LongTag))
+[info]  at sauerkraut.format.pb.ProtocolBufferFieldWriter.putStructure(writer.scala:44)
+[info]  at sauerkraut.benchmarks.SimpleMessage$$anon$1.write(BenchmarkTests.scala:34)
+[info]  at sauerkraut.benchmarks.SimpleMessage$$anon$1.write(BenchmarkTests.scala:34)
+[info]  at sauerkraut.core.CollectionWriter.write$$anonfun$2$$anonfun$1$$anonfun$1(collections.scala:32)
+[info]  at dotty.runtime.function.JProcedure1.apply(JProcedure1.java:15)
+[info]  at dotty.runtime.function.JProcedure1.apply(JProcedure1.java:10)
+[info]  at sauerkraut.format.pb.ProtocolBufferFieldWriter.putElement(writer.scala:62)
+[info]  at sauerkraut.core.CollectionWriter.write$$anonfun$3$$anonfun$2(collections.scala:32)
+[info]  at scala.collection.IterableOnceOps.foreach(IterableOnce.scala:553)
+[info]  at scala.collection.IterableOnceOps.foreach$(IterableOnce.scala:551)
+[info]  at scala.collection.AbstractIterable.foreach(Iterable.scala:920)
+[info]  at sauerkraut.core.CollectionWriter.write$$anonfun$1(collections.scala:32)
+[info]  at dotty.runtime.function.JProcedure1.apply(JProcedure1.java:15)
+[info]  at dotty.runtime.function.JProcedure1.apply(JProcedure1.java:10)
+[info]  at sauerkraut.format.pb.ProtocolBufferFieldWriter.putCollection(writer.scala:31)
+[info]  at sauerkraut.core.CollectionWriter.write(collections.scala:32)
+[info]  at sauerkraut.core.CollectionWriter.write(collections.scala:29)
+[info]  at sauerkraut.benchmarks.LargerMessage$.write$$anonfun$1$$anonfun$1(BenchmarkTests.scala:40)
+[info]  at dotty.runtime.function.JProcedure1.apply(JProcedure1.java:15)
+[info]  at dotty.runtime.function.JProcedure1.apply(JProcedure1.java:10)
+[info]  at sauerkraut.format.pb.DescriptorBasedProtoStructureWriter.putField(writer.scala:74)
+[info]  at sauerkraut.benchmarks.LargerMessage$.sauerkraut$benchmarks$LargerMessage$$anon$1$$_$write$$anonfun$4(BenchmarkTests.scala:40)
+[info]  at dotty.runtime.function.JProcedure1.apply(JProcedure1.java:15)
+[info]  at dotty.runtime.function.JProcedure1.apply(JProcedure1.java:10)
+[info]  at sauerkraut.format.pb.DescriptorBasedProtoWriter.putStructure(writer.scala:85)
+[info]  at sauerkraut.benchmarks.LargerMessage$$anon$1.write(BenchmarkTests.scala:40)
+[info]  at sauerkraut.benchmarks.LargerMessage$$anon$1.write(BenchmarkTests.scala:40)
+[info]  at sauerkraut.api$package$.write(api.scala:49)
+[info]  at sauerkraut.benchmarks.SauerkrautProtocolBufferBenchmarks.save(BenchmarkTests.scala:130)
+[info]  at sauerkraut.benchmarks.JmhBenchmarks.inline$save(BenchmarkTests.scala:71)
+[info]  at sauerkraut.benchmarks.JmhBenchmarks.writeAndReadLargeNestedMessage(BenchmarkTests.scala:91)
+      */
       case _ => throw RuntimeException(s"Cannot find structure definition from: $desc")
     this
 
