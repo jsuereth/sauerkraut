@@ -30,10 +30,10 @@ import java.io.{
  */
 object Nbt extends PickleFormat
 
-given [O <: OutputStream] as PickleWriterSupport[O, Nbt.type]:
+given [O <: OutputStream]: PickleWriterSupport[O, Nbt.type] with
   def writerFor(format: Nbt.type, output: O): PickleWriter =
     NbtPickleWriter(internal.TagOutputStream(DataOutputStream(output)))
 
-given [I <: InputStream] as PickleReaderSupport[I, Nbt.type]:
+given [I <: InputStream]: PickleReaderSupport[I, Nbt.type] with
   def readerFor(format: Nbt.type, input: I): PickleReader =
     NbtPickleReader(internal.TagInputStream(DataInputStream(input)))

@@ -19,7 +19,7 @@ package format
 package testing
 
 import org.junit.Assert._
-import sauerkraut.core.{Buildable,Writer,given _}
+import sauerkraut.core.{Buildable,Writer,given}
 
 /** Basic tests a format can use to determine if they are
  * in compliance with the base spec.

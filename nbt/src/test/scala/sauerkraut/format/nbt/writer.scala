@@ -4,7 +4,7 @@ package nbt
 
 import org.junit.Test
 import org.junit.Assert._
-import core.{Writer,given _}
+import core.{Writer,given}
 
 def hexString(buf: Array[Byte]): String =
   buf.map(b => f"$b%02x").mkString("")

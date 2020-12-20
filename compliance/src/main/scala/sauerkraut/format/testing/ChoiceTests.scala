@@ -18,7 +18,7 @@ package sauerkraut
 package format
 package testing
 
-import core.{Writer, Buildable, given _}
+import core.{Writer, Buildable, given}
 
 import org.junit.Test
 

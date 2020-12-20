@@ -3,14 +3,14 @@ package sauerkraut
 import org.junit.Test
 import org.junit.Assert._
 import format.json.Json
-import format.json.{given _}
+import format.json.{given}
 import format.{fastTypeTag, primitiveTag}
-import core.{Writer, Buildable, given _}
+import core.{Writer, Buildable, given}
 import java.io.StringWriter
 
 
 case class TestManual(x: Double, b: Int, stuff: Array[Int])
-given Writer[TestManual]:
+given Writer[TestManual] with
   override def write(value: TestManual, pickle: format.PickleWriter): Unit =
     pickle.putStructure(value, fastTypeTag[TestManual]())(
       _.putField("x", w => w.putPrimitive(value.x, primitiveTag[Double]())).

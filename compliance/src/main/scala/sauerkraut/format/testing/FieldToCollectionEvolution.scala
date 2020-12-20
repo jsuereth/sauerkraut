@@ -22,7 +22,7 @@ package testing
 
 import org.junit.Test
 import scala.collection.mutable.ArrayBuffer
-import sauerkraut.core.{Buildable,Writer,given _}
+import sauerkraut.core.{Buildable,Writer,given}
 
 
 
