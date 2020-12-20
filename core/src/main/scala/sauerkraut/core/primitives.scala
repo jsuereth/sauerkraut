@@ -59,7 +59,7 @@ final class StaticValueBuilder[T](
   override def putPrimitive(value: T): Unit = ()
 
 given Writer[Unit] = PrimitiveWriter[Unit]()
-given Buildable[Unit]:
+given Buildable[Unit] with
   override def newBuilder: Builder[Unit] = 
     StaticValueBuilder(PrimitiveTag.UnitTag, ())
 given Writer[Byte] = PrimitiveWriter[Byte]()

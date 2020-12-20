@@ -39,12 +39,12 @@ final class ArrayWriter[T: Writer : reflect.ClassTag] extends Writer[Array[T]]:
       do c.putElement(itemWriter => summon[Writer[T]].write(item, itemWriter))
     )
 
-given [T](using Writer[T]) as Writer[List[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T]) as Writer[Vector[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T]) as Writer[Seq[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T]) as Writer[Iterable[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T]) as Writer[collection.mutable.ArrayBuffer[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T], reflect.ClassTag[T]) as Writer[Array[T]] = ArrayWriter[T]()
+given [T](using Writer[T]): Writer[List[T]] = CollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): Writer[Vector[T]] = CollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): Writer[Seq[T]] = CollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): Writer[Iterable[T]] = CollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): Writer[collection.mutable.ArrayBuffer[T]] = CollectionWriter[T]().asInstanceOf
+given [T](using Writer[T], reflect.ClassTag[T]): Writer[Array[T]] = ArrayWriter[T]()
 
 final class SimpleCollectionBuilder[E: Buildable, To](
     b: ScalaCollectionBuilder[E, To])
@@ -66,15 +66,15 @@ final class CollectionBuildable[E: Buildable, To](
   def newBuilder: Builder[To] =
     SimpleCollectionBuilder[E, To](newColBuilder())
 
-given [T](using Buildable[T]) as Buildable[List[T]] =
+given [T](using Buildable[T]): Buildable[List[T]] =
   CollectionBuildable[T, List[T]](() => List.newBuilder)
-given [T](using Buildable[T]) as Buildable[Seq[T]] =
+given [T](using Buildable[T]): Buildable[Seq[T]] =
   CollectionBuildable[T, Seq[T]](() => Seq.newBuilder)
-given [T](using Buildable[T]) as Buildable[Iterable[T]] =
+given [T](using Buildable[T]): Buildable[Iterable[T]] =
   CollectionBuildable[T, Iterable[T]](() => Iterable.newBuilder)
-given [T](using Buildable[T]) as Buildable[Vector[T]] =
+given [T](using Buildable[T]): Buildable[Vector[T]] =
   CollectionBuildable[T, Vector[T]](() => Vector.newBuilder)
-given [T](using Buildable[T], reflect.ClassTag[T]) as Buildable[Array[T]] =
+given [T](using Buildable[T], reflect.ClassTag[T]): Buildable[Array[T]] =
   CollectionBuildable[T, Array[T]](() => Array.newBuilder[T])
-given [T](using Buildable[T], reflect.ClassTag[T]) as Buildable[ArrayBuffer[T]] =
+given [T](using Buildable[T], reflect.ClassTag[T]): Buildable[ArrayBuffer[T]] =
   CollectionBuildable[T, ArrayBuffer[T]](() => ArrayBuffer.newBuilder[T])

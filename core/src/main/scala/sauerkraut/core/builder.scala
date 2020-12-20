@@ -96,7 +96,7 @@ object Buildable:
   inline def buildersFor[Elems <: Tuple]: List[Builder[_]] =
     inline erasedValue[Elems] match
       case _: (h *: tail) => (builderFor[h] :: buildersFor[tail])
-      case _: Unit => Nil
+      case _: EmptyTuple => Nil
   /** Summons a single new builder for a type. */
   inline def builderFor[T]: Builder[T] =
     summonFrom {
@@ -123,7 +123,7 @@ object Buildable:
               throw BuildException(s"Unable to find field $name", e)
         override def result: T =
           m.fromProduct(
-              ArrayProduct(
+              Tuple.fromArray(
                 // TODO - this `map` is now one of the more signficant slowdowns from sauerkraut. 
                 fields
                 .map(b =>

@@ -136,24 +136,24 @@ inline def choiceMatcher[NamesAndElems <: Tuple](name: String): FastTypeTag[?] =
       then fastTypeTag[tpe]()
       else choiceMatcher[tail](name)
     // TODO - better errors.
-    case _: Unit => throw RuntimeException(s"Could not find $name")
+    case _: EmptyTuple => throw RuntimeException(s"Could not find $name")
 
 /** From a tuple of types, pulls all the type tags. */
 inline def options[Elems]: List[FastTypeTag[?]] =
   inline erasedValue[Elems] match
     case _: (h *: tail) => fastTypeTag[h]() :: options[tail]
-    case _: Unit => Nil
+    case _: EmptyTuple  => Nil
 import scala.quoted._
-private def typeNameImpl[T: Type](using QuoteContext): Expr[String] =
-  Expr(summon[Type[T]].show)
+private def typeNameImpl[T: Type](using Quotes): Expr[String] =
+  Expr(Type.show[T])
 /** Pulls a full-string (unique) name for the given type. */
 inline def typeName[T]: String = ${typeNameImpl[T]}
 
 private inline def unsupportedType[T]: FastTypeTag[T] = ${unsupportedTypeImpl[T]}
-private def unsupportedTypeImpl[T: Type](using qctx: QuoteContext): Expr[FastTypeTag[T]] =
-  qctx.error(s"Unsupported saurekraut pickling type: ${summon[Type[T]].show}")
+private def unsupportedTypeImpl[T: Type](using qctx: Quotes): Expr[FastTypeTag[T]] =
+  quotes.reflect.report.error(s"Unsupported saurekraut pickling type: ${Type.show[T]}")
   Expr(null)
 private inline def notPrimitiveError[T]: PrimitiveTag[T] = ${notPrimitiveErrorImpl[T]}
-private def notPrimitiveErrorImpl[T: Type](using qctx: QuoteContext): Expr[PrimitiveTag[T]] =
-  qctx.error(s"Not a sauerkraut primitive type: ${summon[Type[T]].show}")
+private def notPrimitiveErrorImpl[T: Type](using qctx: Quotes): Expr[PrimitiveTag[T]] =
+  quotes.reflect.report.error(s"Not a sauerkraut primitive type: ${Type.show[T]}")
   Expr(null)

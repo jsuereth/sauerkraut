@@ -1,6 +1,6 @@
 package sauerkraut.format
 
-import sauerkraut.core.{given _}
+import sauerkraut.core.{given}
 import org.junit.Test
 import org.junit.Assert._
 

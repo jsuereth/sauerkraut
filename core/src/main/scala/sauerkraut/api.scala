@@ -39,22 +39,27 @@ final class PickleFormatDsl[F <: PickleFormat](format: F):
     s.readerFor(format, input)
 
 
-/** Reads type `T` using the PickleReader. */
-def [T](pickle: PickleReader) read(using b: core.Buildable[T]): T =
-  pickle.push(b.newBuilder).result
+extension [T](pickle: PickleReader)
+  /** Reads type `T` using the PickleReader. */
+  def read(using b: core.Buildable[T]): T =
+    pickle.push(b.newBuilder).result
 
 
-/** Writes the value to a pickle. Note: This flushes the pickle writer. */
-def [T](pickle: PickleWriter) write(value: T)(using s: core.Writer[T]): Unit =
-  s.write(value, pickle)
-  pickle.flush()
+extension [T](pickle: PickleWriter)
+  /** Writes the value to a pickle. Note: This flushes the pickle writer. */
+  def write(value: T)(using s: core.Writer[T]): Unit =
+    s.write(value, pickle)
+    pickle.flush()
 
-/** Writes the value to a pickle.  Note: This does not flush the pickle writer. */
-def [T](pickle: PickleWriter) lazyWrite(value: T)(using s: core.Writer[T]): Unit =
-  s.write(value, pickle)
+extension [T](pickle: PickleWriter)
+  /** Writes the value to a pickle.  Note: This does not flush the pickle writer. */
+  def lazyWrite(value: T)(using s: core.Writer[T]): Unit =
+    s.write(value, pickle)
 
-def [T](value: T) prettyPrint(using w: core.Writer[T]): String =
-  import format.pretty.{Pretty, given _}
-  val out = java.io.StringWriter()
-  pickle(Pretty).to(out).write(value)
-  out.toString()
+extension [T](value: T) 
+  /** Pretty-prints any writable value. */
+  def prettyPrint(using w: core.Writer[T]): String =
+    import format.pretty.{Pretty, given}
+    val out = java.io.StringWriter()
+    pickle(Pretty).to(out).write(value)
+    out.toString()

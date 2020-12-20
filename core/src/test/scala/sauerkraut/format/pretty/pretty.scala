@@ -3,7 +3,7 @@ package format
 package pretty
 package testing
 
-import core.{Writer,given _}
+import core.{Writer,given}
 import org.junit.Test
 import org.junit.Assert._
 
@@ -20,19 +20,22 @@ enum SimpleAdt derives Writer:
   case One
   case Two(x: Int)
 
-def (in: String) fixLineEnd: String =
-  in.replaceAll("\r\n", "\n")
+extension (in: String)
+  def fixLineEnd: String =
+    in.replaceAll("\r\n", "\n")
 
 class TestPrettyPrint {
   @Test def testEnum(): Unit =
     assertEquals("""|Choice(sauerkraut.format.pretty.testing.SimpleAdt) {
                     |  One: Struct(sauerkraut.format.pretty.testing.SimpleAdt.One.type) {}
                     |}""".stripMargin('|').fixLineEnd, SimpleAdt.One.prettyPrint.fixLineEnd)
+    // Enum changes require us to force the type to be the base type here...
+    val two: SimpleAdt = SimpleAdt.Two(2)
     assertEquals("""|Choice(sauerkraut.format.pretty.testing.SimpleAdt) {
-                    |  Two: Struct(sauerkraut.format.pretty.testing.SimpleAdt.Two) {
-                    |    x: 2
-                    |  }
-                    |}""".stripMargin('|').fixLineEnd, SimpleAdt.Two(2).prettyPrint.fixLineEnd)
+                     |  Two: Struct(sauerkraut.format.pretty.testing.SimpleAdt.Two) {
+                     |    x: 2
+                     |  }
+                     |}""".stripMargin('|').fixLineEnd, two.prettyPrint.fixLineEnd)
   @Test def testStruct(): Unit =
     assertEquals("""|Struct(sauerkraut.format.pretty.testing.TestStruct) {
                     |  value: 20

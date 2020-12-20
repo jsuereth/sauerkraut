@@ -31,6 +31,6 @@ object Pickler:
     override def write(value: T, pickle: format.PickleWriter): Unit = w.write(value, pickle)
     override def toString(): String = s"BuiltPickler($b, $w)"
   /** Provides picklers by joining readers + writers. */
-  given [T](using Buildable[T], Writer[T]) as Pickler[T] =
+  given [T](using Buildable[T], Writer[T]): Pickler[T] =
     BuiltPickler(summon[Buildable[T]], summon[Writer[T]])
   

@@ -21,6 +21,6 @@ package pretty
 object Pretty extends PickleFormat
 
 
-given [O <: java.io.Writer] as PickleWriterSupport[O, Pretty.type]:
+given [O <: java.io.Writer]: PickleWriterSupport[O, Pretty.type] with
   def writerFor(format: Pretty.type, output: O): PickleWriter =
     PrettyPrintPickleWriter(output)

@@ -51,9 +51,9 @@ object Writer:
         case _: (elem *: elems1) =>
           pickle.putField(summonLabel[Labels](idx),
             fieldPickle =>
-              writeInl[elem](productElement[elem](value, idx), fieldPickle))
+              writeInl[elem](value.asInstanceOf[Product].productElement(idx).asInstanceOf[elem], fieldPickle))
           writeElems[elems1, Labels](pickle, value, idx+1)
-        case _: Unit => ()
+        case _: EmptyTuple => ()
   
   inline private def writeOption[NamesAndElems <: Tuple](value: Any, pickle: format.PickleWriter, tag: format.FastTypeTag[?]): Unit =
     inline erasedValue[NamesAndElems] match
@@ -64,7 +64,7 @@ object Writer:
              writeInl[tpe](value.asInstanceOf[tpe], p) 
         )
         else writeOption[tail](value, pickle, tag)
-      case _: Unit => ()
+      case _: EmptyTuple => ()
 
   inline private def writeStruct[MirroredElemTypes <: Tuple, MirroredElemLabels <: Tuple](
     value: Any, pickle: format.PickleWriter, tag: format.FastTypeTag[?]): Unit =

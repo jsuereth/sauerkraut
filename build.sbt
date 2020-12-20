@@ -1,6 +1,6 @@
 import com.typesafe.sbt.license.{DepModuleInfo}
 
-val dottyVersion = "0.24.0"
+val dottyVersion = "3.0.0-M3"
 
 val commonSettings: Seq[Setting[_]] = Seq(
   organization := "com.jsuereth.sauerkraut",
@@ -18,6 +18,7 @@ val commonSettings: Seq[Setting[_]] = Seq(
     case DepModuleInfo(group, id, version) if id contains "junit" => "Used for testing"
     case DepModuleInfo(group, id, version) if id contains "protocjar" => "Used to compile proto files to Java."
   },
+   useScala3doc := true,
 )
 
 val core = project
