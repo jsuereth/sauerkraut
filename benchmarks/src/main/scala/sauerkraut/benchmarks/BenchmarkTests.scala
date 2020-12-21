@@ -17,13 +17,13 @@
 package sauerkraut
 package benchmarks
 
-import core.{Writer,Buildable,given _}
+import core.{Writer,Buildable,given}
 import java.nio.ByteBuffer
 import java.io.OutputStreamWriter
-import format.pb.{RawBinary,Protos,ProtoTypeDescriptor,field,given _}
-import format.json.{Json,given _}
-import format.nbt.{Nbt,given _}
-import format.xml.{Xml,given _}
+import format.pb.{RawBinary,Protos,ProtoTypeDescriptor,field,given}
+import format.json.{Json,given}
+import format.nbt.{Nbt,given}
+import format.xml.{Xml,given}
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 import java.util.concurrent.TimeUnit
@@ -123,7 +123,7 @@ class JavaSerializationBenchmarks extends JmhBenchmarks:
     out.flush()
 
 class SauerkrautProtocolBufferBenchmarks extends JmhBenchmarks:
-  val MyProtos = Protos[SimpleMessage *: LargerMessage *: Unit]()
+  val MyProtos = Protos[SimpleMessage *: LargerMessage *: EmptyTuple]()
   override def load[T: Buildable](store: ByteBuffer): T =
     pickle(MyProtos).from(store).read[T]
   override def save[T: Writer](value: T, store: ByteBuffer): Unit =

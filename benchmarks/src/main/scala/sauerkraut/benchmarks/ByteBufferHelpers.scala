@@ -54,7 +54,8 @@ class ByteBufferInputStream(buffer: ByteBuffer) extends InputStream:
       buffer.get(bytes, off, length)
       length
 
-def (buffer: ByteBuffer) in: InputStream = ByteBufferInputStream(buffer)
-def (buffer: ByteBuffer) reader: Reader = InputStreamReader(buffer.in)
-def (buffer: ByteBuffer) out: OutputStream = ByteBufferOutputStream(buffer)
-def (buffer: ByteBuffer) writer: Writer = OutputStreamWriter(buffer.out)
+extension (buffer: ByteBuffer) 
+  def in: InputStream = ByteBufferInputStream(buffer)
+  def reader: Reader = InputStreamReader(buffer.in)
+  def out: OutputStream = ByteBufferOutputStream(buffer)
+  def writer: Writer = OutputStreamWriter(buffer.out)
