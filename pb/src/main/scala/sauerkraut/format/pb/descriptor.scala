@@ -98,11 +98,10 @@ object ProtoTypeDescriptor:
     inline erasedValue[T] match
       case _: (field *: rest) =>
         summonFieldDescriptor[field] +: summonFieldDescriptorsImpl[rest]
-      case _: Unit => Array()
+      case _: EmptyTuple => Array()
 
   // ENTER THE MACROS
   import scala.quoted._
-  import scala.tasty._
   import deriving._
   import core.internal.InlineHelper._
   private inline def lookupFieldNum[T](name: String): Int =
@@ -128,49 +127,49 @@ object ProtoTypeDescriptor:
   private inline def fieldNumToIndexCheck[T](num: Int): Int =
     ${fieldNumToIndexCheckImpl[T]('num)}
 
-  def fieldNameCheckImpl[T](using t: Type[T], qctx: QuoteContext)(id: Expr[Int]): Expr[String] =
-    import qctx.tasty.{_, given _}
-    import qctx._
-    val helper = MacroHelper(qctx)
+  def fieldNameCheckImpl[T](using t: Type[T])(using Quotes)(id: Expr[Int]): Expr[String] =
+    import quotes.reflect._
+    val helper = MacroHelper()
     val fieldNamesAndTypesWithNum =
-      helper.fieldNamesTypesAndNumber(t.unseal.tpe.asInstanceOf[helper.qctx.tasty.Type])
+    helper.fieldNamesTypesAndNumber(
+      TypeTree.of[T].tpe.asInstanceOf[helper.qctx.reflect.TypeRepr])
     val cases: Iterable[CaseDef] =
-      fieldNamesAndTypesWithNum map {
-        case (label, (tpe, num)) =>
-          CaseDef(Literal(Constant(num)), None, Literal(Constant(label))).asInstanceOf[qctx.tasty.CaseDef]
-      }      
-    // Effectively a pattern match against all known field names to return
-    // the field numbers.
-    Match(id.unseal, cases.toList).seal.asInstanceOf[Expr[String]]
+        fieldNamesAndTypesWithNum map {
+          case (label, (tpe, num)) =>
+            CaseDef(Literal(IntConstant(num)), None, Literal(StringConstant(label)))
+        }      
+    // Effectively a pattern match against all known field nums to return
+    // the field names.
+    Match(id.asTerm, cases.toList).asExpr.asInstanceOf[Expr[String]]
 
-  def fieldNumToIndexCheckImpl[T](using t: Type[T], qctx: QuoteContext)(id: Expr[Int]): Expr[Int] =
-    import qctx.tasty.{_, given _}
-    import qctx._
-    val helper = MacroHelper(qctx)
+  def fieldNumToIndexCheckImpl[T](using t: Type[T])(using Quotes)(id: Expr[Int]): Expr[Int] =
+    import quotes.reflect._
+    val helper = MacroHelper()
     val fieldNamesAndTypesWithNum =
-      helper.fieldNamesTypesAndNumber(t.unseal.tpe.asInstanceOf[helper.qctx.tasty.Type])
+    helper.fieldNamesTypesAndNumber(
+      TypeTree.of[T].tpe.asInstanceOf[helper.qctx.reflect.TypeRepr])
     val cases: Iterable[CaseDef] =
       fieldNamesAndTypesWithNum.zipWithIndex map {
         case ((label, (tpe, num)), idx) =>
-          CaseDef(Literal(Constant(num)), None, Literal(Constant(idx))).asInstanceOf[qctx.tasty.CaseDef]
+          CaseDef(Literal(IntConstant(num)), None, Literal(IntConstant(idx)))
       }
-    Match(id.unseal, cases.toList).seal.asInstanceOf[Expr[Int]] 
+    Match(id.asTerm, cases.toList).asExpr.asInstanceOf[Expr[Int]] 
 
 
-  def fieldNumCheckImpl[T](using t: Type[T], qctx: QuoteContext)(name: Expr[String]): Expr[Int] =
-    import qctx.tasty.{_, given _}
-    import qctx._
-    val helper = MacroHelper(qctx)
+  def fieldNumCheckImpl[T](using t: Type[T])(using Quotes)(name: Expr[String]): Expr[Int] =
+    import quotes.reflect._
+    val helper = MacroHelper()
     val fieldNamesAndTypesWithNum =
-      helper.fieldNamesTypesAndNumber(t.unseal.tpe.asInstanceOf[helper.qctx.tasty.Type])
+    helper.fieldNamesTypesAndNumber(
+      TypeTree.of[T].tpe.asInstanceOf[helper.qctx.reflect.TypeRepr])
     val cases: Iterable[CaseDef] =
       fieldNamesAndTypesWithNum map {
         case (label, (tpe, num)) =>
-          CaseDef(Literal(Constant(label)), None, Literal(Constant(num))).asInstanceOf[qctx.tasty.CaseDef]
+          CaseDef(Literal(StringConstant(label)), None, Literal(IntConstant(num)))
       }
     // Effectively a pattern match against all known field names to return
     // the field numbers.
-    Match(name.unseal, cases.toList).seal.asInstanceOf[Expr[Int]]
+    Match(name.asTerm, cases.toList).asExpr.asInstanceOf[Expr[Int]]
 
 /**
  * A repository for type descriptors mappings that will be used
@@ -207,7 +206,7 @@ object TypeDescriptorRepository:
     inline erasedValue[T] match
       case _: (h *: tail) => 
         Map(loadEntry[h]) ++ loadGivenMappings[tail]
-      case _: Unit => Map.empty
+      case _: EmptyTuple => Map.empty
 
   private inline def loadEntry[T]: (FastTypeTag[T], ProtoTypeDescriptor[T]) =
     summonFrom {

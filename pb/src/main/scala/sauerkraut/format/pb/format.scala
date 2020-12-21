@@ -28,28 +28,28 @@ import com.google.protobuf.{CodedInputStream,CodedOutputStream}
  */ 
 object RawBinary extends PickleFormat
 
-given [O <: OutputStream] as PickleWriterSupport[O, RawBinary.type]:
+given [O <: OutputStream]: PickleWriterSupport[O, RawBinary.type] with
   def writerFor(format: RawBinary.type, output: O): PickleWriter = 
     RawBinaryPickleWriter(CodedOutputStream.newInstance(output))
 
-given [I <: InputStream] as PickleReaderSupport[I, RawBinary.type]:
+given [I <: InputStream]: PickleReaderSupport[I, RawBinary.type] with
   def readerFor(format: RawBinary.type, input: I): PickleReader = 
     RawBinaryPickleReader(CodedInputStream.newInstance(input))
 
 
-given PickleWriterSupport[Array[Byte], RawBinary.type]:
+given PickleWriterSupport[Array[Byte], RawBinary.type] with
   def writerFor(format: RawBinary.type, output: Array[Byte]): PickleWriter = 
     RawBinaryPickleWriter(CodedOutputStream.newInstance(output))
 
-given PickleReaderSupport[Array[Byte], RawBinary.type]:
+given PickleReaderSupport[Array[Byte], RawBinary.type] with
   def readerFor(format: RawBinary.type, input: Array[Byte]): PickleReader =
     RawBinaryPickleReader(CodedInputStream.newInstance(new java.io.ByteArrayInputStream(input)))
 
-given PickleWriterSupport[ByteBuffer, RawBinary.type]:
+given PickleWriterSupport[ByteBuffer, RawBinary.type] with
   def writerFor(format: RawBinary.type, output: ByteBuffer): PickleWriter = 
     RawBinaryPickleWriter(CodedOutputStream.newInstance(output))
 
-given PickleReaderSupport[ByteBuffer, RawBinary.type]:
+given PickleReaderSupport[ByteBuffer, RawBinary.type] with
   def readerFor(format: RawBinary.type, input: ByteBuffer): PickleReader =
     RawBinaryPickleReader(CodedInputStream.newInstance(input))
 
@@ -69,20 +69,20 @@ object Protos:
        val repository = TypeDescriptorRepository[T]()
      }
 
-given [O <: OutputStream, P <: Protos] as PickleWriterSupport[O, P]:
+given [O <: OutputStream, P <: Protos]: PickleWriterSupport[O, P] with
   def writerFor(protos: P, output: O): PickleWriter =
     DescriptorBasedProtoWriter(CodedOutputStream.newInstance(output), protos.repository)
 
-given [P <: Protos] as PickleWriterSupport[ByteBuffer, P]:
+given [P <: Protos]: PickleWriterSupport[ByteBuffer, P] with
   def writerFor(protos: P, output: ByteBuffer): PickleWriter = 
     DescriptorBasedProtoWriter(CodedOutputStream.newInstance(output), protos.repository)
 
 
-given [I <: InputStream, P <: Protos] as PickleReaderSupport[I, P]:
+given [I <: InputStream, P <: Protos]: PickleReaderSupport[I, P] with
   def readerFor(protos: P, input: I): PickleReader =
     DescriptorBasedProtoReader(CodedInputStream.newInstance(input), protos.repository)
 
 
-given [P <: Protos] as PickleReaderSupport[ByteBuffer, P]:
+given [P <: Protos]: PickleReaderSupport[ByteBuffer, P] with
   def readerFor(protos: P, input: ByteBuffer): PickleReader =
     DescriptorBasedProtoReader(CodedInputStream.newInstance(input), protos.repository)

@@ -17,12 +17,10 @@
 package sauerkraut.format.pb
 
 import deriving._
-import scala.tasty._
 import scala.quoted._
 
-class MacroHelper(val qctx: QuoteContext):
-  import qctx.tasty.{_,given _}
-  given QuoteContext = qctx
+class MacroHelper(using val qctx: Quotes):
+  import quotes.reflect._
   /** 
    * Extracts the refinement + label bounds added
    * to a Mirror.Of type when it is a product.
@@ -30,31 +28,31 @@ class MacroHelper(val qctx: QuoteContext):
    * Note: This is INCREDIBLY tied to the current impl.
    */
   object ProductOfRefinement:
-      def unapply(t: Type): Option[(Type, Type)] =
-        t.widen match
-            case Refinement(
-                Refinement(_,
-                  "MirroredElemTypes",
-                  TypeBounds(elems, _)),
-                "MirroredElemLabels",
-                TypeBounds(labels,_)) =>
-              Some(elems, labels)
-            case _ => None
+    def unapply(t: TypeRepr): Option[(TypeRepr, TypeRepr)] =
+      t.widen match
+        case Refinement(
+            Refinement(_,
+              "MirroredElemTypes",
+              TypeBounds(elems, _)),
+            "MirroredElemLabels",
+            TypeBounds(labels,_)) =>
+          Some(elems, labels)
+        case _ => None
   object TupleCons:
-    def unapply(t: Type): Option[(Type, Type)] =
+    def unapply(t: TypeRepr): Option[(TypeRepr, TypeRepr)] =
       t match
-        case AppliedType(TypeRef(_, "*:"),List(head : Type, cons: Type)) => 
+        case AppliedType(TypeRef(_, "*:"),List(head: TypeRepr, cons: TypeRepr)) => 
           Some(head, cons)
         case _ => None // TODO
 
-  def fieldNumberFromType(elem: Type): Int =
+  def fieldNumberFromType(elem: TypeRepr): Int =
     elem match
       // TODO - Ensure this is a `@field(num)` annotation. 
-      case AnnotatedType(tpe, Apply(term, List(Literal(Constant(num))))) =>
+      case AnnotatedType(tpe, Apply(term, List(Literal(IntConstant(num))))) =>
         num.asInstanceOf[Int]
 
   /** Creates a type + name array from tuple-types of ElemLabels + ElemTypes. */
-  def typesAndNames(elems: Type, labels: Type): Map[String, Type] =
+  def typesAndNames(elems: TypeRepr, labels: TypeRepr): Map[String, TypeRepr] =
     (elems, labels) match
       case (TupleCons(elem, nextElems), TupleCons(ConstantString(label), nextLabels)) => 
         Map("test" -> elem)
@@ -63,12 +61,12 @@ class MacroHelper(val qctx: QuoteContext):
 
   /** Extracts the string from any constnat type.  This just toString's the value. */
   object ConstantString:
-    def unapply(t: Type): Option[String] =
+    def unapply(t: TypeRepr): Option[String] =
       t match
         case ConstantType(c) => Some(c.value.toString)
         case _ => None
   
-  def fieldNamesTypesAndNumber(mirrorProductType: Type): Map[String, (Type, Int)] =
+  def fieldNamesTypesAndNumber(mirrorProductType: TypeRepr): Map[String, (TypeRepr, Int)] =
     mirrorProductType.widen match {
       case ProductOfRefinement(elems, labels) =>
         val fields = typesAndNames(elems, labels)

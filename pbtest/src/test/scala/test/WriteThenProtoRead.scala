@@ -3,7 +3,7 @@ package test
 import org.junit.Test
 import org.junit.Assert._
 import sauerkraut.{read, pickle, write}
-import sauerkraut.format.pb.{given _}
+import sauerkraut.format.pb.{given}
 import collection.JavaConverters.asScalaBufferConverter
 
 class TestWriteThenRead:

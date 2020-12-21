@@ -5,7 +5,7 @@ package pb
 import sauerkraut.{read,write}
 import org.junit.Test
 import org.junit.Assert._
-import core.{Buildable,Writer,given _}
+import core.{Buildable,Writer,given}
 
 // Example from: https://developers.google.com/protocol-buffers/docs/encoding
 // ```
