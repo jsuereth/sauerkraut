@@ -25,14 +25,14 @@ import java.nio.channels.ReadableByteChannel
 
 object Xml extends PickleFormat
 
-given [O <: Writer] as PickleWriterSupport[O, Xml.type]:
+given [O <: Writer]: PickleWriterSupport[O, Xml.type] with
   override def writerFor(format: Xml.type, output: O): PickleWriter = 
     XmlPickleWriter(output)
 
-given [I <: InputStream] as PickleReaderSupport[I, Xml.type]:
+given [I <: InputStream]: PickleReaderSupport[I, Xml.type] with
   override def readerFor(format: Xml.type, input: I): PickleReader =
     XmlReader(inputStreamSaxReader(input))
 
-given PickleReaderSupport[String, Xml.type]:
+given PickleReaderSupport[String, Xml.type] with
   override def readerFor(format: Xml.type, input: String): PickleReader =
     XmlReader(inputStreamSaxReader(java.io.ByteArrayInputStream(input.getBytes)))

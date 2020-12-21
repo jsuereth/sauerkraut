@@ -6,7 +6,7 @@ package xml
 import org.junit.Test
 import org.junit.Assert._
 import format.{fastTypeTag, primitiveTag}
-import core.{Writer, Buildable, given _}
+import core.{Writer, Buildable, given}
 import java.io.StringWriter
 
 case class TestDerived(x: Double, b: Int, z: List[String]) 
