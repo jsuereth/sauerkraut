@@ -3,12 +3,12 @@ import com.typesafe.sbt.license.{DepModuleInfo}
 val dottyVersion = "3.0.0-M3"
 
 val commonSettings: Seq[Setting[_]] = Seq(
-  organization := "com.jsuereth.sauerkraut",
-  organizationName := "Google",
+  organization := (ThisBuild / organization).value,
+  organizationName := (ThisBuild / organizationName).value,
   startYear := Some(2019),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),  
-  version := "0.1.0",  
-  scalaVersion := dottyVersion,
+  version := (ThisBuild / version).value,  
+  scalaVersion := (ThisBuild / scalaVersion).value,
   libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
   licenseReportTitle := "third_party_licenses",
   licenseReportDir := baseDirectory.value / "third_party",
@@ -20,6 +20,17 @@ val commonSettings: Seq[Setting[_]] = Seq(
   },
    useScala3doc := true,
 )
+
+// Overall GHA setup + project defaults.
+ThisBuild / githubWorkflowPublish := Nil
+ThisBuild / githubWorkflowArtifactUpload := false
+// ThisBuild / githubWorkflowScalaVersions := Seq(dottyVersion)
+ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8", "adopt@1.11")
+ThisBuild / scalaVersion := dottyVersion
+ThisBuild / crossScalaVersions := Seq(dottyVersion)
+ThisBuild / version := "0.1.0-SNAPSHOT"
+ThisBuild / organization := "com.jsuereth.sauerkraut"
+ThisBuild / organizationName := "Google"
 
 val core = project
   .settings(commonSettings:_*)
