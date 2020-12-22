@@ -4,7 +4,7 @@ package pb
 
 import org.junit.Test
 import org.junit.Assert._
-import core.{Writer,given _}
+import core.{Writer,given}
 
 case class Derived(x: Boolean, test: String) derives Writer
 case class Repeated(x: List[Boolean]) derives Writer

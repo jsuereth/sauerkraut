@@ -48,7 +48,7 @@ case class PrimitiveTypeDescriptor[T](tag: FastTypeTag[T])
 /** A descriptor for collections. */
 case class CollectionTypeDescriptor[Col, T](tag: FastTypeTag[Col], element: ProtoTypeDescriptor[T])
   extends ProtoTypeDescriptor[Col]
-
+  
 object ProtoTypeDescriptor:
   inline def derived[T]: ProtoTypeDescriptor[T] =
     new MessageProtoDescriptor[T] {
@@ -59,10 +59,13 @@ object ProtoTypeDescriptor:
       override def fieldNumber(name: String): Int =
         lookupFieldNum[T](name)
       override def fieldDesc[F](num: Int): ProtoTypeDescriptor[F] =
-        try fieldDescriptors(fieldNumToIndex[T](num)).asInstanceOf[ProtoTypeDescriptor[F]]
+        try
+          fieldDescriptors(fieldNumToIndex[T](num)).asInstanceOf[ProtoTypeDescriptor[F]]
         catch
           case e: java.lang.ArrayIndexOutOfBoundsException =>
             throw RuntimeException(s"Failed with [$tag] to find ${fieldName(num)}($num) at ${fieldNumToIndex[T](num)} in ${fieldDescriptors.mkString("[", ",", "]")}")
+      override def toString(): String =
+        s"MessageProto($tag)"
     }
   inline def primitive[T]: ProtoTypeDescriptor[T] =
     PrimitiveTypeDescriptor(fastTypeTag[T]())
@@ -146,8 +149,8 @@ object ProtoTypeDescriptor:
     import quotes.reflect._
     val helper = MacroHelper()
     val fieldNamesAndTypesWithNum =
-    helper.fieldNamesTypesAndNumber(
-      TypeTree.of[T].tpe.asInstanceOf[helper.qctx.reflect.TypeRepr])
+      helper.fieldNamesTypesAndNumber(
+        TypeTree.of[T].tpe.asInstanceOf[helper.qctx.reflect.TypeRepr])
     val cases: Iterable[CaseDef] =
       fieldNamesAndTypesWithNum.zipWithIndex map {
         case ((label, (tpe, num)), idx) =>

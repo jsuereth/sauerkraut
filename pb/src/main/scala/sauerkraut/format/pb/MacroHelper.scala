@@ -52,12 +52,11 @@ class MacroHelper(using val qctx: Quotes):
         num.asInstanceOf[Int]
 
   /** Creates a type + name array from tuple-types of ElemLabels + ElemTypes. */
-  def typesAndNames(elems: TypeRepr, labels: TypeRepr): Map[String, TypeRepr] =
+  def typesAndNames(elems: TypeRepr, labels: TypeRepr): Seq[(String, TypeRepr)] =
     (elems, labels) match
       case (TupleCons(elem, nextElems), TupleCons(ConstantString(label), nextLabels)) => 
-        Map("test" -> elem)
-        typesAndNames(nextElems, nextLabels) + (label -> elem)
-      case _ => Map.empty
+        (label -> elem) +: typesAndNames(nextElems, nextLabels)
+      case _ => Seq.empty
 
   /** Extracts the string from any constnat type.  This just toString's the value. */
   object ConstantString:
@@ -65,13 +64,14 @@ class MacroHelper(using val qctx: Quotes):
       t match
         case ConstantType(c) => Some(c.value.toString)
         case _ => None
-  
-  def fieldNamesTypesAndNumber(mirrorProductType: TypeRepr): Map[String, (TypeRepr, Int)] =
+
+  /** Extracts an (idemptotently sorted) list of field names, types and "numbers" (via proto annotations). */
+  def fieldNamesTypesAndNumber(mirrorProductType: TypeRepr): Seq[(String, (TypeRepr, Int))] =
     mirrorProductType.widen match {
       case ProductOfRefinement(elems, labels) =>
         val fields = typesAndNames(elems, labels)
         fields.map {
           case (k,v) => (k, (v, fieldNumberFromType(v)))
         }
-      case None => Map.empty
+      case None => Seq.empty
     }
