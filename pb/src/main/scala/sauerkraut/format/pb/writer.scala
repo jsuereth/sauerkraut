@@ -28,8 +28,12 @@ class ProtocolBufferFieldWriter(
     extends PickleWriter with PickleCollectionWriter:
   // Writing a collection should simple write a field multiple times.
   override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
-    work(this)
-    this
+    desc match
+      case CollectionTypeDescriptor(_, elementTag) =>
+        work(ProtocolBufferFieldWriter(out, fieldNum, elementTag))
+        this
+      case _ =>
+        throw new RuntimeException(s"Could not find collection descriptor, found: $desc")
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
     desc match
       case msg: MessageProtoDescriptor[_] =>
@@ -41,7 +45,8 @@ class ProtocolBufferFieldWriter(
         work(DescriptorBasedProtoStructureWriter(tmpOut, msg))
         tmpOut.flush()
         out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
-      case _ => throw RuntimeException(s"Cannot find structure definition from: $desc")
+      case _ => 
+        throw RuntimeException(s"Cannot find structure definition from: $desc")
     this
 
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =

@@ -80,68 +80,67 @@ object Buildable:
   import internal.InlineHelper.{summonLabels,labelIndexLookup}
   /** Derives Builders for any product-like class. */
   inline def derived[T](using m: Mirror.Of[T]): Buildable[T] =
-    new Buildable[T] {
-        // TODO - use the FastTypeTag for this.
-        private val knownFieldNames: Array[String] =
-          summonLabels[m.MirroredElemLabels].toArray
-        override def newBuilder: Builder[T] =
-          inline m match
-            case m: Mirror.ProductOf[T] =>
-               productBuilder[T, m.type](m, knownFieldNames)
-            case m: Mirror.SumOf[T] =>
-              sumBuilder[T, m.type](m)
-            case _ => compiletime.error("Cannot derive builder for non-struct classes")
-    }
-  /** Summons new builders for a tuple of types. */
-  inline def buildersFor[Elems <: Tuple]: List[Builder[_]] =
-    inline erasedValue[Elems] match
-      case _: (h *: tail) => (builderFor[h] :: buildersFor[tail])
-      case _: EmptyTuple => Nil
-  /** Summons a single new builder for a type. */
-  inline def builderFor[T]: Builder[T] =
+    inline m match
+      case m: Mirror.ProductOf[T] =>
+        productBuildable[T, m.type](m)
+      case m: Mirror.SumOf[T] =>
+        sumBuildable[T, m.type](m)
+      case _ => compiletime.error("Cannot derive builder for non-struct classes")
+
+  /** Summons a Buildable for T (or derives it) */
+  inline def buildableFor[T]: Buildable[T] =
     summonFrom {
-      case b: Buildable[T] => b.newBuilder
+      case b: Buildable[T] => b
       // TODO - this is terrible, figure out a way not to
       // waste so much compute for this.
-      case m: Mirror.Of[T] => derived[T].newBuilder
-      case _ => compiletime.error("Unable to construct builder")
+      case m: Mirror.Of[T] => derived[T]
+      case _ => compiletime.error("Unable to construct buildable")
     }
-    
-  inline def productBuilder[T, M <: Mirror.ProductOf[T]](m: M,
-    fieldNames: Array[String]): Builder[T] = 
-    new StructureBuilder[T] {
-        override val tag: format.Struct[T] = format.fastTypeTag[T]().asInstanceOf
-        override def toString(): String = s"Builder[${format.typeName[T]}]"
-        private var fields = buildersFor[m.MirroredElemTypes]
-        override def putField[F](name: String): Builder[F] =
-          // TODO - this throws IndexOutOfBoundsException.  We should have better error message. 
-          try
-            val idx = labelIndexLookup[m.MirroredElemLabels](name)
-            fields(idx).asInstanceOf[Builder[F]]
-          catch
-            case e: IndexOutOfBoundsException =>
-              throw BuildException(s"Unable to find field $name", e)
-        override def result: T =
-          m.fromProduct(
+
+  /** Summons new builders for a tuple of types. */
+  inline def buildablesFor[Elems <: Tuple]: List[Buildable[_]] =
+    inline erasedValue[Elems] match
+      case _: (h *: tail) => (buildableFor[h] :: buildablesFor[tail])
+      case _: EmptyTuple => Nil
+
+  inline def productBuildable[T, M <: Mirror.ProductOf[T]](m: M): Buildable[T] =
+    new Buildable[T]:
+      private val myTag: format.Struct[T] = format.fastTypeTag[T]().asInstanceOf
+      private var myFields = buildablesFor[m.MirroredElemTypes]
+      override def toString(): String = s"Buildable[${format.typeName[T]}]"
+      override def newBuilder: Builder[T] =
+        new StructureBuilder[T]:
+          override def tag = myTag
+          private val fieldBuilders = myFields.map(_.newBuilder)
+          override def toString(): String = s"Builder[${format.typeName[T]}]"
+          override def putField[F](name: String): Builder[F] =
+            try
+              val idx = labelIndexLookup[m.MirroredElemLabels](name)
+              fieldBuilders(idx).asInstanceOf[Builder[F]]
+            catch
+              case e: IndexOutOfBoundsException =>
+                throw BuildException(s"Unable to find field $name", e)
+          override def result: T =
+             m.fromProduct(
               Tuple.fromArray(
                 // TODO - this `map` is now one of the more signficant slowdowns from sauerkraut. 
-                fields
-                .map(b =>
+                fieldBuilders.iterator.map(b =>
                     b.asInstanceOf[Builder[_]].result.asInstanceOf[Object]
                 ).toArray[Object])
-          )
-    }
-  inline def sumBuilder[T, M <: Mirror.SumOf[T]](m: M): Builder[T] =
-    new ChoiceBuilder[T] {
-      private var choiceBuilder: Builder[T] = null
-      // TODO - see if we can encode this as inline function against a pregenerated array of builders.
-      private val builderLookup: Map[String, Builder[_]] =
-        (summonLabels[m.MirroredElemLabels] zip
-        buildersFor[m.MirroredElemTypes].toArray).toMap.asInstanceOf[Map[String, Builder[_]]]
-      override val tag = format.fastTypeTag[T]().asInstanceOf[format.Choice[T]]
-      // TODO - we should allow by-name *or* by-ordinal rather than reverse engineering that junk.
-      override def putChoice[F](name: String): Builder[F] =
-        choiceBuilder = builderLookup(name).asInstanceOf[Builder[T]] 
-        choiceBuilder.asInstanceOf[Builder[F]]
-      override def result: T = choiceBuilder.result
-    }
+            )
+
+  inline def sumBuildable[T, M <: Mirror.SumOf[T]](m: M): Buildable[T] =
+    new Buildable[T]:
+      private val myTag: format.Choice[T] = format.fastTypeTag[T]().asInstanceOf
+      private val myFieldLookup = (summonLabels[m.MirroredElemLabels] zip 
+                                   buildablesFor[m.MirroredElemTypes]).toMap.asInstanceOf[Map[String, Buildable[_]]]
+      override def newBuilder: Builder[T] =
+        new ChoiceBuilder[T]:
+          private var choiceBuilder: Builder[T] = null
+          override val tag = myTag
+          // TODO - we should allow by-name *or* by-ordinal rather than reverse engineering that junk.
+          override def putChoice[F](name: String): Builder[F] =
+            choiceBuilder = myFieldLookup(name).asInstanceOf[Buildable[T]].newBuilder
+            choiceBuilder.asInstanceOf[Builder[F]]
+          override def result: T = choiceBuilder.result
+

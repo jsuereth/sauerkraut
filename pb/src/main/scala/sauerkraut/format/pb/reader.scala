@@ -39,6 +39,9 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
     (b, desc) match
       case (b: core.StructureBuilder[T], s: MessageProtoDescriptor[_]) => readStructure(b, s)
       case (b: core.CollectionBuilder[_,_], s: CollectionTypeDescriptor[_,_]) => pushWithDesc(b.putElement(), s.element.asInstanceOf)
+      case (b: core.PrimitiveBuilder[_], s: PrimitiveTypeDescriptor[_]) => 
+        // TODO - Is this the fastest way?
+        RawBinaryPickleReader(in).push(b)
       case _ => throw BuildException(s"Unable to find proto descriptor for $b", null)
     b
       
@@ -61,12 +64,18 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
               }
             case other => throw BuildException(s"Unable to find descriptor for ${struct.tag}, found $other", null)
         case col: core.CollectionBuilder[_,_] =>
-          // TODO - this is WRONG, we need to lookup the descriptor of
-          // the field.
-          RawBinaryPickleReader(in).push(col.putElement())
+          mapping.fieldDesc(fieldNum) match
+            case desc: CollectionTypeDescriptor[_,_] =>
+              desc.element match
+                case x: PrimitiveTypeDescriptor[_] =>
+                  pushWithDesc(col, mapping.fieldDesc(fieldNum))
+                case other =>
+                  limitByWireType(WIRETYPE_LENGTH_DELIMITED) {
+                    pushWithDesc(col, mapping.fieldDesc(fieldNum))
+                  }
+            case other => throw BuildException(s"Unable to find collection descriptor for ${col}, found $other", null)
         case prim: core.PrimitiveBuilder[_] =>
           RawBinaryPickleReader(in).push(prim)
-        
     var done: Boolean = false
     while !done do
       in.readTag match
