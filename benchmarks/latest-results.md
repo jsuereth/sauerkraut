@@ -20,17 +20,18 @@ Our goal is to:
 | Benchmark | Format    | ByteSize | ns / op   | error (ns / op) |
 | --------- | --------- | -------- | --------- | --------------- |
 | simple    | JavaProto |	1550     | 419.798   | 4.919           |
-| simple    | proto     | 1550     | 428.289   | 4.385           |
-| simple    | raw       | 1550     | 442.104   | 3.000           |
-| simple    | nbt       | 2000     | 746.992   | 9.415           |
-| simple    | json      | 2175     | 1562.585  | 15.149          |
-| simple    | JavaSer   | 3900     | 3365.595  | 203.147         |
-| simple    | xml       | 4775     | 25715.052 | 452.214         |
-| complex   | JavaProto | 4025     | 902.756   | 19.716          |
-| complex   | raw       | 4675     | 4574.543  | 25.797          |
-| complex   | json      | 5875     | 7761.684  | 204.940         |
-| complex   | nbt       | 7350     | 3933.956  | 67.111          |
-| complex   | JavaSer   | 25600    | 31395.595 | 203.147         |
+| simple    | proto     | 1550     | 607.257   | 12.695          |
+| simple    | raw       | 1550     | 553.576   | 3.000           |
+| simple    | nbt       | 2000     | 858.871   | 9.415           |
+| simple    | json      | 2175     | 1775.988  | 15.149          |
+| simple    | JavaSer   | 3900     | 3604.978  | 203.147         |
+| simple    | xml       | 4775     | 39624.193 | 446.492         |
+| complex   | JavaProto | 4025     | 937.747   | 6.992           |
+| complex   | proto     | 4350     | 7134.287  | 176.37          |
+| complex   | raw       | 4675     | 5453.463  | 25.797          |
+| complex   | json      | 5875     | 8676.212  | 204.940         |
+| complex   | nbt       | 7350     | 4613.851  | 67.111          |
+| complex   | JavaSer   | 25600    | 33947.191 | 203.147         |
 | complex   | xml       | 32125    | 44126.052 | 452.214         |
 
 Currently there's a bit too much overhead in Sauerkraut vs. Java's protocol
@@ -50,13 +51,55 @@ large runtime overhead.
   - We were doing validation that tags read MATCH what we see in
     the type.  May be more efficient just to let it throw and catch
     later.   We'll figure out more when we update error reporting.
-- [ ] Figure out where `StrictOptimisedLinearSeqOps.drop` is being called.
-- [ ] Split apart `RawBinaryPickleReader.push` (7.4%)
+- [X] Figure out where `StrictOptimisedLinearSeqOps.drop` is being called.
+- [X] Split apart `RawBinaryPickleReader.push` (7.4%)
 - [ ] Attempt to remove the crazy amount of boxing/unboxing we have w/ Primitives (2.5%)
   - [ ] Erase PrimitiveBuilders in codegen of `Buildable.derived[T]`
   - [ ] Add direct un-boxed signatures for putPrimitive.
 - [ ] Figure out if `Mirror.ProductOf[T]#fromProduct` could be more efficient. (2.9%)
+- [ ] Support compressed repeated fields in PB format
+- [ ] Add size-hint to `CollectionBuilder`
 
+## Stack Tracing Results (2020-12-22)
+
+We did a bunch of changes to support nested proto serialization w/ descriptors.  Here we investigate the stack trace for those directly, as the performance has dropped below that of 'raw', which should not be the case if we've done a good job.
+
+sauerkraut pb format
+```
+## Complex
+[info] ....[Thread state: RUNNABLE]........................................................................
+[info]  10.2%  20.5% scala.collection.immutable.AbstractSeq.<init>
+[info]   3.9%   7.9% sauerkraut.benchmarks.SimpleMessage$$anon$6$$anon$1.<init>
+[info]   3.9%   7.9% sauerkraut.format.pb.DescriptorBasedProtoReader.pushWithDesc
+[info]   3.7%   7.4% com.google.protobuf.CodedInputStream$ArrayDecoder.readInt32
+[info]   3.6%   7.1% com.google.protobuf.CodedOutputStream.newInstance
+[info]   2.2%   4.4% scala.collection.mutable.Growable.addAll
+[info]   1.8%   3.6% com.google.protobuf.Utf8.encode
+[info]   1.6%   3.3% sauerkraut.core.PrimitiveWriter.write
+[info]   1.5%   3.0% com.google.protobuf.CodedInputStream$ArrayDecoder.readString
+[info]   1.5%   2.9% scala.collection.AbstractIterable.<init>
+[info]  16.0%  32.1% <other>
+
+## Simple
+
+[info]  12.6%  25.2% sauerkraut.format.pb.RawBinaryPickleReader.push
+[info]   6.6%  13.1% scala.collection.mutable.Growable.addAll
+[info]   5.2%  10.4% com.google.protobuf.Utf8.encode
+[info]   4.6%   9.1% com.google.protobuf.CodedOutputStream$ArrayEncoder.writeStringNoTag
+[info]   4.1%   8.1% scala.collection.AbstractIterable.coll
+[info]   3.3%   6.6% com.google.protobuf.CodedOutputStream$ArrayEncoder.writeTag
+[info]   2.0%   4.0% sauerkraut.benchmarks.generated.SauerkrautProtocolBufferBenchmarks_writeAndReadSimpleMessage_jmhTest.writeAndReadSimpleMessage_avgt_jmhStub
+[info]   1.9%   3.7% com.google.protobuf.CodedOutputStream$ArrayEncoder.<init>
+[info]   1.6%   3.1% scala.collection.immutable.List.map
+[info]   1.6%   3.1% scala.collection.IterableOnceOps.toArray$
+[info]   6.7%  13.4% <other>
+```
+
+It looks like sauerkraut is suffering from inefficient collection handling.
+
+One obvious issue is the optimisation for collection of primitives down in protocol buffers.  Previously, scala-pickling treated `Array[Int | Long | Double | Float]` specially, and this is certainly something we should do.  Indeed,  Sauerkraut is unable to parse [packed repeated fields](https://developers.google.com/protocol-buffers/docs/encoding#packed) coming out of pb.
+
+Another potential optimisation would be determining more efficient buffering + collection loading.  Currently writing a collection first requires a `size` to be passed into the interface.  We can expand `CollectionBuilder` to be able to pre-allocate collection buffer space using this size if it's been written in the format.  Such a method would be an optional optimisation, and merits performance investigation.  The complication here, e.g. is that formats like protocol buffers would still require *multiple* possible collection encodings to be aggregated together.
 
 ## Stack Tracing Results (post-knownFields-opt 2020-03-01)
 

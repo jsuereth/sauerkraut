@@ -39,9 +39,7 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
     (b, desc) match
       case (b: core.StructureBuilder[T], s: MessageProtoDescriptor[_]) => readStructure(b, s)
       case (b: core.CollectionBuilder[_,_], s: CollectionTypeDescriptor[_,_]) => pushWithDesc(b.putElement(), s.element.asInstanceOf)
-      case (b: core.PrimitiveBuilder[_], s: PrimitiveTypeDescriptor[_]) => 
-        // TODO - Is this the fastest way?
-        RawBinaryPickleReader(in).push(b)
+      case (b: core.PrimitiveBuilder[_], s: PrimitiveTypeDescriptor[_]) => Shared.readPrimitive(in)(b)
       case _ => throw BuildException(s"Unable to find proto descriptor for $b", null)
     b
       
@@ -68,6 +66,7 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
             case desc: CollectionTypeDescriptor[_,_] =>
               desc.element match
                 case x: PrimitiveTypeDescriptor[_] =>
+                  // TODO - Figure out how to pull compressed primitive arrays.
                   pushWithDesc(col, mapping.fieldDesc(fieldNum))
                 case other =>
                   limitByWireType(WIRETYPE_LENGTH_DELIMITED) {
@@ -75,7 +74,7 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
                   }
             case other => throw BuildException(s"Unable to find collection descriptor for ${col}, found $other", null)
         case prim: core.PrimitiveBuilder[_] =>
-          RawBinaryPickleReader(in).push(prim)
+          Shared.readPrimitive(in)(prim)
     var done: Boolean = false
     while !done do
       in.readTag match

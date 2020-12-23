@@ -41,17 +41,7 @@ class RawBinaryPickleReader(in: CodedInputStream)
     b
 
   private def readPrimitive[T](b: core.PrimitiveBuilder[T]): Unit =
-    b.tag match
-        case PrimitiveTag.UnitTag => ()
-        case PrimitiveTag.BooleanTag => b.putPrimitive(in.readBool())
-        case PrimitiveTag.ByteTag => b.putPrimitive(in.readRawByte())
-        case PrimitiveTag.CharTag => b.putPrimitive(in.readInt32().toChar)
-        case PrimitiveTag.ShortTag => b.putPrimitive(in.readInt32().toShort)
-        case PrimitiveTag.IntTag => b.putPrimitive(in.readInt32())
-        case PrimitiveTag.LongTag => b.putPrimitive(in.readInt64())
-        case PrimitiveTag.FloatTag => b.putPrimitive(in.readFloat())
-        case PrimitiveTag.DoubleTag => b.putPrimitive(in.readDouble())
-        case PrimitiveTag.StringTag => b.putPrimitive(in.readString())
+    Shared.readPrimitive(in)(b)
   private def readStructure[T](struct: core.StructureBuilder[T]): Unit =
     // Note: This is on the critical read path, and need to be
     // ultra efficient.  Ideally we hotpath to not use name-based lookup.

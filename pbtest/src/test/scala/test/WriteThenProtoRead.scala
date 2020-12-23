@@ -1,6 +1,6 @@
 package test
 
-import org.junit.Test
+import org.junit.{Test, Ignore}
 import org.junit.Assert._
 import sauerkraut.{read, pickle, write}
 import sauerkraut.format.pb.{given}
@@ -43,3 +43,26 @@ class TestWriteThenRead:
     val in = java.io.ByteArrayInputStream(out.toByteArray)
     val result = pickle(TestProtos).from(in).read[NestedTestPickle2]
     assertEquals(source.getField.getThing, result.field.thing)
+    assertEquals(source.getField.getMore, result.field.more)
+
+  // We dont' support "packed repeated fields" yet.
+  @Ignore
+  @Test def googleWritesSauerReadsPackedRepeated(): Unit =
+    val source = 
+      Test1OuterClass.NestedTest2.newBuilder
+      .setField(
+        Test1OuterClass.Test1.newBuilder
+        .setThing(2)
+        .setMore("test")
+        .addStuff(1)
+        .addStuff(2)
+        .build
+      )
+      .build
+    val out = java.io.ByteArrayOutputStream()
+    source.writeTo(out)
+    val in = java.io.ByteArrayInputStream(out.toByteArray)
+    val result = pickle(TestProtos).from(in).read[NestedTestPickle2]
+    assertEquals(source.getField.getThing, result.field.thing)
+    assertEquals(source.getField.getMore, result.field.more)
+    assertEquals(source.getField.getStuffList.asScala.map(_.intValue), result.field.stuff)

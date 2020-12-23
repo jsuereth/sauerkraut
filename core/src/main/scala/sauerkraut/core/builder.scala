@@ -106,7 +106,7 @@ object Buildable:
   inline def productBuildable[T, M <: Mirror.ProductOf[T]](m: M): Buildable[T] =
     new Buildable[T]:
       private val myTag: format.Struct[T] = format.fastTypeTag[T]().asInstanceOf
-      private var myFields = buildablesFor[m.MirroredElemTypes]
+      private val myFields = buildablesFor[m.MirroredElemTypes].toArray
       override def toString(): String = s"Buildable[${format.typeName[T]}]"
       override def newBuilder: Builder[T] =
         new StructureBuilder[T]:
