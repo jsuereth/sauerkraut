@@ -37,7 +37,19 @@ class TestFastTypeTag:
     fastTypeTag[Adt]() match
       case c: Choice[_] => assertEquals(c.name, "sauerkraut.format.Adt")
       case other => fail(s"$other is not a Choice!")
+
+  @Test def findCustomCollectionTag(): Unit =
+    class MyCrazyType
+    given sauerkraut.core.CollectionPickler[Int, MyCrazyType] = null
+    fastTypeTag[MyCrazyType]() match
+      case c: CollectionTag[_,_] =>
+        System.err.println(s"Collection tag: $c")
+        assertEquals("MyCrazyType", c.name)
+        assertEquals(fastTypeTag[Int](), c.elementTag)
+        assertEquals(fastTypeTag[MyCrazyType](), fastTypeTag[MyCrazyType]())
+      case other => fail(s"$other is not a Collection!")
   @Test def findCollections(): Unit =
+    // TODO - fix these.
     assertEquals(
       Given[Any]("scala.collection.immutable.Seq[scala.Int]"),
       fastTypeTag[Seq[Int]]()

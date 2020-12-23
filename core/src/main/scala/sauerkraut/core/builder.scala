@@ -62,6 +62,8 @@ trait ChoiceBuilder[T] extends Builder[T]:
 
 /** Represents a builder of collections from pickles. */
 trait CollectionBuilder[E, To] extends Builder[To]:
+  /** The FastTypeTag for this collection. */
+  //def tag: format.CollectionTag[To, E]
   /** Places an element into the collection.   Returns a new builder for the new element. */
   def putElement(): Builder[E]
 

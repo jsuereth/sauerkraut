@@ -76,6 +76,18 @@ sealed trait Choice[T] extends NonPrimitiveTag[T]:
       case _ => false
   final override def toString = s"Choice($name)"
 
+/** A collection type, where we can draw out its element type. */
+final class CollectionTag[T, E](
+  val name: String,
+  val elementTag: FastTypeTag[E]
+) extends NonPrimitiveTag[T]:
+  final override def hashCode: Int = name.hashCode
+  final override def equals(other: Any): Boolean =
+    other match
+      case o: CollectionTag[_, _] => o.name == name
+      case _ => false
+  final override def toString = s"Collection($name)"
+
 /** A Reader + Writer are available in given scope for this type. */
 case class Given[T](name: String) extends NonPrimitiveTag[T]
 
@@ -106,20 +118,21 @@ inline def fastTypeTag[T](): FastTypeTag[T] =
         case _: Float => primitiveTag[T]()
         case _: Double => primitiveTag[T]()
         case _: String => primitiveTag[T]()
-        // TODO - file bug for this not working
-        // case _: Unit | Boolean | Char | Short | Int | Long | Float | Double | String => primitiveTag[T]()
         case _ => compiletime.summonFrom {
+          // First we check to see if this is a collection tag:
+          case collection: core.CollectionPickler[e, T] =>
+            CollectionTag(typeName[T], fastTypeTag[e]())
           case m: deriving.Mirror.ProductOf[T] =>
             // TODO - should we encode options/names in the tag?
             new Struct[T] {
-              override def name = typeName[T]
+              override val name = typeName[T]
               override val fields = InlineHelper.summonLabels[m.MirroredElemLabels].toArray
             }
           case m: deriving.Mirror.SumOf[T] =>
             new Choice[T] {
-              override def name = typeName[T]
+              override val name = typeName[T]
               override def ordinal[T](value: T): Int = m.ordinal(value.asInstanceOf[m.MirroredMonoType])
-              override def options = format.options[m.MirroredElemTypes]
+              override val options = format.options[m.MirroredElemTypes]
               override def nameFromOrdinal(ordinal: Int): String =
                 InlineHelper.labelLookup[m.MirroredElemLabels](ordinal)
               override def find(name: String): FastTypeTag[?] = 

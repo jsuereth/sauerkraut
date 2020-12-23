@@ -23,9 +23,12 @@ import scala.collection.mutable.{
   ArrayBuffer
 }
 
+/** A marker trait denoting how to write a collection of similar values. */
+sealed trait CollectionWriter[E, C] extends Writer[C]
+
 // TODO - make generic for all collections. Maybe codegen?
 /** A writer for all collections extending Iterable. */
-final class CollectionWriter[T: Writer]() extends Writer[Iterable[T]]:
+final class GenCollectionWriter[T: Writer]() extends Writer[Iterable[T]]:
   override def write(value: Iterable[T], pickle: PickleWriter): Unit =
     pickle.putCollection(value.size)(c =>
       for item <- value
@@ -39,11 +42,11 @@ final class ArrayWriter[T: Writer : reflect.ClassTag] extends Writer[Array[T]]:
       do c.putElement(itemWriter => summon[Writer[T]].write(item, itemWriter))
     )
 
-given [T](using Writer[T]): Writer[List[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T]): Writer[Vector[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T]): Writer[Seq[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T]): Writer[Iterable[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T]): Writer[collection.mutable.ArrayBuffer[T]] = CollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): Writer[List[T]] = GenCollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): Writer[Vector[T]] = GenCollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): Writer[Seq[T]] = GenCollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): Writer[Iterable[T]] = GenCollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): Writer[collection.mutable.ArrayBuffer[T]] = GenCollectionWriter[T]().asInstanceOf
 given [T](using Writer[T], reflect.ClassTag[T]): Writer[Array[T]] = ArrayWriter[T]()
 
 final class SimpleCollectionBuilder[E: Buildable, To](
