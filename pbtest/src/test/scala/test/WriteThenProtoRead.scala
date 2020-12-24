@@ -46,7 +46,6 @@ class TestWriteThenRead:
     assertEquals(source.getField.getMore, result.field.more)
 
   // We dont' support "packed repeated fields" yet.
-  @Ignore
   @Test def googleWritesSauerReadsPackedRepeated(): Unit =
     val source = 
       Test1OuterClass.NestedTest2.newBuilder

@@ -24,8 +24,7 @@ import scala.collection.mutable.{
 }
 
 /** A marker trait denoting how to write a collection of similar values. */
-sealed trait CollectionWriter[C] extends Writer[C]:
-  def tag: FastTypeTag[C] = ???
+sealed trait CollectionWriter[C] extends Writer[C]
 
 // TODO - make generic for all collections. Maybe codegen?
 /** A writer for all collections extending Iterable. */

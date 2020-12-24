@@ -28,6 +28,14 @@ import WireFormat.{
 
 /** Helper methods for implementing pb + raw protocols. */
 object Shared:
+  /** Reads a compressed repeated primitive field. */
+  def readCompressedPrimitive[E, To](in: CodedInputStream)(b: core.CollectionBuilder[E, To], elementTag: PrimitiveTag[E]): Unit =
+    limitByWireType(in)(WIRETYPE_LENGTH_DELIMITED) {
+      while (!in.isAtEnd()) {
+        readPrimitive(in)(b.putElement().asInstanceOf)
+      }
+    }
+  /** Reads a primitive by using the Builder's tag to determine how to interpret the data. */
   def readPrimitive[T](in: CodedInputStream)(b: core.PrimitiveBuilder[T]): Unit =
     b.tag match
       case PrimitiveTag.UnitTag => ()
@@ -40,3 +48,13 @@ object Shared:
       case PrimitiveTag.FloatTag => b.putPrimitive(in.readFloat())
       case PrimitiveTag.DoubleTag => b.putPrimitive(in.readDouble())
       case PrimitiveTag.StringTag => b.putPrimitive(in.readString())
+
+  inline def limitByWireType[A](in: CodedInputStream)(wireType: Int)(f: => A): Unit =
+    // TODO - if field is a STRING we do not limit by length.
+    if wireType == WIRETYPE_LENGTH_DELIMITED
+    then
+      var length = in.readRawVarint32()
+      val limit = in.pushLimit(length)
+      f
+      in.popLimit(limit)
+    else f

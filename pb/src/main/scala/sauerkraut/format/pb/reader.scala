@@ -50,14 +50,14 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
         try Some(mapping.fieldName(num))
         catch 
           case _: MatchError => None
-    def readField(field: String, fieldNum: Int): Unit =
+    def readField(field: String, fieldNum: Int, fieldWireType: Int): Unit =
       struct.putField(field) match
         case choice: core.ChoiceBuilder[_] =>
           ???
         case struct: core.StructureBuilder[_] =>
           mapping.fieldDesc(fieldNum) match
             case msg: MessageProtoDescriptor[_] =>
-              limitByWireType(WIRETYPE_LENGTH_DELIMITED) {
+              Shared.limitByWireType(in)(WIRETYPE_LENGTH_DELIMITED) {
                 readStructure(struct, msg)
               }
             case other => throw BuildException(s"Unable to find descriptor for ${struct.tag}, found $other", null)
@@ -66,10 +66,12 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
             case desc: CollectionTypeDescriptor[_,_] =>
               desc.element match
                 case x: PrimitiveTypeDescriptor[_] =>
-                  // TODO - Figure out how to pull compressed primitive arrays.
-                  pushWithDesc(col, mapping.fieldDesc(fieldNum))
+                  // Special handle compressed primitive arrays.
+                  if (fieldWireType == WIRETYPE_LENGTH_DELIMITED) 
+                    Shared.readCompressedPrimitive(in)(col, x.tag.asInstanceOf)
+                  else pushWithDesc(col, mapping.fieldDesc(fieldNum))
                 case other =>
-                  limitByWireType(WIRETYPE_LENGTH_DELIMITED) {
+                  Shared.limitByWireType(in)(WIRETYPE_LENGTH_DELIMITED) {
                     pushWithDesc(col, mapping.fieldDesc(fieldNum))
                   }
             case other => throw BuildException(s"Unable to find collection descriptor for ${col}, found $other", null)
@@ -80,13 +82,4 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
       in.readTag match
         case 0 => done = true
         case Tag(wireType, num @ FieldName(field)) =>
-          readField(field, num)
-  inline private def limitByWireType[A](wireType: Int)(f: => A): Unit =
-    // TODO - if field is a STRING we do not limit by length.
-    if wireType == WIRETYPE_LENGTH_DELIMITED
-    then
-      var length = in.readRawVarint32()
-      val limit = in.pushLimit(length)
-      f
-      in.popLimit(limit)
-    else f
+          readField(field, num, wireType)

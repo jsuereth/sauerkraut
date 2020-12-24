@@ -59,16 +59,14 @@ class RawBinaryPickleReader(in: CodedInputStream)
         case Tag(WIRETYPE_LENGTH_DELIMITED,
                  fieldNum @ Field(fieldBuilder: core.PrimitiveBuilder[?])) =>
           // Don't read the length, string read will do this.
-          RawBinaryPickleReader(in).push(fieldBuilder)
+          push(fieldBuilder)
         // All other types are somewhat uniform.
         case Tag(wireType, fieldNum @ Field(fieldBuilder)) =>
-          limitByWireType(wireType) {
+          Shared.limitByWireType(in)(wireType) {
             // For repeating fields, we just add to a collection.
             fieldBuilder match {
-              case x: core.CollectionBuilder[?, ?] =>
-                RawBinaryPickleReader(in).push(x.putElement())
-              case y => 
-                RawBinaryPickleReader(in).push(y)
+              case x: core.CollectionBuilder[?, ?] => push(x.putElement())
+              case y => push(y)
             }
           }
         case _ => done = true
@@ -76,23 +74,16 @@ class RawBinaryPickleReader(in: CodedInputStream)
     in.readTag match
       case 0 => ()
       case Tag(wireType, ordinal) =>
-        limitByWireType(wireType) {
+        Shared.limitByWireType(in)(wireType) {
           // TODO - We should allow pushing choice by ordinal or name...
           val name = choice.tag.nameFromOrdinal(ordinal-1)
-          RawBinaryPickleReader(in).push(choice.putChoice(name))
+          push(choice.putChoice(name))
         }
-  inline private def limitByWireType[A](wireType: Int)(f: => A): Unit =
-    if (wireType == WIRETYPE_LENGTH_DELIMITED)
-      var length = in.readRawVarint32()
-      val limit = in.pushLimit(length)
-      f
-      in.popLimit(limit)
-    else f
   private def readCollection[E, To](c: core.CollectionBuilder[E, To]): Unit  =
     // Collections are written as:
     // [TAG] [LengthInBytes] [LengthOfCollection] [Element]*
     var length = in.readRawVarint32()
     // TODO - sizeHint
     while (length > 0)
-      RawBinaryPickleReader(in).push(c.putElement())
+      push(c.putElement())
       length -= 1
