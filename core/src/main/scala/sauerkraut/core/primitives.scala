@@ -45,7 +45,7 @@ final class SimplePrimitiveBuilder[T](
   override def toString(): String =
     s"Builder[$tag]"
 
-final class PrimitiveBuildable[T](tag: PrimitiveTag[T]) extends Buildable[T]:
+final class PrimitiveBuildable[T](override val tag: PrimitiveTag[T]) extends Buildable[T]:
   override def newBuilder: Builder[T] = SimplePrimitiveBuilder[T](tag)
 
 object PrimitiveBuildable:
@@ -60,6 +60,7 @@ final class StaticValueBuilder[T](
 
 given Writer[Unit] = PrimitiveWriter[Unit]()
 given Buildable[Unit] with
+  override val tag: format.FastTypeTag[Unit] = format.fastTypeTag[Unit]()
   override def newBuilder: Builder[Unit] = 
     StaticValueBuilder(PrimitiveTag.UnitTag, ())
 given Writer[Byte] = PrimitiveWriter[Byte]()

@@ -24,30 +24,13 @@ package core
  */
 trait Pickler[T] extends Buildable[T] with Writer[T]
 
-/**
- * A special marker trait denoting a pickler that can write values of `T` composed
- * of more than on element of type `E`.
- * 
- * This can be used for complex collections, for example
- * `C = Map[String, Int]` and `E = (String, Int)`.
- * 
- * This is a special instance of a normal Pickler, and must be available for collections
- * to participate in hot-path optimisations in pickling formats.
- */
-trait CollectionPickler[E, C] extends Pickler[C]
-
 object Pickler:
   // Helper class to combine readers + writers into picklers.
   private class BuiltPickler[T](b: Buildable[T], w: Writer[T]) extends Pickler[T]:
+    override def tag: format.FastTypeTag[T] = b.tag
     override def newBuilder: Builder[T] = b.newBuilder
     override def write(value: T, pickle: format.PickleWriter): Unit = w.write(value, pickle)
     override def toString(): String = s"BuiltPickler($b, $w)"
-  // Helper class to combine collection readers and writes into picklers.
-  private class BuiltCollectionPickler[E,C](b: CollectionBuildable[E, C], w: CollectionWriter[E, C]) extends Pickler[C]:
-    override def newBuilder: Builder[C] = b.newBuilder
-    override def write(value: C, pickle: format.PickleWriter): Unit = w.write(value, pickle)
-    override def toString(): String = s"BuiltCollectionPickler($b, $w)"
   /** Provides picklers by joining readers + writers. */
   given [T](using Buildable[T], Writer[T]): Pickler[T] =
     BuiltPickler(summon[Buildable[T]], summon[Writer[T]])
-  

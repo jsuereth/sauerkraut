@@ -25,6 +25,8 @@ import format.FastTypeTag
 trait Buildable[T]:
   /** Construct a new builder that can generate type T. */
   def newBuilder: Builder[T]
+  /** Fast runtimee access to type-struture information. */
+  def tag: FastTypeTag[T]
 
 /** 
  * Represents something that can build type T out of a pickle.
@@ -63,7 +65,7 @@ trait ChoiceBuilder[T] extends Builder[T]:
 /** Represents a builder of collections from pickles. */
 trait CollectionBuilder[E, To] extends Builder[To]:
   /** The FastTypeTag for this collection. */
-  //def tag: format.CollectionTag[To, E]
+  def tag: format.CollectionTag[To, E]
   /** Places an element into the collection.   Returns a new builder for the new element. */
   def putElement(): Builder[E]
 
@@ -110,6 +112,7 @@ object Buildable:
       private val myTag: format.Struct[T] = format.fastTypeTag[T]().asInstanceOf
       private val myFields = buildablesFor[m.MirroredElemTypes].toArray
       override def toString(): String = s"Buildable[${format.typeName[T]}]"
+      override def tag: format.FastTypeTag[T] = myTag
       override def newBuilder: Builder[T] =
         new StructureBuilder[T]:
           override def tag = myTag
@@ -134,6 +137,7 @@ object Buildable:
   inline def sumBuildable[T, M <: Mirror.SumOf[T]](m: M): Buildable[T] =
     new Buildable[T]:
       private val myTag: format.Choice[T] = format.fastTypeTag[T]().asInstanceOf
+      override def tag: format.FastTypeTag[T] = myTag
       private val myFieldLookup = (summonLabels[m.MirroredElemLabels] zip 
                                    buildablesFor[m.MirroredElemTypes]).toMap.asInstanceOf[Map[String, Buildable[_]]]
       override def newBuilder: Builder[T] =
