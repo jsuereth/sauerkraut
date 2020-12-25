@@ -117,6 +117,12 @@ object Buildable:
         new StructureBuilder[T]:
           override def tag = myTag
           private val fieldBuilders = myFields.map(_.newBuilder)
+          // Convert from fieldBuilders to "product" with access to
+          // values.
+          private object fieldValues extends Product:
+            override def canEqual(other: Any): Boolean = false
+            override def productArity: Int = fieldBuilders.length
+            override def productElement(idx: Int): Any = fieldBuilders(idx).result
           override def toString(): String = s"Builder[${format.typeName[T]}]"
           override def putField[F](name: String): Builder[F] =
             try
@@ -125,14 +131,7 @@ object Buildable:
             catch
               case e: IndexOutOfBoundsException =>
                 throw BuildException(s"Unable to find field $name", e)
-          override def result: T =
-             m.fromProduct(
-              Tuple.fromArray(
-                // TODO - this `map` is now one of the more signficant slowdowns from sauerkraut. 
-                fieldBuilders.iterator.map(b =>
-                    b.asInstanceOf[Builder[_]].result.asInstanceOf[Object]
-                ).toArray[Object])
-            )
+          override def result: T = m.fromProduct(fieldValues)
 
   inline def sumBuildable[T, M <: Mirror.SumOf[T]](m: M): Buildable[T] =
     new Buildable[T]:

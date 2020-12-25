@@ -27,7 +27,7 @@ import WireFormat.{
 }
 
 object Tag:
-  def unapply(tag: Int): (Int, Int) =
+  inline def unapply(tag: Int): (Int, Int) =
     (WireFormat.getTagWireType(tag), WireFormat.getTagFieldNumber(tag))
 
 class RawBinaryPickleReader(in: CodedInputStream)
