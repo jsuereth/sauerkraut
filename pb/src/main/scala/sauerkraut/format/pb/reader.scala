@@ -60,18 +60,17 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
             case x: PrimitiveTypeDescriptor[_] =>
               if (wireType == WIRETYPE_LENGTH_DELIMITED) 
                 Shared.readCompressedPrimitive(in)(col, x.tag.asInstanceOf)
-                // TODO - directly call putElement here?
-              else pushWithDesc(col, desc)
+              else pushWithDesc(col.putElement(), x.asInstanceOf)
             case other =>
               Shared.limitByWireType(in)(WIRETYPE_LENGTH_DELIMITED) {
-                pushWithDesc(col, desc)
+                pushWithDesc(col.putElement(), other.asInstanceOf)
               }
         case p: core.PrimitiveBuilder[_] => Shared.readPrimitive(in)(p)
       }
     catch
       case e: ClassCastException => throw BuildException(s"Builder and descriptor do not align.  Builder: $fieldBuilder, Descriptor: $desc", null)
 
-  def readStructure[T](struct: core.StructureBuilder[T], mapping: MessageProtoDescriptor[T]): Unit =
+  private def readStructure[T](struct: core.StructureBuilder[T], mapping: MessageProtoDescriptor[T]): Unit =
     object FieldName:
       def unapply(num: Int): Option[String] = 
         try Some(mapping.fieldName(num))

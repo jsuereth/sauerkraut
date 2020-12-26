@@ -53,14 +53,17 @@ final class SimpleCollectionBuilder[E: Buildable, To](
     override val tag: format.CollectionTag[To, E],
     b: ScalaCollectionBuilder[E, To])
     extends CollectionBuilder[E, To]:
-  private var tmpBuilder = List.newBuilder[Builder[E]]
+  private var tmpBuilder = collection.mutable.ArrayBuffer.newBuilder[Builder[E]]
   def putElement(): Builder[E] =
     val nextElement = summon[Buildable[E]].newBuilder
     tmpBuilder += nextElement
     nextElement
   def result: To =
-    // TODO - make efficient?
-    b ++= (tmpBuilder.result.map(_.result))
+    val buffer = tmpBuilder.result
+    b.sizeHint(buffer.size)
+    val i = buffer.iterator
+    while (i.hasNext)
+      b += i.next.result
     b.result
   override def toString: String = s"Builder[$b]"
 
