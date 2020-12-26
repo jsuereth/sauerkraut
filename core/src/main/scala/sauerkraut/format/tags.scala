@@ -62,6 +62,15 @@ sealed trait Struct[T] extends NonPrimitiveTag[T]:
       case o: Struct[_] => o.name == name
       case _ => false
   final override def toString = s"Struct($name)"
+
+private class CustomStruct[T](
+  override val name: String,
+  override val fields: Array[String]
+) extends Struct[T]
+/** Constructs a custom structure-definition tag. */
+inline def structTag[T](fields: Array[String]): Struct[T] =
+  CustomStruct(typeName[T], fields)
+
 /** A non-primitive type, where the value could be one of several options. */
 sealed trait Choice[T] extends NonPrimitiveTag[T]:
   def name: String
@@ -76,9 +85,34 @@ sealed trait Choice[T] extends NonPrimitiveTag[T]:
       case _ => false
   final override def toString = s"Choice($name)"
 
+// TODO - implement this.
+inline def choiceTag[T](/* options */): Choice[T] = ???
+
+/** A collection type, where we can draw out its element type. */
+final class CollectionTag[T, E](
+  val name: String,
+  val elementTag: FastTypeTag[E]
+) extends NonPrimitiveTag[T]:
+  final override def hashCode: Int = name.hashCode + 13*elementTag.hashCode
+  final override def equals(other: Any): Boolean =
+    other match
+      case o: CollectionTag[_, _] => (o.name == name) && (o.elementTag == elementTag)
+      case _ => false
+  final override def toString = s"Collection($name)"
+
+/** 
+ * Constructs a ccollection tag for collections of type T containing repeated
+ * elements of type E. 
+ */
+inline def collectionTag[T : reflect.ClassTag, E](elementTag: FastTypeTag[E]): CollectionTag[T,E] =
+  // TODO - use a macro attempt to grab type constructor or some other
+  // mechanism to get an idempotent AND unique name for collection + element.
+  CollectionTag(summon[reflect.ClassTag[T]].runtimeClass.getName, elementTag)
+
 /** A Reader + Writer are available in given scope for this type. */
 case class Given[T](name: String) extends NonPrimitiveTag[T]
 
+/** Constructs a primitive tag or throws a compiletime error. */
 import compiletime.erasedValue
 inline def primitiveTag[T](): PrimitiveTag[T] =
     inline erasedValue[T] match
@@ -94,6 +128,23 @@ inline def primitiveTag[T](): PrimitiveTag[T] =
         case _: String => PrimitiveTag.StringTag.asInstanceOf[PrimitiveTag[T]]
         case _ => notPrimitiveError[T]
 
+/**
+ * Synthesizes reflection information for type T.
+ * 
+ * This method will attempt to generate a "FastTypeTag" for the type T.
+ * 
+ * - If T is a primitive, you get a PrimitiveTag
+ * - If T is derivable (Struct/Choice) you will get a synthesized tag.
+ * - If T has an implicitly available `Pickler[T]`, then its tag is returned. 
+ * 
+ * This lookup is done in the specified order, allowing the usage of `fastTypeTag`
+ * when deriving an implicitly available `Pickler[T]`, breaking any looped lookup.
+ * 
+ * If you are synthesizing your own `Pickler[T]` by hand, please use one of:
+ * - [[collectionTag]]
+ * - [[choiceTag]]
+ * - [[structTag]]
+ */
 inline def fastTypeTag[T](): FastTypeTag[T] =
     inline erasedValue[T] match
         case _: Unit => primitiveTag[T]()
@@ -106,26 +157,26 @@ inline def fastTypeTag[T](): FastTypeTag[T] =
         case _: Float => primitiveTag[T]()
         case _: Double => primitiveTag[T]()
         case _: String => primitiveTag[T]()
-        // TODO - file bug for this not working
-        // case _: Unit | Boolean | Char | Short | Int | Long | Float | Double | String => primitiveTag[T]()
         case _ => compiletime.summonFrom {
+          // TODO: Createa a mechanism whereby we can override "bad" deriviations for
+          // collections (e.g. List)
           case m: deriving.Mirror.ProductOf[T] =>
-            // TODO - should we encode options/names in the tag?
             new Struct[T] {
-              override def name = typeName[T]
+              override val name = typeName[T]
               override val fields = InlineHelper.summonLabels[m.MirroredElemLabels].toArray
             }
           case m: deriving.Mirror.SumOf[T] =>
             new Choice[T] {
-              override def name = typeName[T]
+              override val name = typeName[T]
               override def ordinal[T](value: T): Int = m.ordinal(value.asInstanceOf[m.MirroredMonoType])
-              override def options = format.options[m.MirroredElemTypes]
+              override val options = format.options[m.MirroredElemTypes]
               override def nameFromOrdinal(ordinal: Int): String =
                 InlineHelper.labelLookup[m.MirroredElemLabels](ordinal)
               override def find(name: String): FastTypeTag[?] = 
                 choiceMatcher[Tuple.Zip[m.MirroredElemLabels, m.MirroredElemTypes]](name)
             }
-          case p: core.Pickler[T] => Given[T](typeName[T])
+          // If the user has given us a pickler, use the reflection they provide.
+          case p: core.Pickler[T] => p.tag
           case _ =>  unsupportedType[T]
         }
 

@@ -25,12 +25,12 @@ package core
 trait Pickler[T] extends Buildable[T] with Writer[T]
 
 object Pickler:
-  // Helper class to combine readers + writers into pickles.
+  // Helper class to combine readers + writers into picklers.
   private class BuiltPickler[T](b: Buildable[T], w: Writer[T]) extends Pickler[T]:
+    override def tag: format.FastTypeTag[T] = b.tag
     override def newBuilder: Builder[T] = b.newBuilder
     override def write(value: T, pickle: format.PickleWriter): Unit = w.write(value, pickle)
     override def toString(): String = s"BuiltPickler($b, $w)"
   /** Provides picklers by joining readers + writers. */
   given [T](using Buildable[T], Writer[T]): Pickler[T] =
     BuiltPickler(summon[Buildable[T]], summon[Writer[T]])
-  

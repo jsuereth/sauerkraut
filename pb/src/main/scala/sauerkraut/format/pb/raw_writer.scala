@@ -41,17 +41,7 @@ class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with Pi
       case _ => work(RawBinaryStructureWriter(out))
     this
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    tag match
-      case PrimitiveTag.UnitTag => ()
-      case PrimitiveTag.BooleanTag => out.writeBoolNoTag(picklee.asInstanceOf[Boolean])
-      case PrimitiveTag.ByteTag => out.write(picklee.asInstanceOf[Byte])
-      case PrimitiveTag.CharTag => out.writeInt32NoTag(picklee.asInstanceOf[Char].toInt)
-      case PrimitiveTag.ShortTag => out.writeInt32NoTag(picklee.asInstanceOf[Short].toInt)
-      case PrimitiveTag.IntTag => out.writeInt32NoTag(picklee.asInstanceOf[Int])
-      case PrimitiveTag.LongTag => out.writeInt64NoTag(picklee.asInstanceOf[Long])
-      case PrimitiveTag.FloatTag => out.writeFloatNoTag(picklee.asInstanceOf[Float])
-      case PrimitiveTag.DoubleTag => out.writeDoubleNoTag(picklee.asInstanceOf[Double])
-      case PrimitiveTag.StringTag => out.writeStringNoTag(picklee.asInstanceOf[String])
+    Shared.writePrimitiveRaw(out)(picklee, tag)
     this
   override def flush(): Unit = out.flush()
 

@@ -4,6 +4,8 @@ import sauerkraut.core.{given}
 import org.junit.Test
 import org.junit.Assert._
 
+import collection.mutable.ArrayBuffer
+
 case class SimpleType()
 case class ParameterizedType[T, U]()
 
@@ -22,6 +24,7 @@ class TestFastTypeTag:
     assertEquals(PrimitiveTag.FloatTag, fastTypeTag[Float]())
     assertEquals(PrimitiveTag.DoubleTag, fastTypeTag[Double]())
     assertEquals(PrimitiveTag.StringTag, fastTypeTag[String]())
+
   @Test def findStructs(): Unit =
     fastTypeTag[SimpleType]() match
       case s: Struct[_] =>
@@ -33,21 +36,33 @@ class TestFastTypeTag:
         assertEquals(s.name, "sauerkraut.format.ParameterizedType[scala.Boolean, sauerkraut.format.SimpleType]")
         assertEquals(s.fields.length, 0)
       case other => fail(s"$other is not a Struct!")
+
   @Test def findSums(): Unit =
     fastTypeTag[Adt]() match
       case c: Choice[_] => assertEquals(c.name, "sauerkraut.format.Adt")
       case other => fail(s"$other is not a Choice!")
+
   @Test def findCollections(): Unit =
+    val example = collectionTag[Array[Int], Int](fastTypeTag[Int]())
+    assertEquals(fastTypeTag[Int](), example.elementTag)
+    assertEquals("[I", example.name)
+
+    val example2 = collectionTag[ArrayBuffer[Float], Float](fastTypeTag[Float]())
+    assertEquals(fastTypeTag[Float](), example2.elementTag)
+    assertEquals("scala.collection.mutable.ArrayBuffer", example2.name)
+
     assertEquals(
-      Given[Any]("scala.collection.immutable.Seq[scala.Int]"),
+      collectionTag[Array[Int], Int](fastTypeTag[Int]()),
+      fastTypeTag[Array[Int]]()
+    )
+    assertEquals(
+      collectionTag[Seq[Int], Int](fastTypeTag[Int]()),
       fastTypeTag[Seq[Int]]()
     )
     assertEquals(
-      Given[Any]("scala.collection.Iterable[scala.Int]"),
+      collectionTag[Iterable[Int], Int](fastTypeTag[Int]()),
       fastTypeTag[Iterable[Int]]()
     )
-    assertEquals(
-      Given[Any]("scala.Array[scala.Int]"),
-      fastTypeTag[Array[Int]]()
-    )
     // Note: List[T] is actually a SUM type.  we may want to special case that one..
+    assertFalse("Inequality works", fastTypeTag[Array[Int]]() == fastTypeTag[Array[Boolean]]())
+    assertFalse("Inequality works", fastTypeTag[Array[Int]]() == fastTypeTag[Array[Float]]())

@@ -28,26 +28,28 @@ class ProtocolBufferFieldWriter(
     extends PickleWriter with PickleCollectionWriter:
   // Writing a collection should simple write a field multiple times.
   override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
-    desc match
-      case CollectionTypeDescriptor(_, elementTag) =>
-        work(ProtocolBufferFieldWriter(out, fieldNum, elementTag))
-        this
-      case _ =>
-        throw new RuntimeException(s"Could not find collection descriptor, found: $desc")
+    try
+      desc.asInstanceOf[CollectionTypeDescriptor[_,_]].element match
+        case p: PrimitiveTypeDescriptor[_] if length > 1 => Shared.writeCompressedPrimitives(out, fieldNum)(work)
+        case elemTag => work(ProtocolBufferFieldWriter(out, fieldNum, elemTag))
+      this
+    catch
+      case e: ClassCastException =>
+        throw new WriteException(s"Could not find collection descriptor, found: $desc", e)
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
-    desc match
-      case msg: MessageProtoDescriptor[_] =>
-        // We need to write a header for this structure proto, which includes its size.
-        // For now, we be lazy and write to temporary array, then do it all at once.
-        // TODO - figure out if we can precompute and do this faster!
-        val tmpByteOut = java.io.ByteArrayOutputStream()
-        val tmpOut = CodedOutputStream.newInstance(tmpByteOut)
-        work(DescriptorBasedProtoStructureWriter(tmpOut, msg))
-        tmpOut.flush()
-        out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
-      case _ => 
-        throw RuntimeException(s"Cannot find structure definition from: $desc")
-    this
+    try
+      // We need to write a header for this structure proto, which includes its size.
+      // For now, we be lazy and write to temporary array, then do it all at once.
+      // TODO - figure out if we can precompute and do this faster!
+      val tmpByteOut = java.io.ByteArrayOutputStream()
+      val tmpOut = CodedOutputStream.newInstance(tmpByteOut)
+      work(DescriptorBasedProtoStructureWriter(tmpOut, desc.asInstanceOf))
+      tmpOut.flush()
+      out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
+      this
+    catch
+      case e: ClassCastException =>
+        throw WriteException(s"Cannot find structure definition from: $desc", e)
 
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
     tag match
@@ -64,6 +66,7 @@ class ProtocolBufferFieldWriter(
     this
 
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
+    // TODO - when writing primitive collection, we won't need fieldNum tags.
     pickler(this)
     this
 
@@ -85,12 +88,12 @@ class DescriptorBasedProtoWriter(
     repository: TypeDescriptorRepository
 ) extends PickleWriter:
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
-    repository.find(tag) match
-      case msg: MessageProtoDescriptor[_] =>
-        work(DescriptorBasedProtoStructureWriter(out, msg))
-      case other =>
-        throw WriteException(s"Unable to find message descriptor for $tag, found $other", null)
-    this
+    try
+      work(DescriptorBasedProtoStructureWriter(out, repository.find(tag).asInstanceOf))
+      this
+    catch
+      case e: ClassCastException =>
+        throw WriteException(s"Unable to find message descriptor for $tag, found ${repository.find(tag)}", e)
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter = ???
   override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter = ???
   override def flush(): Unit = out.flush()

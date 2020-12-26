@@ -44,9 +44,6 @@ class TestWriteThenRead:
     val result = pickle(TestProtos).from(in).read[NestedTestPickle2]
     assertEquals(source.getField.getThing, result.field.thing)
     assertEquals(source.getField.getMore, result.field.more)
-
-  // We dont' support "packed repeated fields" yet.
-  @Ignore
   @Test def googleWritesSauerReadsPackedRepeated(): Unit =
     val source = 
       Test1OuterClass.NestedTest2.newBuilder
@@ -66,3 +63,17 @@ class TestWriteThenRead:
     assertEquals(source.getField.getThing, result.field.thing)
     assertEquals(source.getField.getMore, result.field.more)
     assertEquals(source.getField.getStuffList.asScala.map(_.intValue), result.field.stuff)
+
+
+  @Test def sauerWritesGoogleReadsPackedRepeated(): Unit =
+    val source = 
+      NestedTestPickle2(
+        TestPickle1(2, "test", List(1, 2))
+      )
+    val out = java.io.ByteArrayOutputStream()
+    pickle(TestProtos).to(out).write(source)
+    val result = Test1OuterClass.NestedTest2.parseFrom(
+      java.io.ByteArrayInputStream(out.toByteArray))
+    assertEquals(source.field.thing, result.getField.getThing)
+    assertEquals(source.field.more, result.getField.getMore)
+    assertEquals(source.field.stuff, result.getField.getStuffList.asScala.map(_.intValue))

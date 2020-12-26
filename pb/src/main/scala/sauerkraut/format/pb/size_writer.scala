@@ -23,6 +23,7 @@ import com.google.protobuf.CodedOutputStream
 trait SizeEstimator:
   def finalSize: Int
 
+
 class RawPickleSizeEstimator extends PickleWriter with SizeEstimator:
   private var size: Int = 0
   override def finalSize: Int = size

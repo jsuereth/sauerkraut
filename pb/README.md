@@ -17,6 +17,6 @@ implement two formats for Scala:
 # TODOs
 
 - [ ] Enum support for descriptor-based serialization
-- [ ] Collection support for descriptor-based serialization
+- [X] Collection support for descriptor-based serialization
 - [ ] Optimisation for descriptor-based serialization
 - [ ] ByteChannel input

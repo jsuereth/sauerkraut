@@ -17,64 +17,88 @@
 package sauerkraut
 package core
 
-import format.{PickleReader,PickleWriter}
+import format.{PickleReader,PickleWriter, FastTypeTag}
 import scala.collection.mutable.{
   Builder => ScalaCollectionBuilder,
   ArrayBuffer
 }
 
+/** A marker trait denoting how to write a collection of similar values. */
+sealed trait CollectionWriter[C] extends Writer[C]
+
 // TODO - make generic for all collections. Maybe codegen?
 /** A writer for all collections extending Iterable. */
-final class CollectionWriter[T: Writer]() extends Writer[Iterable[T]]:
+final class GenCollectionWriter[T: Writer]() extends CollectionWriter[Iterable[T]]:
   override def write(value: Iterable[T], pickle: PickleWriter): Unit =
     pickle.putCollection(value.size)(c =>
       for item <- value
       do c.putElement(itemWriter => summon[Writer[T]].write(item, itemWriter))
     )
 /** A writer for raw array types. */
-final class ArrayWriter[T: Writer : reflect.ClassTag] extends Writer[Array[T]]:
+final class ArrayWriter[T: Writer : reflect.ClassTag] extends CollectionWriter[Array[T]]:
   override def write(value: Array[T], pickle: PickleWriter): Unit =
     pickle.putCollection(value.length)(c =>
       for item <- value
       do c.putElement(itemWriter => summon[Writer[T]].write(item, itemWriter))
     )
 
-given [T](using Writer[T]): Writer[List[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T]): Writer[Vector[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T]): Writer[Seq[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T]): Writer[Iterable[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T]): Writer[collection.mutable.ArrayBuffer[T]] = CollectionWriter[T]().asInstanceOf
-given [T](using Writer[T], reflect.ClassTag[T]): Writer[Array[T]] = ArrayWriter[T]()
+given [T](using Writer[T]): CollectionWriter[List[T]] = GenCollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): CollectionWriter[Vector[T]] = GenCollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): CollectionWriter[Seq[T]] = GenCollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): CollectionWriter[Iterable[T]] = GenCollectionWriter[T]().asInstanceOf
+given [T](using Writer[T]): CollectionWriter[collection.mutable.ArrayBuffer[T]] = GenCollectionWriter[T]().asInstanceOf
+given [T](using Writer[T], reflect.ClassTag[T]): CollectionWriter[Array[T]] = ArrayWriter[T]()
 
 final class SimpleCollectionBuilder[E: Buildable, To](
+    override val tag: format.CollectionTag[To, E],
     b: ScalaCollectionBuilder[E, To])
     extends CollectionBuilder[E, To]:
-  private var tmpBuilder = List.newBuilder[Builder[E]]
+  private var tmpBuilder = collection.mutable.ArrayBuffer.newBuilder[Builder[E]]
   def putElement(): Builder[E] =
     val nextElement = summon[Buildable[E]].newBuilder
     tmpBuilder += nextElement
     nextElement
   def result: To =
-    // TODO - make efficient?
-    b ++= (tmpBuilder.result.map(_.result))
+    val buffer = tmpBuilder.result
+    b.sizeHint(buffer.size)
+    val i = buffer.iterator
+    while (i.hasNext)
+      b += i.next.result
     b.result
   override def toString: String = s"Builder[$b]"
 
-final class CollectionBuildable[E: Buildable, To](
-    newColBuilder: () => ScalaCollectionBuilder[E, To])
-    extends Buildable[To]:
-  def newBuilder: Builder[To] =
-    SimpleCollectionBuilder[E, To](newColBuilder())
+trait CollectionBuildable[C] extends Buildable[C]:
+  def tag: FastTypeTag[C]
 
-given [T](using Buildable[T]): Buildable[List[T]] =
-  CollectionBuildable[T, List[T]](() => List.newBuilder)
-given [T](using Buildable[T]): Buildable[Seq[T]] =
-  CollectionBuildable[T, Seq[T]](() => Seq.newBuilder)
-given [T](using Buildable[T]): Buildable[Iterable[T]] =
-  CollectionBuildable[T, Iterable[T]](() => Iterable.newBuilder)
-given [T](using Buildable[T]): Buildable[Vector[T]] =
-  CollectionBuildable[T, Vector[T]](() => Vector.newBuilder)
-given [T](using Buildable[T], reflect.ClassTag[T]): Buildable[Array[T]] =
-  CollectionBuildable[T, Array[T]](() => Array.newBuilder[T])
-given [T](using Buildable[T], reflect.ClassTag[T]): Buildable[ArrayBuffer[T]] =
-  CollectionBuildable[T, ArrayBuffer[T]](() => ArrayBuffer.newBuilder[T])
+final class GenCollectionBuildable[E: Buildable, To](
+    myTag: format.CollectionTag[To, E],
+    newColBuilder: () => ScalaCollectionBuilder[E, To])
+    extends CollectionBuildable[To]:
+  def tag: FastTypeTag[To] = myTag
+  def newBuilder: Builder[To] =
+    SimpleCollectionBuilder[E, To](myTag, newColBuilder())
+
+given [T](using Buildable[T]): CollectionBuildable[List[T]] =
+  GenCollectionBuildable[T, List[T]](
+    format.collectionTag[List[T], T](summon[Buildable[T]].tag),
+    () => List.newBuilder)
+given [T](using Buildable[T]): CollectionBuildable[Seq[T]] =
+  GenCollectionBuildable[T, Seq[T]](
+    format.collectionTag[Seq[T], T](summon[Buildable[T]].tag),
+    () => Seq.newBuilder)
+given [T](using Buildable[T]): CollectionBuildable[Iterable[T]] =
+  GenCollectionBuildable[T, Iterable[T]](
+    format.collectionTag[Iterable[T], T](summon[Buildable[T]].tag),
+    () => Iterable.newBuilder)
+given [T](using Buildable[T]): CollectionBuildable[Vector[T]] =
+  GenCollectionBuildable[T, Vector[T]](
+    format.collectionTag[Vector[T], T](summon[Buildable[T]].tag),
+    () => Vector.newBuilder)
+given [T](using Buildable[T], reflect.ClassTag[T]): CollectionBuildable[ArrayBuffer[T]] =
+  GenCollectionBuildable[T, ArrayBuffer[T]](
+    format.collectionTag[ArrayBuffer[T], T](summon[Buildable[T]].tag),
+    () => ArrayBuffer.newBuilder[T])
+given [T](using Buildable[T], reflect.ClassTag[T]): CollectionBuildable[Array[T]] =
+  GenCollectionBuildable[T, Array[T]](
+    format.collectionTag[Array[T], T](summon[Buildable[T]].tag),
+    () => Array.newBuilder[T])
