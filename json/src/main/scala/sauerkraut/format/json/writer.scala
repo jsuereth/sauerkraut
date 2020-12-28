@@ -23,7 +23,7 @@ import java.io.Writer
 type JsonOutputStream = Writer
 
 class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter:
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
     out.write('[')
     work(JsonPickleCollectionWriter(out))
     out.write(']')

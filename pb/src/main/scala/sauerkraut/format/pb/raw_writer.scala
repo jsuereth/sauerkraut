@@ -27,7 +27,7 @@ import com.google.protobuf.{CodedOutputStream,WireFormat}
  * class/definition skew, but not ok in most serialization applications.
  */
 class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with PickleCollectionWriter:
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
     // When writing 'raw' collections, we just write a length, then each element.
     out.writeInt32NoTag(length)
     work(this)
@@ -69,7 +69,7 @@ class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int)
     extends PickleWriter:
   // Writing a collection should simple write a field multiple times.
   // TODO - see if we can determine type and use the alternative encoding.
-  override def putCollection(length: Int)(work : PickleCollectionWriter => Unit): PickleWriter =
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work : PickleCollectionWriter => Unit): PickleWriter =
     // Collections are written as the the field number repeated.
     work(RawBinaryCollectionInFieldWriter(out, fieldNum))
     this

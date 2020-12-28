@@ -26,7 +26,7 @@ class PrettyPrintPickleWriter(out: Writer, indent: Int = 0) extends PickleWriter
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
     out.write(picklee.toString)
     this
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
     if (length == 0) then
       out.write("[]")
     else

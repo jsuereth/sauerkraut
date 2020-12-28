@@ -36,7 +36,7 @@ class NbtPickleWriter(out: TagOutputStream, optName: Option[String] = None)
     optWriteName()
     out.writePayload[Any](picklee, tag.asInstanceOf)
     this
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
     // We defer writing a tag until we know the collection type.
     out.writeRawTag(NbtTag.TagList)
     optWriteName()
@@ -73,7 +73,7 @@ class NbtCollectionWriter(
     optHeader(out.writeTag(tag))
     out.writePayload[Any](picklee, tag.asInstanceOf)
     this
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
     // We defer writing a tag until we know the collection type.
     optHeader(out.writeRawTag(NbtTag.TagList))
     work(NbtCollectionWriter(out, length))

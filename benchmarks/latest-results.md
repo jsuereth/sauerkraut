@@ -21,14 +21,14 @@ Our goal is to:
 
 | Framework  | Format    | ByteSize | Read (ns / op)   | Write ( ns / op) |
 | ---------  | --------- | -------- | ---------------- | ---------------- |
-| Sauerkraut | proto     | 4125     | 1938.84          | 2384.86           |
-| Sauerkraut | raw       | 4675     | 3081.16          | 1642.89          |
-| Sauerkraut | nbt       | 7350     | 2321.81          | 1523.85          |
-| Sauerkraut | json      | 5875     | 3851.68          | 3858.37          |
-| Sauerkraut | xml       | 32125    | 46972.45         | 8373.64          |
-| Sava Ser   |           | 25600    | 24490.29         | 6742.91          |
-| Kryo       |           |          |                  |                  |
-| JavaProto  |           | 4025     | 380.43           | 522.19           |
+| Sauerkraut | proto     | 165      | 1938.84          | 2384.86          |
+| Sauerkraut | raw       | 197      | 3081.16          | 1642.89          |
+| Sauerkraut | nbt       | 294      | 2321.81          | 1523.85          |
+| Sauerkraut | json      | 235      | 3851.68          | 3858.37          |
+| Sauerkraut | xml       | 1285     | 46972.45         | 8373.64          |
+| Java Ser   |           | 1024     | 24490.29         | 6742.91          |
+| Kryo       |           | 275      | 1748.03          | 1465.01          |
+| JavaProto  |           | 161      | 380.43           | 522.19           |
 
 Currently there's a bit too much overhead in Sauerkraut vs. Java's protocol
 buffers. It still beats Java Serialization on all counts, but that's

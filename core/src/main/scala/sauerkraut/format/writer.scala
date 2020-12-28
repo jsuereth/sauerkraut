@@ -47,7 +47,7 @@ trait PickleWriter:
    * @return  A pickler which can serialzie the collection.
    *          `endCollection()` must be called on this for correct behavior.
    */
-  def putCollection(length: Int /*, tag: CollectionTag[_,_]*/)(work: PickleCollectionWriter => Unit): PickleWriter
+  def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter
   /**
    * Denotes a 'choice' type that needs to be written.
    * 

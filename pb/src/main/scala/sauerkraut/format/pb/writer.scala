@@ -27,7 +27,7 @@ class ProtocolBufferFieldWriter(
     desc: ProtoTypeDescriptor[?]) 
     extends PickleWriter with PickleCollectionWriter:
   // Writing a collection should simple write a field multiple times.
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
     try
       desc.asInstanceOf[CollectionTypeDescriptor[_,_]].element match
         case p: PrimitiveTypeDescriptor[_] if length > 1 => Shared.writeCompressedPrimitives(out, fieldNum)(work)
@@ -95,5 +95,5 @@ class DescriptorBasedProtoWriter(
       case e: ClassCastException =>
         throw WriteException(s"Unable to find message descriptor for $tag, found ${repository.find(tag)}", e)
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter = ???
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter = ???
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = ???
   override def flush(): Unit = out.flush()

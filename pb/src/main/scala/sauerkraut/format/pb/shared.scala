@@ -91,7 +91,7 @@ class CompressedPrimitiveCollectionWriter(out: CodedOutputStream) extends Pickle
     pickler(this)
     this
   // TODO - Throw better unsupported operations errors if we don't have the right shape.
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter = ???
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = ???
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter = ???
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
     Shared.writePrimitiveRaw(out)(picklee, tag)
@@ -108,7 +108,7 @@ class CompressedPrimitiveCollectionSizeEstimator extends PickleCollectionWriter 
     pickler(this)
     this
   // TODO - Throw better unsupported operations errors if we don't have the right shape.
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter = ???
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = ???
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter = ???
   override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
     val tmp: Int = tag match

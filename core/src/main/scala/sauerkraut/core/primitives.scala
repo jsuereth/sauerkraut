@@ -20,7 +20,7 @@ package core
 import format.{primitiveTag,PrimitiveTag}
 
 // A writer of primitive values.
-final class PrimitiveWriter[T](tag: PrimitiveTag[T]) extends Writer[T]:
+final class PrimitiveWriter[T](override val tag: PrimitiveTag[T]) extends Writer[T]:
   override def write(value: T, pickle: format.PickleWriter): Unit =
     pickle.putPrimitive(value, tag)
 

@@ -28,7 +28,7 @@ class RawPickleSizeEstimator extends PickleWriter with SizeEstimator:
   private var size: Int = 0
   override def finalSize: Int = size
   override def flush(): Unit = ()
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
     size += CodedOutputStream.computeInt32SizeNoTag(length)
     val estimate = RawCollectionSizeEstimateWriter()
     work(estimate)
@@ -109,7 +109,7 @@ class FieldSizeEstimateWriter(fieldNum: Int,
             fieldNum, picklee.asInstanceOf[String])
     this
   // TODO - Primitives behave differently from messages...
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter = 
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = 
     size += CodedOutputStream.computeTagSize(fieldNum)
     size += CodedOutputStream.computeInt32SizeNoTag(length)
     work(this)
