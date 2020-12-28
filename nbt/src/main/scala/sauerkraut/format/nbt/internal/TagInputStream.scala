@@ -30,7 +30,8 @@ class TagInputStream(in: DataInputStream):
 
   /** Reads an encoded length, part of ListTag/CompoundTag. */
   def readLength(): Int = in.readInt()
-  /** Reads a payload of the given pickle type. 
+  /**
+   * Reads a payload of the given pickle type. 
    * This must mirror TagOuputStream.writePayload.
    */
   def readPayload[T](tag: PrimitiveTag[T]): T =

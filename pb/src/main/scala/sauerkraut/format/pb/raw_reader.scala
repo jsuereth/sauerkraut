@@ -83,7 +83,7 @@ class RawBinaryPickleReader(in: CodedInputStream)
     // Collections are written as:
     // [TAG] [LengthInBytes] [LengthOfCollection] [Element]*
     var length = in.readRawVarint32()
-    // TODO - sizeHint
+    c.sizeHint(length)
     while (length > 0)
       push(c.putElement())
       length -= 1

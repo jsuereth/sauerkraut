@@ -302,12 +302,12 @@ Latest status/analysis can be found in the [benchmarks directory](benchmarks/lat
 - [X] Basic comparison of all formats
 - [X] Size-of-Pickle measurement
 - [ ] Well-thought out dataset for reading/writing
-- [ ] Isolated read vs. write testing
+- [X] Isolated read vs. write testing
 - [ ] Comparison against other frameworks.
   - [X] RawBinary + Protos vs. protocol buffer java implementation
   - [ ] Json Reading vs. raw JAWN to AST (measure overhead)
   - [ ] Jackson
-  - [ ] Avro
+  - [X] Avro
   - [ ] Thrift
   - [ ] Circe
   - [ ] uPickle

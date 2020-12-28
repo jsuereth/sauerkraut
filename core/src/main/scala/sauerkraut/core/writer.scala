@@ -21,6 +21,8 @@ package core
 /** A Writer from some format of objects of the type T. */
 trait Writer[T]:
   def write(value: T, pickle: format.PickleWriter): Unit
+  /** Type tag for what this can write. */
+  // def tag: FastTypeTag[T]
 
 object Writer:
   import scala.compiletime.{constValue,erasedValue,summonFrom}

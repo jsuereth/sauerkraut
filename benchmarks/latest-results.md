@@ -57,8 +57,46 @@ large runtime overhead.
   - [ ] Erase PrimitiveBuilders in codegen of `Buildable.derived[T]`
   - [ ] Add direct un-boxed signatures for putPrimitive.
 - [ ] Figure out if `Mirror.ProductOf[T]#fromProduct` could be more efficient. (2.9%)
-- [ ] Support compressed repeated fields in PB format
+- [X] Support compressed repeated fields in PB format
 - [ ] Add size-hint to `CollectionBuilder`
+
+## New Stack Tracing Results (2020-12-24)
+
+Writing pb format
+```
+[info]   7.8%  15.6% com.google.protobuf.CodedOutputStream$AbstractBufferedEncoder.bufferUInt64NoTag
+[info]   6.8%  13.7% com.google.protobuf.Utf8.encode
+[info]   6.0%  11.9% com.google.protobuf.CodedOutputStream$AbstractBufferedEncoder.bufferUInt32NoTag
+[info]   4.1%   8.3% com.google.protobuf.CodedOutputStream$AbstractBufferedEncoder.bufferInt32NoTag
+[info]   3.8%   7.7% scala.collection.mutable.Growable.addAll
+[info]   2.8%   5.7% scala.collection.AbstractIterable.<init>
+[info]   2.3%   4.7% sauerkraut.format.pb.format$package$given_PickleWriterSupport_O_P.writerFor
+[info]   2.0%   3.9% scala.collection.immutable.ArraySeq.copyToArray
+[info]   2.0%   3.9% sauerkraut.benchmarks.SimpleMessage$$anon$1.write
+[info]   1.5%   2.9% sauerkraut.benchmarks.WriteBenchmarks.setUp$$anonfun$1
+[info]  10.9%  21.8% <other>
+```
+
+Reading pb format
+```
+[info]  10.4%  20.8% scala.collection.immutable.AbstractSeq.<init>
+[info]   4.4%   8.8% sauerkraut.format.pb.DescriptorBasedProtoReader.pushWithDesc
+[info]   3.1%   6.2% sauerkraut.format.pb.DescriptorBasedProtoReader.readStructure
+[info]   2.7%   5.4% com.google.protobuf.CodedOutputStream.newInstance
+[info]   2.6%   5.1% scala.collection.mutable.Growable.addAll
+[info]   2.1%   4.2% sauerkraut.core.PrimitiveWriter.write
+[info]   1.8%   3.6% com.google.protobuf.Utf8.encode
+[info]   1.7%   3.4% sauerkraut.benchmarks.SimpleMessage$$anon$6$$anon$1.<init>
+[info]   1.7%   3.4% scala.collection.AbstractIterable.<init>
+[info]   1.4%   2.9% sauerkraut.format.pb.DescriptorBasedProtoReader.readField$1
+[info]  18.2%  36.4% <other>
+```
+
+Here we notice a few issues:
+- Collection Handling still needs work (`Growable.addAll` usage, `Abstract{Seq|Iterable}.<init>`)
+- When writing, we are suffering from encoding into an array buffer, then using its resultisng size instead of precomputing size.
+- `pushWithDesc` is contributing a significant amount to performance.  We should attempt to
+  optimise this further if we can.
 
 ## Stack Tracing Results (2020-12-22)
 

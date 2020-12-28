@@ -29,7 +29,6 @@ import WireFormat.{
 class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepository)
     extends PickleReader:
   def push[T](b: core.Builder[T]): core.Builder[T] =
-    // TODO - put ".tag" on Builder? 
     b match
       case b: core.StructureBuilder[T] =>
         pushWithDesc(b, repo.find(b.tag))

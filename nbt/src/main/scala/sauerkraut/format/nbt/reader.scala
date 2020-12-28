@@ -50,6 +50,7 @@ class NbtPickleReader(in: TagInputStream)
     // Read type of elements in the collection.
     in.readTag() // TODO - assert
     var length = in.readLength()
+    b.sizeHint(length)
     while (length > 0)
       readPayloadFor(b.putElement())
       length -= 1

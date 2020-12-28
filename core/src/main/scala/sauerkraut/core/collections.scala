@@ -54,6 +54,9 @@ final class SimpleCollectionBuilder[E: Buildable, To](
     b: ScalaCollectionBuilder[E, To])
     extends CollectionBuilder[E, To]:
   private var tmpBuilder = collection.mutable.ArrayBuffer.newBuilder[Builder[E]]
+  def sizeHint(length: Int): CollectionBuilder[E, To] =
+    tmpBuilder.sizeHint(length)
+    this
   def putElement(): Builder[E] =
     val nextElement = summon[Buildable[E]].newBuilder
     tmpBuilder += nextElement

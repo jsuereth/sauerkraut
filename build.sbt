@@ -86,6 +86,7 @@ val benchmarks = project
     fork in run := true,
     javaOptions in run += "-Xmx6G",
     libraryDependencies += "org.openjdk.jmh" % "jmh-core" % "1.23",
+    libraryDependencies += "com.esotericsoftware" % "kryo" % "5.0.3",
     protobufRunProtoc in ProtobufConfig := { args =>
       com.github.os72.protocjar.Protoc.runProtoc("-v370" +: args.toArray)
     }

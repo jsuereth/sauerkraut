@@ -38,7 +38,7 @@ class JsonReader(value: ast.JValue) extends PickleReader:
   def readCollection[E, To](p: CollectionBuilder[E,To]): Unit =
     value match
         case ast.JArray(values) =>
-          // TODO - sizeHint
+          p.sizeHint(values.length)
           var idx = 0
           while (idx < values.length)
             JsonReader(values(idx)).push(p.putElement())

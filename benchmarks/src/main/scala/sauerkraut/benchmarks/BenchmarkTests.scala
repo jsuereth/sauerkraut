@@ -30,14 +30,26 @@ import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ArrayBuffer
 
 
+// -- Saurkraut Classes --
 case class SimpleMessage(value: Int @field(2), message: String @field(1))
     derives Writer, Buildable, ProtoTypeDescriptor
-
 case class LargerMessage(
   messages: ArrayBuffer[SimpleMessage] @field(1),
   otherNums: ArrayBuffer[Double] @field(2),
   ints: ArrayBuffer[Long] @field(3)
 ) derives Writer, Buildable, ProtoTypeDescriptor
+
+// -- Java framework classes --
+class JavaSimpleMessage {
+  var value: Int = 0
+  var message: String = ""
+}
+class JavaLargerMessage {
+  var messages = ArrayBuffer[JavaSimpleMessage]()
+  var otherNums = ArrayBuffer[Double]()
+  var ints = ArrayBuffer[Long]()
+}
+
 
 val EXAMPLE_INT=1124312542
 val EXAMPLE_STRING="This is a test of simple byte serialization for us all"
@@ -147,6 +159,38 @@ object JavaSerializationBenchmarks extends SauerkrautBenchmarkConfig:
     out.writeObject(value)
     out.flush()
 
+object KryoSerializationBenchmarks extends BenchmarkConfig[JavaLargerMessage]:
+  private val kryo = com.esotericsoftware.kryo.Kryo()
+  kryo.setRegistrationRequired(false)
+  override def message =
+    val outer = JavaLargerMessage()
+    outer.messages = ArrayBuffer({
+      val tmp = JavaSimpleMessage()
+      tmp.value = EXAMPLE_INT
+      tmp.message = EXAMPLE_STRING
+      tmp
+    }, {
+      val tmp = JavaSimpleMessage()
+      tmp.value = 0
+      tmp.message = ""
+      tmp
+    }, {
+      val tmp = JavaSimpleMessage()
+      tmp.value = -1
+      tmp.message = "ANother string"
+      tmp
+    })
+    outer.otherNums = ArrayBuffer(1.0, -0.000001, 1000000000000000.0101010)
+    outer.ints = ArrayBuffer(1,2,3,4,5,-1,-2,-4,1425,0)
+    outer
+  override val name: String = "java_kryo"
+  override def load(store: ByteBuffer): JavaLargerMessage =
+    val in = com.esotericsoftware.kryo.io.Input(store.in)
+    kryo.readObject(in, classOf[JavaLargerMessage])
+  override def save(value: JavaLargerMessage, store: ByteBuffer): Unit =
+    val out = com.esotericsoftware.kryo.io.Output(store.out)
+    kryo.writeObject(out, value)
+    out.close()
 
 /** Helper to record the # of bytes written in a benchmark. */
 @AuxCounters(AuxCounters.Type.EVENTS)
@@ -163,7 +207,8 @@ val benchmarkConfigs = Set(
   SauerkrautProtoBenchmarkConfig,
   // Competitor frameworks
   JavaSerializationBenchmarks,
-  ProtocolBufferBenchmarkConfig)
+  ProtocolBufferBenchmarkConfig,
+  KryoSerializationBenchmarks)
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
@@ -171,7 +216,7 @@ val benchmarkConfigs = Set(
 class ReadBenchmarks:
   private var config: BenchmarkConfig[?] = null
   private var buffer = ByteBuffer.allocate(1024*1024)
-  @Param(Array("raw", "proto", "nbt", "json", "xml", "java_pb", "java_ser"))
+  @Param(Array("raw", "proto", "nbt", "json", "xml", "java_pb", "java_ser", "java_kryo"))
   var configName: String = null;
   @Setup(Level.Invocation) def setUp(): Unit =
     config = benchmarkConfigs.find(_.name == configName).get
@@ -188,7 +233,7 @@ class ReadBenchmarks:
 class WriteBenchmarks:
   private var config: BenchmarkConfig[?] = null
   private var buffer = ByteBuffer.allocate(1024*1024)
-  @Param(Array("raw", "proto", "nbt", "json", "xml", "java_pb", "java_ser"))
+  @Param(Array("raw", "proto", "nbt", "json", "xml", "java_pb", "java_ser", "java_kryo"))
   var configName: String = null;
   @Setup(Level.Invocation) def setUp(): Unit =
     config = benchmarkConfigs.find(_.name == configName).get

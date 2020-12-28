@@ -64,6 +64,8 @@ trait ChoiceBuilder[T] extends Builder[T]:
 
 /** Represents a builder of collections from pickles. */
 trait CollectionBuilder[E, To] extends Builder[To]:
+  /** Hint how large the size of the collection will be.  Must be called before `putElement`. */
+  def sizeHint(length: Int): CollectionBuilder[E,To]
   /** The FastTypeTag for this collection. */
   def tag: format.CollectionTag[To, E]
   /** Places an element into the collection.   Returns a new builder for the new element. */
