@@ -17,32 +17,25 @@ Our goal is to:
 
 ## Full Results (2020-03-05)
 
-| Benchmark | Format    | ByteSize | ns / op   | error (ns / op) |
-| --------- | --------- | -------- | --------- | --------------- |
-| simple    | JavaProto |	1550     | 419.798   | 4.919           |
-| simple    | proto     | 1550     | 607.257   | 12.695          |
-| simple    | raw       | 1550     | 553.576   | 3.000           |
-| simple    | nbt       | 2000     | 858.871   | 9.415           |
-| simple    | json      | 2175     | 1775.988  | 15.149          |
-| simple    | JavaSer   | 3900     | 3604.978  | 203.147         |
-| simple    | xml       | 4775     | 39624.193 | 446.492         |
-| complex   | JavaProto | 4025     | 937.747   | 6.992           |
-| complex   | proto     | 4350     | 7134.287  | 176.37          |
-| complex   | raw       | 4675     | 5453.463  | 25.797          |
-| complex   | json      | 5875     | 8676.212  | 204.940         |
-| complex   | nbt       | 7350     | 4613.851  | 67.111          |
-| complex   | JavaSer   | 25600    | 33947.191 | 203.147         |
-| complex   | xml       | 32125    | 44126.052 | 452.214         |
+*Test #1 - Nested messages + primitive collections*
+
+| Framework  | Format    | ByteSize | Read (ns / op)   | Write ( ns / op) |
+| ---------  | --------- | -------- | ---------------- | ---------------- |
+| Sauerkraut | proto     | 4125     | 1938.84          | 2384.86           |
+| Sauerkraut | raw       | 4675     | 3081.16          | 1642.89          |
+| Sauerkraut | nbt       | 7350     | 2321.81          | 1523.85          |
+| Sauerkraut | json      | 5875     | 3851.68          | 3858.37          |
+| Sauerkraut | xml       | 32125    | 46972.45         | 8373.64          |
+| Sava Ser   |           | 25600    | 24490.29         | 6742.91          |
+| Kryo       |           |          |                  |                  |
+| JavaProto  |           | 4025     | 380.43           | 522.19           |
 
 Currently there's a bit too much overhead in Sauerkraut vs. Java's protocol
 buffers. It still beats Java Serialization on all counts, but that's
 nothing impressive in today's world.
 
-Let's look into likely suspects for this 2x overhead on simple messages.
-
-Note: For complex messages our overhead in ByteSize is likely due to not
-treating collections of primitives specially, which also accounts for a
-large runtime overhead.
+Below is a journal of investigation and experiments in trying to improve these
+numbers from the naive implementation into something ready-for-production.
 
 ## Areas to investigate:
 
