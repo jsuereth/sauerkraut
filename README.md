@@ -318,5 +318,5 @@ Latest status/analysis can be found in the [benchmarks directory](benchmarks/lat
 
 Thanks to everyone who contributed to the original pickling library for inspiration, with a few callouts.
 
-- Heather Miller + Phillip Haller for the original idea, innovation and motivation for Scala.
+- Heather Miller + Philipp Haller for the original idea, innovation and motivation for Scala.
 - Havoc Pennington + Eugene Yokota for helping define what's important when pickling a protocol and evolving that protocol.
