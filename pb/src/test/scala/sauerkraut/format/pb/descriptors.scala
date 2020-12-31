@@ -51,7 +51,6 @@ class TestProtocolBufferWithDesc:
     val out = java.io.ByteArrayOutputStream()
     pickle(MyProtos).to(out).write(value)
     val bytes = out.toByteArray()
-    System.err.println(s"Pickled:\n${hexString(bytes)}\n\n")
     val in = java.io.ByteArrayInputStream(bytes)
     assertEquals(s"Failed to roundtrip", value, pickle(MyProtos).from(in).read[T])
 

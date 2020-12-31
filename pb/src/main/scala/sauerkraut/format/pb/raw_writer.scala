@@ -27,22 +27,26 @@ import com.google.protobuf.{CodedOutputStream,WireFormat}
  * class/definition skew, but not ok in most serialization applications.
  */
 class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with PickleCollectionWriter:
-  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
-    // When writing 'raw' collections, we just write a length, then each element.
-    out.writeInt32NoTag(length)
-    work(this)
-    this
-  override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
-    pickler(this)
-    this
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
-    tag match
-      case ctag: Choice[a] => work(RawBinaryChoiceWriter(ctag.ordinal(picklee.asInstanceOf[a]), out)) 
-      case _ => work(RawBinaryStructureWriter(out))
-    this
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    Shared.writePrimitiveRaw(out)(picklee, tag)
-    this
+  override def sizeHint(numElements: Int): Unit = 
+    out.writeInt32NoTag(numElements)
+  override def writeElement[T: core.Writer](value: T): Unit =
+    summon[core.Writer[T]].write(value, this)  
+  override def writeCollection[T: core.CollectionWriter](value: T): Unit =
+    summon[core.CollectionWriter[T]].writeCollection(value, this)
+  override def writeStructure[T: core.StructureWriter ](value: T): Unit =
+    summon[core.StructureWriter[T]].writeStructure(value, RawBinaryStructureWriter(out))
+  override def writeChoice[T: core.ChoiceWriter ](value: T): Unit =
+    summon[core.ChoiceWriter[T]].writeChoice(value, RawBinaryChoiceWriter(out))
+  override def writeUnit(): Unit = ()
+  override def writeBoolean(value: Boolean): Unit = out.writeBoolNoTag(value)
+  override def writeByte(value: Byte): Unit = out.write(value)
+  override def writeChar(value: Char): Unit = out.writeInt32NoTag(value.toInt)
+  override def writeShort(value: Short): Unit = out.writeInt32NoTag(value.toInt)
+  override def writeInt(value: Int): Unit = out.writeInt32NoTag(value)
+  override def writeLong(value: Long): Unit = out.writeInt64NoTag(value)
+  override def writeFloat(value: Float): Unit = out.writeFloatNoTag(value)
+  override def writeDouble(value: Double): Unit = out.writeDoubleNoTag(value)
+  override def writeString(value: String): Unit = out.writeStringNoTag(value)
   override def flush(): Unit = out.flush()
 
 /** 
@@ -50,63 +54,58 @@ class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with Pi
  * a new index, starting with 1 and moving up.
  */
 class RawBinaryStructureWriter(out: CodedOutputStream) extends PickleStructureWriter:
-  private var currentFieldIndex = 0
-  override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
-    currentFieldIndex += 1
-    pickler(RawBinaryFieldWriter(out, currentFieldIndex))
-    this
+  override def writeField[T: core.Writer](number: Int, name: String, value: T): Unit =
+    summon[core.Writer[T]].write(value, RawBinaryFieldWriter(out, number+1))
 
 /** 
  * An unknown protocol buffer structure writer for enums.  It simply looks up the type-level ordinal.
  */
-class RawBinaryChoiceWriter(ordinal: Int, out: CodedOutputStream) extends PickleStructureWriter:
-  private var currentFieldIndex = 0
-  override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
-    pickler(RawBinaryFieldWriter(out, ordinal+1))
-    this
+class RawBinaryChoiceWriter(out: CodedOutputStream) extends PickleChoiceWriter:
+  override def writeChoice[T: core.Writer](number: Int, name: String, value: T): Unit =
+    summon[core.Writer[T]].write(value, RawBinaryFieldWriter(out, number+1))
 
 class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int) 
     extends PickleWriter:
   // Writing a collection should simple write a field multiple times.
   // TODO - see if we can determine type and use the alternative encoding.
-  override def putCollection(length: Int, tag: CollectionTag[_,_])(work : PickleCollectionWriter => Unit): PickleWriter =
-    // Collections are written as the the field number repeated.
-    work(RawBinaryCollectionInFieldWriter(out, fieldNum))
-    this
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
+  override def writeStructure[T: core.StructureWriter ](value: T): Unit =
+    val structureWriter = summon[core.StructureWriter[T]]
     val sizeEstimate = FieldSizeEstimateWriter(fieldNum, None)
-    sizeEstimate.putStructure(picklee, tag)(work)
+    sizeEstimate.writeStructure(value)
     out.writeTag(fieldNum, WireFormat.WIRETYPE_LENGTH_DELIMITED)
     out.writeInt32NoTag(sizeEstimate.finalSize)
-    work(RawBinaryStructureWriter(out))
-    this
-
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    tag match
-      case PrimitiveTag.UnitTag =>
-         // We need to make sure we write a tag/wiretype here
-         // TODO - find a less-byte way to do it.
-        out.writeInt32(fieldNum, 0)
-      case PrimitiveTag.ByteTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Byte].toInt)
-      case PrimitiveTag.BooleanTag => out.writeBool(fieldNum, picklee.asInstanceOf[Boolean])
-      case PrimitiveTag.CharTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Char].toInt)
-      case PrimitiveTag.ShortTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Short].toInt)
-      case PrimitiveTag.IntTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Int])
-      case PrimitiveTag.LongTag => out.writeInt64(fieldNum, picklee.asInstanceOf[Long])
-      case PrimitiveTag.FloatTag => out.writeFloat(fieldNum, picklee.asInstanceOf[Float])
-      case PrimitiveTag.DoubleTag => out.writeDouble(fieldNum, picklee.asInstanceOf[Double])
-      case PrimitiveTag.StringTag => out.writeString(fieldNum, picklee.asInstanceOf[String])
-    this
-
+    structureWriter.writeStructure(value, RawBinaryStructureWriter(out))
+  override def writeChoice[T: core.ChoiceWriter ](value: T): Unit =
+    val choiceWriter = summon[core.ChoiceWriter[T]]
+    val sizeEstimate = FieldSizeEstimateWriter(fieldNum, None)
+    sizeEstimate.writeChoice(value)
+    out.writeTag(fieldNum, WireFormat.WIRETYPE_LENGTH_DELIMITED)
+    out.writeInt32NoTag(sizeEstimate.finalSize)
+    choiceWriter.writeChoice(value, RawBinaryChoiceWriter(out))
+  override def writeCollection[T: core.CollectionWriter](value: T): Unit =
+    summon[core.CollectionWriter[T]].writeCollection(value, RawBinaryCollectionInFieldWriter(out, fieldNum))
+  override def writeUnit(): Unit =
+    // We need to make sure we write a tag/wiretype here
+    // TODO - find a less-byte way to do it.
+    out.writeInt32(fieldNum, 0)
+  override def writeBoolean(value: Boolean): Unit = out.writeBool(fieldNum, value)
+  override def writeByte(value: Byte): Unit = out.writeInt32(fieldNum, value)
+  override def writeChar(value: Char): Unit = out.writeInt32(fieldNum, value)
+  override def writeShort(value: Short): Unit = out.writeInt32(fieldNum, value)
+  override def writeInt(value: Int): Unit = out.writeInt32(fieldNum, value)
+  override def writeLong(value: Long): Unit = out.writeInt64(fieldNum, value)
+  override def writeFloat(value: Float): Unit = out.writeFloat(fieldNum, value)
+  override def writeDouble(value: Double): Unit = out.writeDouble(fieldNum, value)
+  override def writeString(value: String): Unit = out.writeString(fieldNum, value)
   override def flush(): Unit = out.flush()
 
 class RawBinaryCollectionInFieldWriter(out: CodedOutputStream, fieldNum: Int)
     extends PickleCollectionWriter:
-  override def putElement(work: PickleWriter => Unit): PickleCollectionWriter =
-    // TODO - we need to know what we're writing here...
+  override def sizeHint(numElements: Int): Unit = ()
+  override def writeElement[T: core.Writer](value: T): Unit =
+    val writer = summon[core.Writer[T]]
     out.writeTag(fieldNum, WireFormat.WIRETYPE_LENGTH_DELIMITED)
     val sizeEstimate = RawPickleSizeEstimator()
-    work(sizeEstimate)
+    writer.write(value, sizeEstimate)
     out.writeInt32NoTag(sizeEstimate.finalSize)
-    work(RawBinaryPickleWriter(out))
-    this
+    writer.write(value, RawBinaryPickleWriter(out))

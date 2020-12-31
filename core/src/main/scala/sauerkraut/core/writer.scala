@@ -69,6 +69,7 @@ object Writer:
           override def writeChoice(value: T, pickle: format.PickleChoiceWriter): Unit =
             // TODO - We may need to synthesize writers for each option.
             writeOption[Tuple.Zip[m.MirroredElemLabels, m.MirroredElemTypes]](
+              m.ordinal(value),
               value, 
               pickle,
               tag)
@@ -89,12 +90,12 @@ object Writer:
           writeElems[elems1, Labels](pickle, value, idx+1)
         case _: EmptyTuple => ()
   
-  inline private def writeOption[NamesAndElems <: Tuple](value: Any, pickle: format.PickleChoiceWriter, tag: format.FastTypeTag[?]): Unit =
+  inline private def writeOption[NamesAndElems <: Tuple](ordinal: Int, value: Any, pickle: format.PickleChoiceWriter, tag: format.FastTypeTag[?]): Unit =
     inline erasedValue[NamesAndElems] match
       case _: (Tuple2[name, tpe] *: tail) =>
         if value.isInstanceOf[tpe]
-        then pickle.writeChoice[tpe](0, label[name], value.asInstanceOf[tpe])(using summonWriter[tpe])
-        else writeOption[tail](value, pickle, tag)
+        then pickle.writeChoice[tpe](ordinal, label[name], value.asInstanceOf[tpe])(using summonWriter[tpe])
+        else writeOption[tail](ordinal, value, pickle, tag)
       case _: EmptyTuple => ()
 
   inline private def writeStruct[MirroredElemTypes <: Tuple, MirroredElemLabels <: Tuple](

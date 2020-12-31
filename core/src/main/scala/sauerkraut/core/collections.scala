@@ -38,8 +38,12 @@ final class GenCollectionWriter[T: Writer, C <: Iterable[T]](
   private val elWriter = summon[Writer[T]]
   override def writeCollection(value: C, pickle: PickleCollectionWriter): Unit =
     pickle.sizeHint(value.size)
-    for item <- value
-    do pickle.writeElement(item)(using elWriter)
+    // TODO - microbenchmark using lambda vs. while loop.
+    var i = value.iterator
+    while (i.hasNext)
+      pickle.writeElement(i.next)(using elWriter)
+    // for item <- value
+    // do pickle.writeElement(item)(using elWriter)
 /** A writer for raw array types. */
 final class ArrayWriter[T: Writer : reflect.ClassTag](
   override val tag: CollectionTag[Array[T], T]

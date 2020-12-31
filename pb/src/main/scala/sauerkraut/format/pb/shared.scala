@@ -37,15 +37,15 @@ object Shared:
       }
     }
 
-  def writeCompressedPrimitives[E, To](out: CodedOutputStream, fieldNum: Int)(
-    work: PickleCollectionWriter => Unit): Unit =
+  def writeCompressedPrimitives[C: core.CollectionWriter](out: CodedOutputStream, fieldNum: Int, value: C): Unit =
+    val writer = summon[core.CollectionWriter[C]]
     out.writeTag(fieldNum, WIRETYPE_LENGTH_DELIMITED)
     // TODO - we want a size estimator for protos w/ descriptors...
     val sizeEstimate = CompressedPrimitiveCollectionSizeEstimator()
-    work(sizeEstimate)
+    writer.writeCollection(value, sizeEstimate)
     out.writeInt32NoTag(sizeEstimate.finalSize)
     // Write the primitives...
-    work(CompressedPrimitiveCollectionWriter(out))
+    writer.writeCollection(value, CompressedPrimitiveCollectionWriter(out))
 
   /** Reads a primitive by using the Builder's tag to determine how to interpret the data. */
   def readPrimitive[T](in: CodedInputStream)(b: core.PrimitiveBuilder[T]): Unit =
@@ -87,15 +87,22 @@ object Shared:
 /** Pickle writer that can only write compressed repeated primitive fields. */
 class CompressedPrimitiveCollectionWriter(out: CodedOutputStream) extends PickleCollectionWriter with PickleWriter:
   override def flush(): Unit = out.flush()
-  override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
-    pickler(this)
-    this
+  override def sizeHint(numElements: Int): Unit = ()
+  override def writeElement[T: core.Writer](value: T): Unit = summon[core.Writer[T]].write(value, this)
   // TODO - Throw better unsupported operations errors if we don't have the right shape.
-  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = ???
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter = ???
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    Shared.writePrimitiveRaw(out)(picklee, tag)
-    this
+  override def writeCollection[T: core.CollectionWriter](value: T): Unit = ???
+  override def writeStructure[T: core.StructureWriter ](value: T): Unit = ???
+  override def writeChoice[T: core.ChoiceWriter](value: T): Unit = ???
+  override def writeUnit(): Unit = ()
+  override def writeBoolean(value: Boolean): Unit = out.writeBoolNoTag(value)
+  override def writeByte(value: Byte): Unit = out.write(value)
+  override def writeChar(value: Char): Unit = out.writeInt32NoTag(value.toInt)
+  override def writeShort(value: Short): Unit = out.writeInt32NoTag(value.toInt)
+  override def writeInt(value: Int): Unit = out.writeInt32NoTag(value)
+  override def writeLong(value: Long): Unit = out.writeInt64NoTag(value)
+  override def writeFloat(value: Float): Unit = out.writeFloatNoTag(value)
+  override def writeDouble(value: Double): Unit = out.writeDoubleNoTag(value)
+  override def writeString(value: String): Unit = out.writeStringNoTag(value)
 
 
 /** Calculates the byte length of a a compressed repeated primtiive field. */
@@ -103,24 +110,28 @@ class CompressedPrimitiveCollectionSizeEstimator extends PickleCollectionWriter 
   private var size: Int = 0
   def finalSize: Int = size
   override def flush(): Unit = ()
-
-  override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
-    pickler(this)
-    this
+  override def sizeHint(numElements: Int): Unit = ()
+  override def writeElement[T: core.Writer](value: T): Unit = summon[core.Writer[T]].write(value, this)
   // TODO - Throw better unsupported operations errors if we don't have the right shape.
-  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = ???
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter = ???
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    val tmp: Int = tag match
-      case PrimitiveTag.UnitTag => 0
-      case PrimitiveTag.ByteTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Byte].toInt)
-      case PrimitiveTag.BooleanTag => CodedOutputStream.computeBoolSizeNoTag(picklee.asInstanceOf[Boolean])
-      case PrimitiveTag.CharTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Char].toInt)     
-      case PrimitiveTag.ShortTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Short].toInt)
-      case PrimitiveTag.IntTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Int])
-      case PrimitiveTag.LongTag => CodedOutputStream.computeInt64SizeNoTag(picklee.asInstanceOf[Long])
-      case PrimitiveTag.FloatTag => CodedOutputStream.computeFloatSizeNoTag(picklee.asInstanceOf[Float])
-      case PrimitiveTag.DoubleTag => CodedOutputStream.computeDoubleSizeNoTag(picklee.asInstanceOf[Double])
-      case PrimitiveTag.StringTag => CodedOutputStream.computeStringSizeNoTag(picklee.asInstanceOf[String])
-    size += tmp
-    this
+  override def writeCollection[T: core.CollectionWriter](value: T): Unit = ???
+  override def writeStructure[T: core.StructureWriter ](value: T): Unit = ???
+  override def writeChoice[T: core.ChoiceWriter](value: T): Unit = ???
+  override def writeUnit(): Unit = ()
+  override def writeBoolean(value: Boolean): Unit =
+    size += CodedOutputStream.computeBoolSizeNoTag(value)
+  override def writeByte(value: Byte): Unit =
+    size += CodedOutputStream.computeInt32SizeNoTag(value)
+  override def writeChar(value: Char): Unit =
+    size += CodedOutputStream.computeInt32SizeNoTag(value)
+  override def writeShort(value: Short): Unit =
+    size += CodedOutputStream.computeInt32SizeNoTag(value)
+  override def writeInt(value: Int): Unit =
+    size += CodedOutputStream.computeInt32SizeNoTag(value)
+  override def writeLong(value: Long): Unit =
+    size += CodedOutputStream.computeInt64SizeNoTag(value)
+  override def writeFloat(value: Float): Unit =
+    size += CodedOutputStream.computeFloatSizeNoTag(value)
+  override def writeDouble(value: Double): Unit =
+    size += CodedOutputStream.computeDoubleSizeNoTag(value)
+  override def writeString(value: String): Unit =
+    size += CodedOutputStream.computeStringSizeNoTag(value)

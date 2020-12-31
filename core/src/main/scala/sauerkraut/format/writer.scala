@@ -65,7 +65,7 @@ trait PickleStructureWriter:
    * Write a field to the structure which is an object, itself. 
    *  - Note: The object may be a Choice, Collection or Structure
    */
-  def writeField[T: core.Writer](fieldNum: Int, fieldName: String, value: T): Unit
+  def writeField[T: core.Writer](number: Int, name: String, value: T): Unit
 
 /** A writer of collection elements. */
 trait PickleCollectionWriter:
@@ -78,4 +78,4 @@ trait PickleChoiceWriter:
    * Write a choice value of an object.
    *  - Note: The object may itself be a Choice, Collection or Structure
    */
-  def writeChoice[T: core.Writer](choiceNum: Int, choiceName: String, value: T): Unit
+  def writeChoice[T: core.Writer](number: Int, name: String, value: T): Unit
