@@ -29,20 +29,39 @@ class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter:
     out.write(']')
     this
   // TODO - maybe don't rely on toString on primitives...
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): PickleWriter =
-    tag match
-      case PrimitiveTag.UnitTag => out.write("null")
-      case PrimitiveTag.BooleanTag => out.write(picklee.asInstanceOf[Boolean].toString)
-      case PrimitiveTag.CharTag | PrimitiveTag.StringTag => 
-        out.write('"')
-        out.write(picklee.toString)
-        out.write('"')
-      case PrimitiveTag.ByteTag | PrimitiveTag.ShortTag | PrimitiveTag.IntTag | PrimitiveTag.LongTag =>
-        // TODO - appropriate int handling
-        out.write(picklee.toString)
-      case PrimitiveTag.FloatTag | PrimitiveTag.DoubleTag =>
-        // TODO - appropriate floating point handling
-        out.write(picklee.toString)
+  override def putUnit(): PickleWriter =
+    out.write("null")
+    this
+  override def putBoolean(value: Boolean): PickleWriter =
+    out.write(value.toString())
+    this
+  override def putByte(value: Byte): PickleWriter =
+    out.write(value.toString())
+    this
+  override def putChar(value: Char): PickleWriter = 
+    out.write('"')
+    out.write(value.toString())
+    out.write('"')
+    this
+  override def putShort(value: Short): PickleWriter =
+    out.write(value.toString())
+    this
+  override def putInt(value: Int): PickleWriter =
+    out.write(value.toString())
+    this
+  override def putLong(value: Long): PickleWriter =
+    out.write(value.toString())
+    this
+  override def putFloat(value: Float): PickleWriter =
+    out.write(value.toString())
+    this
+  override def putDouble(value: Double): PickleWriter =
+    out.write(value.toString())
+    this
+  override def putString(value: String): PickleWriter = 
+    out.write('"')
+    out.write(value)
+    out.write('"')
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter =
     out.write('{')

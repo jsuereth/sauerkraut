@@ -60,20 +60,7 @@ object Shared:
       case PrimitiveTag.FloatTag => b.putPrimitive(in.readFloat())
       case PrimitiveTag.DoubleTag => b.putPrimitive(in.readDouble())
       case PrimitiveTag.StringTag => b.putPrimitive(in.readString())
-  /** Writes raw primitives with no field tags. */
-  def writePrimitiveRaw[T](out: CodedOutputStream)(picklee: Any, tag: PrimitiveTag[T]): Unit =
-    tag match
-      case PrimitiveTag.UnitTag => ()
-      case PrimitiveTag.BooleanTag => out.writeBoolNoTag(picklee.asInstanceOf[Boolean])
-      case PrimitiveTag.ByteTag => out.write(picklee.asInstanceOf[Byte])
-      case PrimitiveTag.CharTag => out.writeInt32NoTag(picklee.asInstanceOf[Char].toInt)
-      case PrimitiveTag.ShortTag => out.writeInt32NoTag(picklee.asInstanceOf[Short].toInt)
-      case PrimitiveTag.IntTag => out.writeInt32NoTag(picklee.asInstanceOf[Int])
-      case PrimitiveTag.LongTag => out.writeInt64NoTag(picklee.asInstanceOf[Long])
-      case PrimitiveTag.FloatTag => out.writeFloatNoTag(picklee.asInstanceOf[Float])
-      case PrimitiveTag.DoubleTag => out.writeDoubleNoTag(picklee.asInstanceOf[Double])
-      case PrimitiveTag.StringTag => out.writeStringNoTag(picklee.asInstanceOf[String])
-
+  
   inline def limitByWireType[A](in: CodedInputStream)(wireType: Int)(f: => A): Unit =
     // TODO - if field is a STRING we do not limit by length.
     if wireType == WIRETYPE_LENGTH_DELIMITED
@@ -93,8 +80,34 @@ class CompressedPrimitiveCollectionWriter(out: CodedOutputStream) extends Pickle
   // TODO - Throw better unsupported operations errors if we don't have the right shape.
   override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = ???
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter = ???
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    Shared.writePrimitiveRaw(out)(picklee, tag)
+  override def putUnit(): PickleWriter = 
+    this
+  override def putBoolean(value: Boolean): PickleWriter =
+    out.writeBoolNoTag(value)
+    this
+  override def putByte(value: Byte): PickleWriter =
+    out.writeInt32NoTag(value.toInt)
+    this
+  override def putChar(value: Char): PickleWriter = 
+    out.writeInt32NoTag(value.toInt)
+    this
+  override def putShort(value: Short): PickleWriter =
+    out.writeInt32NoTag(value.toInt)
+    this
+  override def putInt(value: Int): PickleWriter = 
+    out.writeInt32NoTag(value)
+    this
+  override def putLong(value: Long): PickleWriter =
+    out.writeInt64NoTag(value)
+    this
+  override def putFloat(value: Float): PickleWriter =
+    out.writeFloatNoTag(value)
+    this
+  override def putDouble(value: Double): PickleWriter =
+    out.writeDoubleNoTag(value)
+    this
+  override def putString(value: String): PickleWriter =
+    out.writeStringNoTag(value)
     this
 
 
@@ -110,17 +123,33 @@ class CompressedPrimitiveCollectionSizeEstimator extends PickleCollectionWriter 
   // TODO - Throw better unsupported operations errors if we don't have the right shape.
   override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = ???
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter = ???
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    val tmp: Int = tag match
-      case PrimitiveTag.UnitTag => 0
-      case PrimitiveTag.ByteTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Byte].toInt)
-      case PrimitiveTag.BooleanTag => CodedOutputStream.computeBoolSizeNoTag(picklee.asInstanceOf[Boolean])
-      case PrimitiveTag.CharTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Char].toInt)     
-      case PrimitiveTag.ShortTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Short].toInt)
-      case PrimitiveTag.IntTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Int])
-      case PrimitiveTag.LongTag => CodedOutputStream.computeInt64SizeNoTag(picklee.asInstanceOf[Long])
-      case PrimitiveTag.FloatTag => CodedOutputStream.computeFloatSizeNoTag(picklee.asInstanceOf[Float])
-      case PrimitiveTag.DoubleTag => CodedOutputStream.computeDoubleSizeNoTag(picklee.asInstanceOf[Double])
-      case PrimitiveTag.StringTag => CodedOutputStream.computeStringSizeNoTag(picklee.asInstanceOf[String])
-    size += tmp
+  override def putUnit(): PickleWriter = 
     this
+  override def putBoolean(value: Boolean): PickleWriter =
+    size += CodedOutputStream.computeBoolSizeNoTag(value)
+    this
+  override def putByte(value: Byte): PickleWriter =
+    size += CodedOutputStream.computeInt32SizeNoTag(value.toInt)
+    this
+  override def putChar(value: Char): PickleWriter = 
+    size += CodedOutputStream.computeInt32SizeNoTag(value.toInt)
+    this
+  override def putShort(value: Short): PickleWriter =
+    size += CodedOutputStream.computeInt32SizeNoTag(value.toInt)
+    this
+  override def putInt(value: Int): PickleWriter = 
+    size += CodedOutputStream.computeInt32SizeNoTag(value)
+    this
+  override def putLong(value: Long): PickleWriter =
+    size += CodedOutputStream.computeInt64SizeNoTag(value)
+    this
+  override def putFloat(value: Float): PickleWriter =
+    size += CodedOutputStream.computeFloatSizeNoTag(value)
+    this
+  override def putDouble(value: Double): PickleWriter =
+    size += CodedOutputStream.computeDoubleSizeNoTag(value)
+    this
+  override def putString(value: String): PickleWriter =
+    size += CodedOutputStream.computeStringSizeNoTag(value)
+    this
+  

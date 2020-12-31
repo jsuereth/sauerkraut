@@ -40,8 +40,34 @@ class RawBinaryPickleWriter(out: CodedOutputStream) extends PickleWriter with Pi
       case ctag: Choice[a] => work(RawBinaryChoiceWriter(ctag.ordinal(picklee.asInstanceOf[a]), out)) 
       case _ => work(RawBinaryStructureWriter(out))
     this
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    Shared.writePrimitiveRaw(out)(picklee, tag)
+  override def putUnit(): PickleWriter = 
+    this
+  override def putBoolean(value: Boolean): PickleWriter =
+    out.writeBoolNoTag(value)
+    this
+  override def putByte(value: Byte): PickleWriter =
+    out.writeInt32NoTag(value.toInt)
+    this
+  override def putChar(value: Char): PickleWriter = 
+    out.writeInt32NoTag(value.toInt)
+    this
+  override def putShort(value: Short): PickleWriter =
+    out.writeInt32NoTag(value.toInt)
+    this
+  override def putInt(value: Int): PickleWriter = 
+    out.writeInt32NoTag(value)
+    this
+  override def putLong(value: Long): PickleWriter =
+    out.writeInt64NoTag(value)
+    this
+  override def putFloat(value: Float): PickleWriter =
+    out.writeFloatNoTag(value)
+    this
+  override def putDouble(value: Double): PickleWriter =
+    out.writeDoubleNoTag(value)
+    this
+  override def putString(value: String): PickleWriter =
+    out.writeStringNoTag(value)
     this
   override def flush(): Unit = out.flush()
 
@@ -81,21 +107,37 @@ class RawBinaryFieldWriter(out: CodedOutputStream, fieldNum: Int)
     work(RawBinaryStructureWriter(out))
     this
 
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    tag match
-      case PrimitiveTag.UnitTag =>
-         // We need to make sure we write a tag/wiretype here
-         // TODO - find a less-byte way to do it.
-        out.writeInt32(fieldNum, 0)
-      case PrimitiveTag.ByteTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Byte].toInt)
-      case PrimitiveTag.BooleanTag => out.writeBool(fieldNum, picklee.asInstanceOf[Boolean])
-      case PrimitiveTag.CharTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Char].toInt)
-      case PrimitiveTag.ShortTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Short].toInt)
-      case PrimitiveTag.IntTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Int])
-      case PrimitiveTag.LongTag => out.writeInt64(fieldNum, picklee.asInstanceOf[Long])
-      case PrimitiveTag.FloatTag => out.writeFloat(fieldNum, picklee.asInstanceOf[Float])
-      case PrimitiveTag.DoubleTag => out.writeDouble(fieldNum, picklee.asInstanceOf[Double])
-      case PrimitiveTag.StringTag => out.writeString(fieldNum, picklee.asInstanceOf[String])
+  override def putUnit(): PickleWriter = 
+    // We need to make sure we write a tag/wiretype here
+    // TODO - find a less-byte way to do it.
+    out.writeInt32(fieldNum, 0)
+    this
+  override def putBoolean(value: Boolean): PickleWriter =
+    out.writeBool(fieldNum, value)
+    this
+  override def putByte(value: Byte): PickleWriter =
+    out.writeInt32(fieldNum, value.toInt)
+    this
+  override def putChar(value: Char): PickleWriter = 
+    out.writeInt32(fieldNum, value.toInt)
+    this
+  override def putShort(value: Short): PickleWriter =
+    out.writeInt32(fieldNum, value.toInt)
+    this
+  override def putInt(value: Int): PickleWriter = 
+    out.writeInt32(fieldNum, value)
+    this
+  override def putLong(value: Long): PickleWriter =
+    out.writeInt64(fieldNum, value)
+    this
+  override def putFloat(value: Float): PickleWriter =
+    out.writeFloat(fieldNum, value)
+    this
+  override def putDouble(value: Double): PickleWriter =
+    out.writeDouble(fieldNum, value)
+    this
+  override def putString(value: String): PickleWriter =
+    out.writeString(fieldNum, value)
     this
 
   override def flush(): Unit = out.flush()

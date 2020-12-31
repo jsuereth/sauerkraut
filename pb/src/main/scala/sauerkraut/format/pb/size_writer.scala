@@ -34,19 +34,34 @@ class RawPickleSizeEstimator extends PickleWriter with SizeEstimator:
     work(estimate)
     size += estimate.finalSize
     this
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    val tmp: Int = tag match
-      case PrimitiveTag.UnitTag => 0
-      case PrimitiveTag.ByteTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Byte].toInt)
-      case PrimitiveTag.BooleanTag => CodedOutputStream.computeBoolSizeNoTag(picklee.asInstanceOf[Boolean])
-      case PrimitiveTag.CharTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Char].toInt)     
-      case PrimitiveTag.ShortTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Short].toInt)
-      case PrimitiveTag.IntTag => CodedOutputStream.computeInt32SizeNoTag(picklee.asInstanceOf[Int])
-      case PrimitiveTag.LongTag => CodedOutputStream.computeInt64SizeNoTag(picklee.asInstanceOf[Long])
-      case PrimitiveTag.FloatTag => CodedOutputStream.computeFloatSizeNoTag(picklee.asInstanceOf[Float])
-      case PrimitiveTag.DoubleTag => CodedOutputStream.computeDoubleSizeNoTag(picklee.asInstanceOf[Double])
-      case PrimitiveTag.StringTag => CodedOutputStream.computeStringSizeNoTag(picklee.asInstanceOf[String])
-    size += tmp
+  override def putUnit(): PickleWriter = 
+    this
+  override def putBoolean(value: Boolean): PickleWriter =
+    size += CodedOutputStream.computeBoolSizeNoTag(value)
+    this
+  override def putByte(value: Byte): PickleWriter =
+    size += CodedOutputStream.computeInt32SizeNoTag(value.toInt)
+    this
+  override def putChar(value: Char): PickleWriter = 
+    size += CodedOutputStream.computeInt32SizeNoTag(value.toInt)
+    this
+  override def putShort(value: Short): PickleWriter =
+    size += CodedOutputStream.computeInt32SizeNoTag(value.toInt)
+    this
+  override def putInt(value: Int): PickleWriter = 
+    size += CodedOutputStream.computeInt32SizeNoTag(value)
+    this
+  override def putLong(value: Long): PickleWriter =
+    size += CodedOutputStream.computeInt64SizeNoTag(value)
+    this
+  override def putFloat(value: Float): PickleWriter =
+    size += CodedOutputStream.computeFloatSizeNoTag(value)
+    this
+  override def putDouble(value: Double): PickleWriter =
+    size += CodedOutputStream.computeDoubleSizeNoTag(value)
+    this
+  override def putString(value: String): PickleWriter =
+    size += CodedOutputStream.computeStringSizeNoTag(value)
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter =
     val estimate = SizeEstimateStructureWriter(RawBinaryMessageDescriptor())
@@ -77,36 +92,35 @@ class FieldSizeEstimateWriter(fieldNum: Int,
     with SizeEstimator:
   private var size: Int = 0
   override def finalSize: Int = size
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    tag match
-      case PrimitiveTag.UnitTag => size += CodedOutputStream.computeInt32Size(fieldNum, 0)
-      case PrimitiveTag.BooleanTag => 
-        size += CodedOutputStream.computeBoolSize(
-            fieldNum, 
-            picklee.asInstanceOf)
-      case PrimitiveTag.ByteTag => size += 1
-      case PrimitiveTag.CharTag =>
-        size += CodedOutputStream.computeInt32Size(
-            fieldNum, picklee.asInstanceOf[Char].toInt)
-      case PrimitiveTag.ShortTag =>
-        size += CodedOutputStream.computeInt32Size(
-            fieldNum, picklee.asInstanceOf[Short].toInt)
-      case PrimitiveTag.IntTag =>
-        size += CodedOutputStream.computeInt32Size(
-            fieldNum, picklee.asInstanceOf[Int])
-      case PrimitiveTag.LongTag =>
-        size += CodedOutputStream.computeInt64Size(
-            fieldNum, picklee.asInstanceOf[Long]
-        )
-      case PrimitiveTag.FloatTag =>
-        size += CodedOutputStream.computeFloatSize(
-            fieldNum, picklee.asInstanceOf[Float])
-      case PrimitiveTag.DoubleTag =>
-        size += CodedOutputStream.computeDoubleSize(
-            fieldNum, picklee.asInstanceOf[Double])
-      case PrimitiveTag.StringTag =>
-        size += CodedOutputStream.computeStringSize(
-            fieldNum, picklee.asInstanceOf[String])
+  override def putUnit(): PickleWriter = 
+    size += CodedOutputStream.computeInt32Size(fieldNum, 0)
+    this
+  override def putBoolean(value: Boolean): PickleWriter =
+    size += CodedOutputStream.computeBoolSize(fieldNum, value)
+    this
+  override def putByte(value: Byte): PickleWriter =
+    size += CodedOutputStream.computeInt32Size(fieldNum, value.toInt)
+    this
+  override def putChar(value: Char): PickleWriter = 
+    size += CodedOutputStream.computeInt32Size(fieldNum, value.toInt)
+    this
+  override def putShort(value: Short): PickleWriter =
+    size += CodedOutputStream.computeInt32Size(fieldNum, value.toInt)
+    this
+  override def putInt(value: Int): PickleWriter = 
+    size += CodedOutputStream.computeInt32Size(fieldNum, value)
+    this
+  override def putLong(value: Long): PickleWriter =
+    size += CodedOutputStream.computeInt64Size(fieldNum, value)
+    this
+  override def putFloat(value: Float): PickleWriter =
+    size += CodedOutputStream.computeFloatSize(fieldNum, value)
+    this
+  override def putDouble(value: Double): PickleWriter =
+    size += CodedOutputStream.computeDoubleSize(fieldNum, value)
+    this
+  override def putString(value: String): PickleWriter =
+    size += CodedOutputStream.computeStringSize(fieldNum, value)
     this
   // TODO - Primitives behave differently from messages...
   override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = 
