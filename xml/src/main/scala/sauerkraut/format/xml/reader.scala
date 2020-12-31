@@ -40,11 +40,21 @@ import java.util.Stack
 import java.io.InputStream
 
 def inputStreamSaxReader(in: InputStream)(handler: DefaultHandler): Unit =
-  val spf = SAXParserFactory.newInstance
-  spf.setNamespaceAware(true)
-  val saxParser = spf.newSAXParser()
-  saxParser.parse(in, handler)
-
+  inline def readXml(): Unit = 
+    val spf = SAXParserFactory.newInstance
+    spf.setNamespaceAware(true)
+    val saxParser = spf.newSAXParser()
+    saxParser.parse(in, handler)
+  // If we can backtrack, then we ignore empty input.
+  if (in.markSupported) then
+    in.mark(0)
+    if (in.read != -1) then 
+      in.reset()
+      readXml()
+  else
+    readXml()
+  
+  
 class XmlReader(reader: DefaultHandler => Unit) extends PickleReader:
   override def push[T](builder: Builder[T]): Builder[T] =
     reader(XmlContentHandler(builder))
@@ -96,6 +106,7 @@ class XmlContentHandler(b: Builder[?]) extends DefaultHandler:
           case _ => throw WriteException(s"Unable to push field ${atts.getValue("name")} into $currentBuilder", null)
       case "collection" => ()
       case "structure" => ()
+      case "choice" => ()
       case "primitive" =>
         hadValue = false
   override def endElement(uri: String, localName: String, qName: String): Unit =
@@ -104,4 +115,4 @@ class XmlContentHandler(b: Builder[?]) extends DefaultHandler:
         if (!hadValue) characters(Array(), 0, 0)
       case "field" | "element" =>
         currentBuilder = stack.pop()
-      case _ =>
+      case _ => ()

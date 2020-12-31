@@ -19,7 +19,7 @@ package core
 
 import format.{
   PickleReader,
-  PickleWriter,
+  PickleCollectionWriter,
   FastTypeTag,
   CollectionTag,
   collectionTag,
@@ -30,41 +30,37 @@ import scala.collection.mutable.{
   ArrayBuffer
 }
 
-/** A marker trait denoting how to write a collection of similar values. */
-sealed trait CollectionWriter[C] extends Writer[C]
-
 // TODO - make generic for all collections. Maybe codegen?
 /** A writer for all collections extending Iterable. */
 final class GenCollectionWriter[T: Writer, C <: Iterable[T]](
   override val tag: CollectionTag[C, T]
 ) extends CollectionWriter[C]:
-  override def write(value: C, pickle: PickleWriter): Unit =
-    pickle.putCollection(value.size, tag)(c =>
-      for item <- value
-      do c.putElement(itemWriter => summon[Writer[T]].write(item, itemWriter))
-    )
+  private val elWriter = summon[Writer[T]]
+  override def writeCollection(value: C, pickle: PickleCollectionWriter): Unit =
+    pickle.sizeHint(value.size)
+    for item <- value
+    do pickle.writeElement(item)(using elWriter)
 /** A writer for raw array types. */
 final class ArrayWriter[T: Writer : reflect.ClassTag](
   override val tag: CollectionTag[Array[T], T]
 ) extends CollectionWriter[Array[T]]:
-  
-  override def write(value: Array[T], pickle: PickleWriter): Unit =
-    pickle.putCollection(value.length, tag)(c =>
-      for item <- value
-      do c.putElement(itemWriter => summon[Writer[T]].write(item, itemWriter))
-    )
+  private val elWriter = summon[Writer[T]]
+  override def writeCollection(value: Array[T], pickle: PickleCollectionWriter): Unit =
+    pickle.sizeHint(value.length)
+    for item <- value
+    do pickle.writeElement(item)(using elWriter)
 
-given [T](using Writer[T]): CollectionWriter[List[T]] = 
+given [T](using Writer[T]): Writer[List[T]] = 
   GenCollectionWriter[T, List[T]](collectionTag[List[T], T](summon[Writer[T]].tag))
-given [T](using Writer[T]): CollectionWriter[Vector[T]] = 
+given [T](using Writer[T]): Writer[Vector[T]] = 
   GenCollectionWriter[T, Vector[T]](collectionTag[Vector[T], T](summon[Writer[T]].tag))
-given [T](using Writer[T]): CollectionWriter[Seq[T]] = 
+given [T](using Writer[T]): Writer[Seq[T]] = 
   GenCollectionWriter[T, Seq[T]](collectionTag[Seq[T], T](summon[Writer[T]].tag))
-given [T](using Writer[T]): CollectionWriter[Iterable[T]] = 
+given [T](using Writer[T]): Writer[Iterable[T]] = 
   GenCollectionWriter[T, Iterable[T]](collectionTag[Iterable[T], T](summon[Writer[T]].tag))
-given [T](using Writer[T]): CollectionWriter[collection.mutable.ArrayBuffer[T]] = 
+given [T](using Writer[T]): Writer[collection.mutable.ArrayBuffer[T]] = 
   GenCollectionWriter[T, collection.mutable.ArrayBuffer[T]](collectionTag[collection.mutable.ArrayBuffer[T], T](summon[Writer[T]].tag))
-given [T](using Writer[T], reflect.ClassTag[T]): CollectionWriter[Array[T]] =
+given [T](using Writer[T], reflect.ClassTag[T]): Writer[Array[T]] =
   ArrayWriter[T](collectionTag[Array[T], T](summon[Writer[T]].tag))
 
 final class SimpleCollectionBuilder[E: Buildable, To](

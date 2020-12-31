@@ -21,46 +21,48 @@ package xml
 import java.io.Writer
 
 
-class XmlPickleWriter(out: Writer) extends PickleWriter with PickleCollectionWriter with PickleStructureWriter:
-  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
-    out.write("<collection>")
-    work(this)
-    out.write("</collection>")
-    this
-  // TODO - maybe don't rely on toString on primitives...
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): PickleWriter =
+class XmlPickleWriter(out: Writer) extends PickleWriter with PickleCollectionWriter with PickleStructureWriter with PickleChoiceWriter:
+  private inline def wrapPrimitive[T](f: => T): Unit =
     out.write("<primitive>")
-    tag match
-      case PrimitiveTag.UnitTag => out.write("null")
-      case PrimitiveTag.BooleanTag => out.write(picklee.asInstanceOf[Boolean].toString)
-      case PrimitiveTag.CharTag | PrimitiveTag.StringTag =>
-        // TODO - figure out whether or not to CDATA this.
-        out.write(picklee.toString)
-      case PrimitiveTag.ByteTag | PrimitiveTag.ShortTag | PrimitiveTag.IntTag | PrimitiveTag.LongTag =>
-        // TODO - appropriate int handling
-        out.write(picklee.toString)
-      case PrimitiveTag.FloatTag | PrimitiveTag.DoubleTag =>
-        // TODO - appropriate floating point handling
-        out.write(picklee.toString)
+    f
     out.write("</primitive>")
-    this
-  override def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter =
-    // TODO - tag...
+  override def writeUnit(): Unit = wrapPrimitive(())
+  override def writeBoolean(value: Boolean): Unit = wrapPrimitive(out.write(value.toString))
+  override def writeByte(value: Byte): Unit = wrapPrimitive(out.write(value.toString))
+  override def writeChar(value: Char): Unit = wrapPrimitive(out.write(value.toString))
+  override def writeShort(value: Short): Unit = wrapPrimitive(out.write(value.toString))
+  override def writeInt(value: Int): Unit = wrapPrimitive(out.write(value.toString))
+  override def writeLong(value: Long): Unit = wrapPrimitive(out.write(value.toString))
+  override def writeFloat(value: Float): Unit = wrapPrimitive(out.write(value.toString))
+  override def writeDouble(value: Double): Unit = wrapPrimitive(out.write(value.toString))
+  override def writeString(value: String): Unit = wrapPrimitive(out.write(value))
+  override def writeStructure[T: core.StructureWriter ](value: T): Unit =
     out.write("<structure>")
-    work(this)
+    summon[core.StructureWriter[T]].writeStructure(value, this)
     out.write("</structure>")
-    this
-
+  override def writeCollection[T: core.CollectionWriter](value: T): Unit =
+    out.write("<collection>")
+    summon[core.CollectionWriter[T]].writeCollection(value, this)
+    out.write("</collection>")
+  override def writeChoice[T: core.ChoiceWriter](value: T): Unit =
+    out.write("<choice>")
+    summon[core.ChoiceWriter[T]].writeChoice(value, this)
+    out.write("</choice>")
   override def flush(): Unit = out.flush()
-  override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
+  override def writeField[T: core.Writer](fieldNum: Int, fieldName: String, value: T): Unit =
     out.write("<field name=\"")
-    out.write(name)
+    out.write(fieldName)
     out.write("\">")
-    pickler(this)
+    summon[core.Writer[T]].write(value, this)
     out.write("</field>")
-    this
-  override def putElement(writer: PickleWriter => Unit): PickleCollectionWriter =
+  override def sizeHint(numElements: Int): Unit = ()
+  override def writeElement[T: core.Writer](value: T): Unit =
     out.write("<element>")
-    writer(this)
+    summon[core.Writer[T]].write(value, this)
     out.write("</element>")
-    this
+  override def writeChoice[T: core.Writer](choiceNum: Int, choiceName: String, value: T): Unit =
+    out.write("<field name=\"")
+    out.write(choiceName)
+    out.write("\">")
+    summon[core.Writer[T]].write(value, this)
+    out.write("</field>")

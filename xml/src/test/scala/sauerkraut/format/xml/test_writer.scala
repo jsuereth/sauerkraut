@@ -12,7 +12,7 @@ import java.io.StringWriter
 case class TestDerived(x: Double, b: Int, z: List[String]) 
   derives Writer, Buildable
 
-class TestJson:
+class TestXmlWriter:
 
   def xml[T: Writer](value: T): String =
      val out = StringWriter()
@@ -20,7 +20,7 @@ class TestJson:
      out.toString()
 
   @Test def writeUnit(): Unit =
-    assertEquals("<primitive>null</primitive>", xml(()))
+    assertEquals("<primitive></primitive>", xml(()))
   @Test def writeBoolean(): Unit =
     assertEquals("<primitive>true</primitive>", xml(true))
     assertEquals("<primitive>false</primitive>", xml(false))

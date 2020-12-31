@@ -49,7 +49,7 @@ class TagOutputStream(out: DataOutputStream):
   def writeLongArrayPayload(value: Array[Long]): Unit =
     out.writeInt(value.length)
     value.foreach(out.writeLong)
-
+ 
   def writeTag[T](tag: PrimitiveTag[T]): Unit =
     import PrimitiveTag._
     tag match

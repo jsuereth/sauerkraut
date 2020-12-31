@@ -20,9 +20,32 @@ package core
 
 /** A Writer from some format of objects of the type T. */
 trait Writer[T]:
+  /** Writes this value into a pickle. */
   def write(value: T, pickle: format.PickleWriter): Unit
   /** Type tag for what this can write. */
   def tag: format.FastTypeTag[T]
+
+/** A Writer for writing structured data of type T. */
+abstract class StructureWriter[T] extends Writer[T]:
+  /** Writes this structure into a pickle-for-structures. */
+  def writeStructure(value: T, pickle: format.PickleStructureWriter): Unit
+  final def write(value: T, pickle: format.PickleWriter): Unit =
+    pickle.writeStructure(value)(using this)
+
+/** A Writer for writing a choice of options all of type T. */
+abstract class ChoiceWriter[T] extends Writer[T]:
+  /** Writes a choice value into a pickle-for-choices. */
+  def writeChoice(value: T, pickle: format.PickleChoiceWriter): Unit
+  final def write(value: T, pickle: format.PickleWriter): Unit =
+    pickle.writeChoice(value)(using this)
+
+/** A writer for writing collections of values of type T. */
+abstract class CollectionWriter[T] extends Writer[T]:
+  /** Writes this collection into a pickle-for-collections. */
+  def writeCollection(value: T, pickle: format.PickleCollectionWriter): Unit
+  final def write(value: T, pickle: format.PickleWriter): Unit =
+    pickle.writeCollection(value)(using this)
+
 
 object Writer:
   import scala.compiletime.{constValue,erasedValue,summonFrom}
@@ -30,67 +53,66 @@ object Writer:
   import internal.InlineHelper.summonLabel
   /** Derives writers of type T. */
   inline def derived[T](using m: Mirror.Of[T]): Writer[T] =
-    new Writer[T] {
-      override val tag: format.FastTypeTag[T] = format.fastTypeTag[T]()
-      override def write(value: T, pickle: format.PickleWriter): Unit =
-        inline m match
-          case m: Mirror.ProductOf[T] =>
+    inline m match
+      case m: Mirror.ProductOf[T] =>
+        new StructureWriter[T]:
+          override val tag: format.FastTypeTag[T] = format.fastTypeTag[T]()
+          // TODO - we should pre-summon writers for every field type here.
+          override def writeStructure(value: T, pickle: format.PickleStructureWriter): Unit =
             writeStruct[m.MirroredElemTypes, m.MirroredElemLabels](
               value,
               pickle,
               tag)
-          case m: Mirror.SumOf[T] =>
+      case m: Mirror.SumOf[T] =>
+        new ChoiceWriter[T]:
+          override val tag: format.FastTypeTag[T] = format.fastTypeTag[T]()
+          override def writeChoice(value: T, pickle: format.PickleChoiceWriter): Unit =
             // TODO - We may need to synthesize writers for each option.
             writeOption[Tuple.Zip[m.MirroredElemLabels, m.MirroredElemTypes]](
               value, 
               pickle,
               tag)
-          case _ => compiletime.error("Cannot derive serialization for non-product classes")
-    }
+      case _ => compiletime.error("Cannot derive serialization for non-product classes")
   /** Writes all the fields (in Elems) to the structure writer. */
   inline private def writeElems[Elems <: Tuple, Labels <: Tuple](
     pickle: format.PickleStructureWriter, value: Any, idx: Int): Unit =
       inline erasedValue[Elems] match
         case _: (elem *: elems1) =>
-          pickle.putField(summonLabel[Labels](idx),
-            fieldPickle =>
-              writeInl[elem](value.asInstanceOf[Product].productElement(idx).asInstanceOf[elem], fieldPickle))
+          // TODO - Allow index to be specified via annotation.
+          pickle.writeField[elem](
+            idx, 
+            summonLabel[Labels](idx),
+            value.asInstanceOf[Product].productElement(idx).asInstanceOf[elem])(
+              // TODO - more efficient handling of nested writer.
+              using summonWriter[elem]
+            )
           writeElems[elems1, Labels](pickle, value, idx+1)
         case _: EmptyTuple => ()
   
-  inline private def writeOption[NamesAndElems <: Tuple](value: Any, pickle: format.PickleWriter, tag: format.FastTypeTag[?]): Unit =
+  inline private def writeOption[NamesAndElems <: Tuple](value: Any, pickle: format.PickleChoiceWriter, tag: format.FastTypeTag[?]): Unit =
     inline erasedValue[NamesAndElems] match
       case _: (Tuple2[name, tpe] *: tail) =>
         if value.isInstanceOf[tpe]
-        then pickle.putChoice(value, tag, label[name])(
-           p =>
-             writeInl[tpe](value.asInstanceOf[tpe], p) 
-        )
+        then pickle.writeChoice[tpe](0, label[name], value.asInstanceOf[tpe])(using summonWriter[tpe])
         else writeOption[tail](value, pickle, tag)
       case _: EmptyTuple => ()
 
   inline private def writeStruct[MirroredElemTypes <: Tuple, MirroredElemLabels <: Tuple](
-    value: Any, pickle: format.PickleWriter, tag: format.FastTypeTag[?]): Unit =
-    pickle.putStructure(this, tag)(writer =>
-            writeElems[MirroredElemTypes, MirroredElemLabels](writer, value, 0))
+    value: Any, pickle: format.PickleStructureWriter, tag: format.FastTypeTag[?]): Unit =
+    writeElems[MirroredElemTypes, MirroredElemLabels](pickle, value, 0)
 
   inline private def label[A]: String = constValue[A].asInstanceOf[String]
 
-  /** Write a particular value to a pickle ready for it. Looks up given Writer. */
-  inline private def writeInl[A](value: A, pickle: format.PickleWriter): Unit =
+  inline private def summonWriter[A]: Writer[A] =
     summonFrom {
-      case writer: Writer[A] => writer.write(value, pickle)
-      // TODO - this is terrible.  We need to figure out a way to
-      // manifest sub-writers for Enums/coproduct/sum types without
-      // directly embedding them in the write method of the parent enum.
-      case m: Mirror.ProductOf[A] =>
-        writeStruct[m.MirroredElemTypes, m.MirroredElemLabels](
-          value,
-          pickle,
-          format.fastTypeTag[A]())
-      case m: Mirror.SumOf[A] =>
-        writeOption[Tuple.Zip[m.MirroredElemLabels, m.MirroredElemTypes]](
-              value, 
-              pickle,
-              format.fastTypeTag[A]())
+      case w: Writer[A] => w
+      case s: Mirror.ProductOf[A] => derived[A]
+      case s: Mirror.SumOf[A] => derived[A]
+      case _ => noWriterFoundError[A]
     }
+
+  import scala.quoted._  
+  inline def noWriterFoundError[T]: Writer[T] = ${noWriterFoundErrorImpl[T]}
+  private def noWriterFoundErrorImpl[T: Type](using qctx: Quotes): Expr[Writer[T]] =
+    quotes.reflect.report.error(s"Could not find given Writer[T] for: ${Type.show[T]}")
+    Expr(null)

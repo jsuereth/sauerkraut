@@ -17,49 +17,43 @@
 package sauerkraut
 package format
 
+
 /**
  * A writer of pickled content.
  * 
- * Currently all pickles can store three types of data:
- * 1. Primitive values (Int, String, etc.)  See [[FastTypeTag]] for definition of primitive.
+ * Currently all pickles can store four types of data:
+ * 1. Primitive values (`Int`, `String`, etc.)
  * 2. A structure of key-value pairs.
  * 3. A collection of other values.
+ * 4. A "choice" between options.
  */
 trait PickleWriter:
-  /** Called to denote that an structure is about to be serialized.
-    * @param picklee
-    *                The structure to be serialized.
-    * @param tag
-    *                The tag to use when pickling this entry.   Tags must be serialized/restored, unless
-    *                otherwise hinted that it can be elided.
-    * @param work
-    *                The function that will write the picklee to a pickle structure.
-    *                Note: this may be called multiple times, e.g. when getting size estimates.
-    */
-  def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter
-  /** Writes a primitive into the pickle. */
-  def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): PickleWriter
-  /**
-   * Denotes that a collection of elements is about to be pickled.
-   *
-   * Note: This must be called after beginEntry()
-   * @param length   The length of the collection being serialized.
-   * @return  A pickler which can serialzie the collection.
-   *          `endCollection()` must be called on this for correct behavior.
-   */
-  def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter
-  /**
-   * Denotes a 'choice' type that needs to be written.
-   * 
-   * Choices are the serialized equivalent of Sum types.  A choice is where one of several
-   * different things could be serialized.    Formats are able to record the choice in any way
-   * they desire.   See [[NonPrimitiveTag.Choice]] for information that can be used to distinguish
-   * between options.
-   */
-  // TODO - make this less ugly / better design.  Currently this is encoded behind struct, but
-  // we should allow formats to be clever.
-  final def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
-    putStructure(picklee, tag)(_.putField(choice, work))
+  /** Denotes an empty value. */
+  def writeUnit(): Unit
+  /** Writes a primtiive booelan value. */
+  def writeBoolean(value: Boolean): Unit
+  /** Writes a primtiive booelan value. */
+  def writeByte(value: Byte): Unit
+  /** Writes a primtiive char value. */
+  def writeChar(value: Char): Unit
+  /** Writes a primitive short value. */
+  def writeShort(value: Short): Unit
+  /** Writes a primtiive int value. */
+  def writeInt(value: Int): Unit
+  /** Writes a primtiive long value. */
+  def writeLong(value: Long): Unit
+  /** Writes a primtiive float value. */
+  def writeFloat(value: Float): Unit
+  /** Writes a primitive double value. */
+  def writeDouble(value: Double): Unit
+  /** Writes a "primtiive" string value. */
+  def writeString(value: String): Unit
+  /** Writes a structured value into the pickle. */
+  def writeStructure[T: core.StructureWriter ](value: T): Unit
+  /** Writes a Collection of values into the pickle. */
+  def writeCollection[T: core.CollectionWriter](value: T): Unit
+  /** Writes a choice between values into the pickle. */
+  def writeChoice[T: core.ChoiceWriter](value: T): Unit
   /** Flush any pending writes down this writer. */
   def flush(): Unit
 
@@ -67,22 +61,21 @@ trait PickleWriter:
  *  Structures are key-value pairs of 'fields'.
  */
 trait PickleStructureWriter:
-  /**
-   * Serialize a "field" in a complex structure/object being pickled.
-   * @param name  The name of the field to serialize.
-   * @param pickler  A callback which will be passed an appropriate pickler.
-   *                 You should ensure this function will perform a beginEntry()/endEntry() block.
-   * @return A builder for remaining items in the current complex structure being pickled.
+  /** 
+   * Write a field to the structure which is an object, itself. 
+   *  - Note: The object may be a Choice, Collection or Structure
    */
-  def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter
+  def writeField[T: core.Writer](fieldNum: Int, fieldName: String, value: T): Unit
 
 /** A writer of collection elements. */
 trait PickleCollectionWriter:
-   /**
-   * Places the next element in the serialized collection.
-   *
-   * Note: This must be called after beginCollection().
-   * @param pickler  A callback which is passed a pickler able to serialize the item in the collection.
-   * @return  A pickler which can serialize the next element of the collection.
+  def sizeHint(numElements: Int): Unit
+  def writeElement[T: core.Writer](value: T): Unit
+
+/** A writer of a choice among options. */
+trait PickleChoiceWriter:
+  /** 
+   * Write a choice value of an object.
+   *  - Note: The object may itself be a Choice, Collection or Structure
    */
-  def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter
+  def writeChoice[T: core.Writer](choiceNum: Int, choiceName: String, value: T): Unit

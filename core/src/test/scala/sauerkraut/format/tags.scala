@@ -1,6 +1,6 @@
 package sauerkraut.format
 
-import sauerkraut.core.{given}
+import sauerkraut.core.{Writer,given}
 import org.junit.Test
 import org.junit.Assert._
 
@@ -66,3 +66,13 @@ class TestFastTypeTag:
     // Note: List[T] is actually a SUM type.  we may want to special case that one..
     assertFalse("Inequality works", fastTypeTag[Array[Int]]() == fastTypeTag[Array[Boolean]]())
     assertFalse("Inequality works", fastTypeTag[Array[Int]]() == fastTypeTag[Array[Float]]())
+
+  @Test def primtiiveArrays(): Unit =
+    assertTrue(summon[Writer[Array[Boolean]]].tag.asInstanceOf[CollectionTag[_,_]].isArray)
+    assertTrue(summon[Writer[Array[Char]]].tag.asInstanceOf[CollectionTag[_,_]].isArray)
+    assertTrue(summon[Writer[Array[Short]]].tag.asInstanceOf[CollectionTag[_,_]].isArray)
+    assertTrue(summon[Writer[Array[Int]]].tag.asInstanceOf[CollectionTag[_,_]].isArray)
+    assertTrue(summon[Writer[Array[Long]]].tag.asInstanceOf[CollectionTag[_,_]].isArray)
+    assertTrue(summon[Writer[Array[Float]]].tag.asInstanceOf[CollectionTag[_,_]].isArray)
+    assertTrue(summon[Writer[Array[Double]]].tag.asInstanceOf[CollectionTag[_,_]].isArray)
+    assertFalse(summon[Writer[List[Double]]].tag.asInstanceOf[CollectionTag[_,_]].isArray)

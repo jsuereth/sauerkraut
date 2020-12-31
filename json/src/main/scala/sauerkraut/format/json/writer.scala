@@ -22,54 +22,64 @@ import java.io.Writer
 
 type JsonOutputStream = Writer
 
-class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter:
-  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
-    out.write('[')
-    work(JsonPickleCollectionWriter(out))
-    out.write(']')
-    this
-  // TODO - maybe don't rely on toString on primitives...
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): PickleWriter =
-    tag match
-      case PrimitiveTag.UnitTag => out.write("null")
-      case PrimitiveTag.BooleanTag => out.write(picklee.asInstanceOf[Boolean].toString)
-      case PrimitiveTag.CharTag | PrimitiveTag.StringTag => 
-        out.write('"')
-        out.write(picklee.toString)
-        out.write('"')
-      case PrimitiveTag.ByteTag | PrimitiveTag.ShortTag | PrimitiveTag.IntTag | PrimitiveTag.LongTag =>
-        // TODO - appropriate int handling
-        out.write(picklee.toString)
-      case PrimitiveTag.FloatTag | PrimitiveTag.DoubleTag =>
-        // TODO - appropriate floating point handling
-        out.write(picklee.toString)
-    this
-  override def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter =
+class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter with PickleChoiceWriter:
+  override def writeUnit(): Unit = out.write("null")
+  override def writeBoolean(value: Boolean): Unit = out.write(value.toString)
+  override def writeByte(value: Byte): Unit = out.write(value.toString)
+  override def writeChar(value: Char): Unit = 
+    // TODO - is it more efficient to save as a number?
+    out.write('"')
+    out.write(value.toString)
+    out.write('"')
+  override def writeShort(value: Short): Unit = out.write(value.toString)
+  override def writeInt(value: Int): Unit = out.write(value.toString)
+  override def writeLong(value: Long): Unit = out.write(value.toString)
+  override def writeFloat(value: Float): Unit = out.write(value.toString)
+  override def writeDouble(value: Double): Unit = out.write(value.toString)
+  override def writeString(value: String): Unit = 
+    out.write('"')
+    // TODO- escape the string
+    out.write(value.toString)
+    out.write('"')
+  override def writeStructure[T: core.StructureWriter ](value: T): Unit =
     out.write('{')
-    work(JsonStructureWriter(out))
+    summon[core.StructureWriter[T]].writeStructure(value, JsonStructureWriter(out))
     out.write('}')
-    this
-
+  override def writeCollection[T: core.CollectionWriter](value: T): Unit =
+    out.write('[')
+    summon[core.CollectionWriter[T]].writeCollection(value, JsonPickleCollectionWriter(out))
+    out.write(']')
+  override def writeChoice[T: core.ChoiceWriter](value: T): Unit =
+    out.write('{')
+    summon[core.ChoiceWriter[T]].writeChoice(value, this)
+    out.write('}')
   override def flush(): Unit = out.flush()
 
-
-class JsonStructureWriter(out: JsonOutputStream) extends PickleStructureWriter:
-  private var needsComma = false
-  def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
-    if (needsComma) out.write(',')
+  // As an optimisation, we write choices here, because there can only be one field.
+  override def writeChoice[T: core.Writer](number: Int, name: String, value: T): Unit =
     // TODO - escape the name...
     out.write('"')
     out.write(name)
     out.write('"')
     out.write(':')
-    pickler(JsonPickleWriter(out))
+    summon[core.Writer[T]].write(value, JsonPickleWriter(out))
+
+class JsonStructureWriter(out: JsonOutputStream) extends PickleStructureWriter:
+  private var needsComma = false
+  override def writeField[T: core.Writer](fieldNum: Int, fieldName: String, value: T): Unit =
+    if (needsComma) out.write(',')
+    // TODO - escape the name...
+    out.write('"')
+    out.write(fieldName)
+    out.write('"')
+    out.write(':')
+    summon[core.Writer[T]].write(value, JsonPickleWriter(out))
     needsComma = true
-    this
 
 class JsonPickleCollectionWriter(out: JsonOutputStream) extends PickleCollectionWriter:
   private var needsComma = false
-  def putElement(writer: PickleWriter => Unit): PickleCollectionWriter =
+  override def sizeHint(numElements: Int): Unit = ()
+  override def writeElement[T: core.Writer](value: T): Unit =
     if (needsComma) out.write(',')
-    writer(JsonPickleWriter(out))
+    summon[core.Writer[T]].write(value, JsonPickleWriter(out))
     needsComma = true
-    this

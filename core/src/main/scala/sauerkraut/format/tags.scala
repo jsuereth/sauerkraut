@@ -99,6 +99,13 @@ final class CollectionTag[T, E](
       case o: CollectionTag[_, _] => (o.name == name) && (o.elementTag == elementTag)
       case _ => false
   final override def toString = s"Collection($name)"
+  /** Tests whether the other type tag is a collection of the same elements. */
+  final def areElementsCompatible[T](other: FastTypeTag[T]): Boolean =
+    other match
+      case o: CollectionTag[_,_] => o.elementTag == elementTag
+      case _ => false
+  /** Returns true if this collection is for a primitive array. */
+  final def isArray: Boolean = (name.length > 0) && (name(0) == '[')
 
 /** 
  * Constructs a ccollection tag for collections of type T containing repeated
