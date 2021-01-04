@@ -39,6 +39,7 @@ numbers from the naive implementation into something ready-for-production.
 
 ## Areas to investigate:
 
+- [ ] Create byte-buffer writing utilties via `sun.misc.Unsafe`.
 - [X] Figure out where immutable.List.length is being called from (22.8%)
   - `Field.unapply` in RawBinaryReader was the issue.
   - We were doing validation that tags read MATCH what we see in

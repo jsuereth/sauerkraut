@@ -26,6 +26,7 @@ import com.google.protobuf.{
 import WireFormat.{
   WIRETYPE_LENGTH_DELIMITED
 }
+import streams.ProtoOutputStream
 
 /** Helper methods for implementing pb + raw protocols. */
 object Shared:
@@ -37,13 +38,13 @@ object Shared:
       }
     }
 
-  def writeCompressedPrimitives[E, To](out: CodedOutputStream, fieldNum: Int)(
+  def writeCompressedPrimitives[E, To](out: ProtoOutputStream, fieldNum: Int)(
     work: PickleCollectionWriter => Unit): Unit =
-    out.writeTag(fieldNum, WIRETYPE_LENGTH_DELIMITED)
+    out.writeInt(streams.WireFormat.LengthDelimited.makeTag(fieldNum))
     // TODO - we want a size estimator for protos w/ descriptors...
     val sizeEstimate = CompressedPrimitiveCollectionSizeEstimator()
     work(sizeEstimate)
-    out.writeInt32NoTag(sizeEstimate.finalSize)
+    out.writeInt(sizeEstimate.finalSize)
     // Write the primitives...
     work(CompressedPrimitiveCollectionWriter(out))
 
@@ -72,7 +73,7 @@ object Shared:
     else f
 
 /** Pickle writer that can only write compressed repeated primitive fields. */
-class CompressedPrimitiveCollectionWriter(out: CodedOutputStream) extends PickleCollectionWriter with PickleWriter:
+class CompressedPrimitiveCollectionWriter(out: ProtoOutputStream) extends PickleCollectionWriter with PickleWriter:
   override def flush(): Unit = out.flush()
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     pickler(this)
@@ -83,31 +84,31 @@ class CompressedPrimitiveCollectionWriter(out: CodedOutputStream) extends Pickle
   override def putUnit(): PickleWriter = 
     this
   override def putBoolean(value: Boolean): PickleWriter =
-    out.writeBoolNoTag(value)
+    out.writeBoolean(value)
     this
   override def putByte(value: Byte): PickleWriter =
-    out.writeInt32NoTag(value.toInt)
+    out.writeInt(value.toInt)
     this
   override def putChar(value: Char): PickleWriter = 
-    out.writeInt32NoTag(value.toInt)
+    out.writeInt(value.toInt)
     this
   override def putShort(value: Short): PickleWriter =
-    out.writeInt32NoTag(value.toInt)
+    out.writeInt(value.toInt)
     this
   override def putInt(value: Int): PickleWriter = 
-    out.writeInt32NoTag(value)
+    out.writeInt(value)
     this
   override def putLong(value: Long): PickleWriter =
-    out.writeInt64NoTag(value)
+    out.writeLong(value)
     this
   override def putFloat(value: Float): PickleWriter =
-    out.writeFloatNoTag(value)
+    out.writeFloat(value)
     this
   override def putDouble(value: Double): PickleWriter =
-    out.writeDoubleNoTag(value)
+    out.writeDouble(value)
     this
   override def putString(value: String): PickleWriter =
-    out.writeStringNoTag(value)
+    out.writeString(value)
     this
 
 
