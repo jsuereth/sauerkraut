@@ -240,6 +240,6 @@ class WriteBenchmarks:
     buffer.clear()
   @Benchmark
   def write(counter: BytesWritten, bh: Blackhole): Unit =
-    config.save(config.message.asInstanceOf, buffer)
+    bh.consume(config.save(config.message.asInstanceOf, buffer))
     buffer.flip()
     counter.bytesWritten = buffer.remaining

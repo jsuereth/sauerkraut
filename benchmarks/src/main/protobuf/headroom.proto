@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package sauerkraut.benchmarks.headroom.proto;
+
+message OtherMessage {
+    int64 id = 1;
+    string name = 2;
+    float value = 3;
+}
+
+message ExampleMessage {
+  int64 id = 1;
+  string name = 2;
+  repeated OtherMessage helpers = 3;
+}
