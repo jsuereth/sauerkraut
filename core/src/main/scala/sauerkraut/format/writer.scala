@@ -37,8 +37,26 @@ trait PickleWriter:
     *                Note: this may be called multiple times, e.g. when getting size estimates.
     */
   def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter
-  /** Writes a primitive into the pickle. */
-  def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): PickleWriter
+  /** Denotes an empty value. */
+  def putUnit(): PickleWriter
+  /** Writes a primtiive booelan value. */
+  def putBoolean(value: Boolean): PickleWriter
+  /** Writes a primtiive booelan value. */
+  def putByte(value: Byte): PickleWriter
+  /** Writes a primtiive char value. */
+  def putChar(value: Char): PickleWriter
+  /** Writes a primitive short value. */
+  def putShort(value: Short): PickleWriter
+  /** Writes a primtiive int value. */
+  def putInt(value: Int): PickleWriter
+  /** Writes a primtiive long value. */
+  def putLong(value: Long): PickleWriter
+  /** Writes a primtiive float value. */
+  def putFloat(value: Float): PickleWriter
+  /** Writes a primitive double value. */
+  def putDouble(value: Double): PickleWriter
+  /** Writes a "primitive" string value. */
+  def putString(value: String): PickleWriter
   /**
    * Denotes that a collection of elements is about to be pickled.
    *
@@ -47,7 +65,7 @@ trait PickleWriter:
    * @return  A pickler which can serialzie the collection.
    *          `endCollection()` must be called on this for correct behavior.
    */
-  def putCollection(length: Int /*, tag: CollectionTag[_,_]*/)(work: PickleCollectionWriter => Unit): PickleWriter
+  def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter
   /**
    * Denotes a 'choice' type that needs to be written.
    * 

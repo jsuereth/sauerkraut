@@ -23,10 +23,35 @@ import java.io.Writer
 /** Pretty prints to a character stream. */
 class PrettyPrintPickleWriter(out: Writer, indent: Int = 0) extends PickleWriter:
   private def indentSpace: String = (0 until indent).map(_ => ' ').mkString("")
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    out.write(picklee.toString)
+  override def putUnit(): PickleWriter = this
+  override def putBoolean(value: Boolean): PickleWriter =
+    out.write(value.toString())
     this
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+  override def putByte(value: Byte): PickleWriter =
+    out.write(value.toString())
+    this
+  override def putChar(value: Char): PickleWriter = 
+    out.write(value.toString())
+    this
+  override def putShort(value: Short): PickleWriter =
+    out.write(value.toString())
+    this
+  override def putInt(value: Int): PickleWriter = 
+    out.write(value.toString())
+    this
+  override def putLong(value: Long): PickleWriter =
+    out.write(value.toString())
+    this
+  override def putFloat(value: Float): PickleWriter =
+    out.write(value.toString())
+    this
+  override def putDouble(value: Double): PickleWriter =
+    out.write(value.toString())
+    this
+  override def putString(value: String): PickleWriter =
+    out.write(value)
+    this
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
     if (length == 0) then
       out.write("[]")
     else

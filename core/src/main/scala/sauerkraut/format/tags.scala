@@ -109,9 +109,6 @@ inline def collectionTag[T : reflect.ClassTag, E](elementTag: FastTypeTag[E]): C
   // mechanism to get an idempotent AND unique name for collection + element.
   CollectionTag(summon[reflect.ClassTag[T]].runtimeClass.getName, elementTag)
 
-/** A Reader + Writer are available in given scope for this type. */
-case class Given[T](name: String) extends NonPrimitiveTag[T]
-
 /** Constructs a primitive tag or throws a compiletime error. */
 import compiletime.erasedValue
 inline def primitiveTag[T](): PrimitiveTag[T] =

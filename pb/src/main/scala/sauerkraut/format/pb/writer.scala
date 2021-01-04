@@ -27,7 +27,7 @@ class ProtocolBufferFieldWriter(
     desc: ProtoTypeDescriptor[?]) 
     extends PickleWriter with PickleCollectionWriter:
   // Writing a collection should simple write a field multiple times.
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
     try
       desc.asInstanceOf[CollectionTypeDescriptor[_,_]].element match
         case p: PrimitiveTypeDescriptor[_] if length > 1 => Shared.writeCompressedPrimitives(out, fieldNum)(work)
@@ -51,20 +51,35 @@ class ProtocolBufferFieldWriter(
       case e: ClassCastException =>
         throw WriteException(s"Cannot find structure definition from: $desc", e)
 
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter =
-    tag match
-      case PrimitiveTag.UnitTag => ()
-      case PrimitiveTag.BooleanTag => out.writeBool(fieldNum, picklee.asInstanceOf[Boolean])
-      case PrimitiveTag.ByteTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Byte].toInt)
-      case PrimitiveTag.CharTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Char].toInt)
-      case PrimitiveTag.ShortTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Short].toInt)
-      case PrimitiveTag.IntTag => out.writeInt32(fieldNum, picklee.asInstanceOf[Int])
-      case PrimitiveTag.LongTag => out.writeInt64(fieldNum, picklee.asInstanceOf[Long])
-      case PrimitiveTag.FloatTag => out.writeFloat(fieldNum, picklee.asInstanceOf[Float])
-      case PrimitiveTag.DoubleTag => out.writeDouble(fieldNum, picklee.asInstanceOf[Double])
-      case PrimitiveTag.StringTag => out.writeString(fieldNum, picklee.asInstanceOf[String])
+  override def putUnit(): PickleWriter = 
     this
-
+  override def putBoolean(value: Boolean): PickleWriter =
+    out.writeBool(fieldNum, value)
+    this
+  override def putByte(value: Byte): PickleWriter =
+    out.writeInt32(fieldNum, value.toInt)
+    this
+  override def putChar(value: Char): PickleWriter = 
+    out.writeInt32(fieldNum, value.toInt)
+    this
+  override def putShort(value: Short): PickleWriter =
+    out.writeInt32(fieldNum, value.toInt)
+    this
+  override def putInt(value: Int): PickleWriter = 
+    out.writeInt32(fieldNum, value)
+    this
+  override def putLong(value: Long): PickleWriter =
+    out.writeInt64(fieldNum, value)
+    this
+  override def putFloat(value: Float): PickleWriter =
+    out.writeFloat(fieldNum, value)
+    this
+  override def putDouble(value: Double): PickleWriter =
+    out.writeDouble(fieldNum, value)
+    this
+  override def putString(value: String): PickleWriter =
+    out.writeString(fieldNum, value)
+    this
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     // TODO - when writing primitive collection, we won't need fieldNum tags.
     pickler(this)
@@ -94,6 +109,15 @@ class DescriptorBasedProtoWriter(
     catch
       case e: ClassCastException =>
         throw WriteException(s"Unable to find message descriptor for $tag, found ${repository.find(tag)}", e)
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[?]): PickleWriter = ???
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter = ???
+  override def putUnit(): PickleWriter = ???
+  override def putBoolean(value: Boolean): PickleWriter = ???
+  override def putByte(value: Byte): PickleWriter = ???
+  override def putChar(value: Char): PickleWriter = ???
+  override def putShort(value: Short): PickleWriter = ???
+  override def putInt(value: Int): PickleWriter = ???
+  override def putLong(value: Long): PickleWriter = ???
+  override def putFloat(value: Float): PickleWriter = ???
+  override def putDouble(value: Double): PickleWriter = ???
+  override def putString(value: String): PickleWriter = ???
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = ???
   override def flush(): Unit = out.flush()

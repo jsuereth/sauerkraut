@@ -4,19 +4,21 @@ import org.junit.Test
 import org.junit.Assert._
 import format.json.Json
 import format.json.{given}
-import format.{fastTypeTag, primitiveTag}
+import format.{fastTypeTag, primitiveTag, collectionTag}
 import core.{Writer, Buildable, given}
 import java.io.StringWriter
 
 
 case class TestManual(x: Double, b: Int, stuff: Array[Int])
 given Writer[TestManual] with
+  override def tag: format.FastTypeTag[TestManual] = 
+    format.structTag[TestManual](Array("x", "b", "stuff"))
   override def write(value: TestManual, pickle: format.PickleWriter): Unit =
     pickle.putStructure(value, fastTypeTag[TestManual]())(
-      _.putField("x", w => w.putPrimitive(value.x, primitiveTag[Double]())).
-      putField("b", w => w.putPrimitive(value.b, primitiveTag[Int]())).
-      putField("stuff", _.putCollection(value.stuff.length)(c =>
-        value.stuff.foreach(i => c.putElement(w => w.putPrimitive(i, primitiveTag[Int]()))))))
+      _.putField("x", w => w.putDouble(value.x)).
+      putField("b", w => w.putInt(value.b)).
+      putField("stuff", _.putCollection(value.stuff.length, collectionTag[Array[Int], Int](fastTypeTag()))(c =>
+        value.stuff.foreach(i => c.putElement(w => w.putInt(i))))))
 
 case class TestDerived(x: Double, b: Int, z: List[String])
   derives Writer, Buildable

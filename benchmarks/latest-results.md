@@ -21,14 +21,14 @@ Our goal is to:
 
 | Framework  | Format    | ByteSize | Read (ns / op)   | Write ( ns / op) |
 | ---------  | --------- | -------- | ---------------- | ---------------- |
-| Sauerkraut | proto     | 4125     | 1938.84          | 2384.86           |
-| Sauerkraut | raw       | 4675     | 3081.16          | 1642.89          |
-| Sauerkraut | nbt       | 7350     | 2321.81          | 1523.85          |
-| Sauerkraut | json      | 5875     | 3851.68          | 3858.37          |
-| Sauerkraut | xml       | 32125    | 46972.45         | 8373.64          |
-| Sava Ser   |           | 25600    | 24490.29         | 6742.91          |
-| Kryo       |           |          |                  |                  |
-| JavaProto  |           | 4025     | 380.43           | 522.19           |
+| Sauerkraut | proto     | 165      | 1938.84          | 2384.86          |
+| Sauerkraut | raw       | 197      | 3081.16          | 1642.89          |
+| Sauerkraut | nbt       | 294      | 2321.81          | 1523.85          |
+| Sauerkraut | json      | 235      | 3851.68          | 3858.37          |
+| Sauerkraut | xml       | 1285     | 46972.45         | 8373.64          |
+| Java Ser   |           | 1024     | 24490.29         | 6742.91          |
+| Kryo       |           | 275      | 1748.03          | 1465.01          |
+| JavaProto  |           | 161      | 380.43           | 522.19           |
 
 Currently there's a bit too much overhead in Sauerkraut vs. Java's protocol
 buffers. It still beats Java Serialization on all counts, but that's
@@ -52,6 +52,54 @@ numbers from the naive implementation into something ready-for-production.
 - [ ] Figure out if `Mirror.ProductOf[T]#fromProduct` could be more efficient. (2.9%)
 - [X] Support compressed repeated fields in PB format
 - [ ] Add size-hint to `CollectionBuilder`
+
+
+## Headroom Experiment 2021-01-03
+
+Wanted to create a set of benchmarks representing our "ideal" performance if we had perfect codegen and
+were able to optimise all aspects of writing similar to other formats.  E.g. if we assume things, like
+an efficient Rope implementation, the ability to use `sun.misc.Unsafe` to directly write values into
+a byte buffer, memoization, etc. then what would our performance look like with the current API.
+
+This is meant to understand if we actually *do* have headroom in this design space to be competitive or if
+we'll always play second fiddle due to the abstraction layers we've chosen to use.
+
+- Option #1: The design currently implemented
+- Option #2: Similar to existing design, but `number` and `name` for fields are encoded everywhere.
+  - Currently unclear how this option WOULD support direction JSON => Scala object derivations
+  - `@field` would move from pb library to core
+  - Codegen would need massive overhaul, liekly be written entirely as a macro.
+  - formats can choose to use number or name-based structures.  This would be a new
+    denotation in the format list.
+
+Current results are as follows:
+
+```
+[info] Benchmark                          Mode  Cnt     Score   Error  Units
+[info] WriteBenchmarks.writeKryo          avgt       1831.583          ns/op
+[info] WriteBenchmarks.writeOption1       avgt       1506.890          ns/op
+[info] WriteBenchmarks.writeOption2       avgt       1046.976          ns/op
+[info] WriteBenchmarks.writeOption2Proto  avgt        439.448          ns/op
+[info] WriteBenchmarks.writeProto         avgt        718.972          ns/op
+```
+
+In this case we used our previous investigation into why protos were beating sauerkraut in benchmarks and
+found the following:
+
+1. Java ProtocolBuffer library does a LOT of optimisation via memoization.  In fact, the current
+  headroom benchmark is dominated (~30%) on message construction.  One of the "bets" of sauerkraut is
+  that creating objects should NOT be expensive if we can make up serialization performance through
+  efficient codegen later.   You *should* be able to adapt your own classes to a protocol and optimise
+  other aspects of your code, not turning all Strings into `ByteString`s behind the scenes.
+
+  As a side note: Java protos optimise down to ~80ms serialization time post-memoization + build.
+2. We need to optimise our `Byte` shuffling powers, probably at a framework level.   Option1 + Option2
+  serialize to NBT format, using `java.io.DataOutputStream`.   Currently, writing strings dominates
+  performance in our "ideal" setting, meaning we should go "unsafe".   It turns out, this is exactly
+  what the "Proto" format does, `CodedOutputStream` will create a byte array of the exact size of
+  the message and use `sun.misc.Unsafe` to shuffle bytes into it.  You can see that using the
+  Sauerkraut option 2 serialization results in an absurd reduction in write speed.
+3. We have not performed similar optimisations for reading yet.  
 
 ## New Stack Tracing Results (2020-12-24)
 
@@ -90,6 +138,18 @@ Here we notice a few issues:
 - When writing, we are suffering from encoding into an array buffer, then using its resultisng size instead of precomputing size.
 - `pushWithDesc` is contributing a significant amount to performance.  We should attempt to
   optimise this further if we can.
+
+Additionally, in investigating the Protocol Buffer implementation we found
+a few key optimisations that work in tandem to give it its speed:
+
+- Strings are turned into ByteStrings of UTF-8 and written as `Array[Byte]`
+  (and memoized as such).  This is a *huge* boost if the JVM itself is
+  using UTF-8 for strings.
+- Output size is precomputed and memoized per-message.
+- The `CodedOutputStream` creates a byte buffer itself of the size of
+  the message being written (see memoized bytesize).   This offers a huge
+  performance advantage vs. using CodedOutputStream with an invalid
+  buffer size.
 
 ## Stack Tracing Results (2020-12-22)
 

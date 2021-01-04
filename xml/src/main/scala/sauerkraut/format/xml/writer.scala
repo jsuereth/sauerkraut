@@ -22,28 +22,38 @@ import java.io.Writer
 
 
 class XmlPickleWriter(out: Writer) extends PickleWriter with PickleCollectionWriter with PickleStructureWriter:
-  override def putCollection(length: Int)(work: PickleCollectionWriter => Unit): PickleWriter =
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
     out.write("<collection>")
     work(this)
     out.write("</collection>")
     this
-  // TODO - maybe don't rely on toString on primitives...
-  override def putPrimitive(picklee: Any, tag: PrimitiveTag[_]): PickleWriter =
+  private inline def writePrimitive[A](f: => A): PickleWriter =
     out.write("<primitive>")
-    tag match
-      case PrimitiveTag.UnitTag => out.write("null")
-      case PrimitiveTag.BooleanTag => out.write(picklee.asInstanceOf[Boolean].toString)
-      case PrimitiveTag.CharTag | PrimitiveTag.StringTag =>
-        // TODO - figure out whether or not to CDATA this.
-        out.write(picklee.toString)
-      case PrimitiveTag.ByteTag | PrimitiveTag.ShortTag | PrimitiveTag.IntTag | PrimitiveTag.LongTag =>
-        // TODO - appropriate int handling
-        out.write(picklee.toString)
-      case PrimitiveTag.FloatTag | PrimitiveTag.DoubleTag =>
-        // TODO - appropriate floating point handling
-        out.write(picklee.toString)
+    f
     out.write("</primitive>")
     this
+  // TODO - maybe don't rely on toString on primitives...
+  override def putUnit(): PickleWriter = 
+    writePrimitive(out.write("null"))
+  override def putBoolean(value: Boolean): PickleWriter =
+    writePrimitive(out.write(value.toString()))
+  override def putByte(value: Byte): PickleWriter =
+    writePrimitive(out.write(value.toString()))
+  override def putChar(value: Char): PickleWriter = 
+    writePrimitive(out.write(value.toString()))
+  override def putShort(value: Short): PickleWriter =
+    writePrimitive(out.write(value.toString()))
+  override def putInt(value: Int): PickleWriter = 
+    writePrimitive(out.write(value.toString()))
+  override def putLong(value: Long): PickleWriter =
+    writePrimitive(out.write(value.toString()))
+  override def putFloat(value: Float): PickleWriter =
+    writePrimitive(out.write(value.toString()))
+  override def putDouble(value: Double): PickleWriter =
+    writePrimitive(out.write(value.toString()))
+  override def putString(value: String): PickleWriter =
+    // TODO - figure out whether or not to CDATA this.
+    writePrimitive(out.write(value.toString()))
   override def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter =
     // TODO - tag...
     out.write("<structure>")

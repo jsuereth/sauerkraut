@@ -22,7 +22,7 @@ package core
 trait Writer[T]:
   def write(value: T, pickle: format.PickleWriter): Unit
   /** Type tag for what this can write. */
-  // def tag: FastTypeTag[T]
+  def tag: format.FastTypeTag[T]
 
 object Writer:
   import scala.compiletime.{constValue,erasedValue,summonFrom}
@@ -31,19 +31,20 @@ object Writer:
   /** Derives writers of type T. */
   inline def derived[T](using m: Mirror.Of[T]): Writer[T] =
     new Writer[T] {
+      override val tag: format.FastTypeTag[T] = format.fastTypeTag[T]()
       override def write(value: T, pickle: format.PickleWriter): Unit =
         inline m match
           case m: Mirror.ProductOf[T] =>
             writeStruct[m.MirroredElemTypes, m.MirroredElemLabels](
               value,
               pickle,
-              format.fastTypeTag[T]())
+              tag)
           case m: Mirror.SumOf[T] =>
             // TODO - We may need to synthesize writers for each option.
             writeOption[Tuple.Zip[m.MirroredElemLabels, m.MirroredElemTypes]](
               value, 
               pickle,
-              format.fastTypeTag[T]())
+              tag)
           case _ => compiletime.error("Cannot derive serialization for non-product classes")
     }
   /** Writes all the fields (in Elems) to the structure writer. */

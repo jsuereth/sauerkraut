@@ -19,16 +19,6 @@ package core
 
 import format.{primitiveTag,PrimitiveTag}
 
-// A writer of primitive values.
-final class PrimitiveWriter[T](tag: PrimitiveTag[T]) extends Writer[T]:
-  override def write(value: T, pickle: format.PickleWriter): Unit =
-    pickle.putPrimitive(value, tag)
-
-object PrimitiveWriter {
-  inline def apply[T](): PrimitiveWriter[T] =
-    new PrimitiveWriter[T](primitiveTag[T]())
-}
-
 // A builder of primitive values.
 final class SimplePrimitiveBuilder[T](
     override val tag: PrimitiveTag[T]) 
@@ -58,26 +48,55 @@ final class StaticValueBuilder[T](
     extends PrimitiveBuilder[T]:
   override def putPrimitive(value: T): Unit = ()
 
-given Writer[Unit] = PrimitiveWriter[Unit]()
+given Writer[Unit] with
+  val tag: format.FastTypeTag[Unit] = format.fastTypeTag[Unit]()
+  def write(value: Unit, pickle: format.PickleWriter): Unit = pickle.putUnit()
 given Buildable[Unit] with
   override val tag: format.FastTypeTag[Unit] = format.fastTypeTag[Unit]()
   override def newBuilder: Builder[Unit] = 
     StaticValueBuilder(PrimitiveTag.UnitTag, ())
-given Writer[Byte] = PrimitiveWriter[Byte]()
+given Writer[Byte] with
+  override val tag = primitiveTag[Byte]()
+  override def write(value: Byte, pickle: format.PickleWriter): Unit =
+    pickle.putByte(value)
 given Buildable[Byte] = PrimitiveBuildable[Byte]()
-given Writer[Boolean] = PrimitiveWriter[Boolean]()
+given Writer[Boolean] with
+  override val tag = primitiveTag[Boolean]()
+  override def write(value: Boolean, pickle: format.PickleWriter): Unit =
+    pickle.putBoolean(value)
 given Buildable[Boolean] = PrimitiveBuildable[Boolean]()
-given Writer[Char] = PrimitiveWriter[Char]()
+given Writer[Char] with
+  override val tag = primitiveTag[Char]()
+  override def write(value: Char, pickle: format.PickleWriter): Unit =
+    pickle.putChar(value)
 given Buildable[Char] = PrimitiveBuildable[Char]()
-given Writer[Short] = PrimitiveWriter[Short]()
+given Writer[Short] with
+  override val tag = primitiveTag[Short]()
+  override def write(value: Short, pickle: format.PickleWriter): Unit =
+    pickle.putShort(value)
 given Buildable[Short] = PrimitiveBuildable[Short]()
-given Writer[Int] = PrimitiveWriter[Int]()
+given Writer[Int] with
+  override val tag = primitiveTag[Int]()
+  override def write(value: Int, pickle: format.PickleWriter): Unit =
+    pickle.putInt(value)
 given Buildable[Int] = PrimitiveBuildable[Int]()
-given Writer[Long] = PrimitiveWriter[Long]()
+given Writer[Long] with
+  override val tag = primitiveTag[Long]()
+  override def write(value: Long, pickle: format.PickleWriter): Unit =
+    pickle.putLong(value)
 given Buildable[Long] = PrimitiveBuildable[Long]()
-given Writer[Float] = PrimitiveWriter[Float]()
+given Writer[Float] with
+  override val tag = primitiveTag[Float]()
+  override def write(value: Float, pickle: format.PickleWriter): Unit =
+    pickle.putFloat(value)
 given Buildable[Float] = PrimitiveBuildable[Float]()
-given Writer[Double] = PrimitiveWriter[Double]()
+given Writer[Double] with
+  override val tag = primitiveTag[Double]()
+  override def write(value: Double, pickle: format.PickleWriter): Unit =
+    pickle.putDouble(value)
 given Buildable[Double] = PrimitiveBuildable[Double]()
-given Writer[String] = PrimitiveWriter[String]()
+given Writer[String] with
+  override val tag = primitiveTag[String]()
+  override def write(value: String, pickle: format.PickleWriter): Unit =
+    pickle.putString(value)
 given Buildable[String] = PrimitiveBuildable[String]()
