@@ -32,7 +32,7 @@ object Nbt extends PickleFormat
 
 given [O <: OutputStream]: PickleWriterSupport[O, Nbt.type] with
   def writerFor(format: Nbt.type, output: O): PickleWriter =
-    NbtPickleWriter(internal.TagOutputStream(DataOutputStream(output)))
+    NbtPickleWriter(internal.TagOutputStream(output))
 
 given [I <: InputStream]: PickleReaderSupport[I, Nbt.type] with
   def readerFor(format: Nbt.type, input: I): PickleReader =

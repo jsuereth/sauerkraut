@@ -79,7 +79,7 @@ val pbtest = project
 
 val nbt = project
   .settings(commonSettings:_*)
-  .dependsOn(core, compliance % "test")
+  .dependsOn(core, utils, compliance % "test")
 
 val xml = project
   .settings(commonSettings:_*)
