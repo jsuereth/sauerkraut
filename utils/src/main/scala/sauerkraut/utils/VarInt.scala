@@ -32,7 +32,7 @@ object VarInt:
 
   // Helper methods / inline impls.
 
-  private inline def readULong(inline readNext: () => Byte): Long =
+  inline def readULong(inline readNext: () => Byte): Long =
     var currentByte: Byte = readNext()
     if (currentByte & 0x80) == 0 then currentByte.toLong
     else
@@ -45,7 +45,7 @@ object VarInt:
         (currentByte & 0x80) != 0 // && offset < 64 
       do ()
       result
-  private inline def readUInt(inline readNext: () => Byte): Int =
+  inline def readUInt(inline readNext: () => Byte): Int =
     var currentByte: Byte = readNext()
     if (currentByte & 0x80) == 0 then currentByte.toInt
     else

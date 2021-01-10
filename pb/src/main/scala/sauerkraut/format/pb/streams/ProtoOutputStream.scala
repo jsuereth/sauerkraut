@@ -16,8 +16,6 @@ final class ProtoOutputStream(out: java.io.OutputStream):
     writeInt(bytes.length)
     out.write(bytes)
   def writeString(value: String): Unit = writeByteArray(value.getBytes(InlineWriter.Utf8))
-  
-
   def writeBoolean(field: Int, value: Boolean): Unit = 
     writeInt(WireFormat.VarInt.makeTag(field))
     writeBoolean(value)

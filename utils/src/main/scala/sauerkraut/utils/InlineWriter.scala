@@ -1,7 +1,7 @@
 package sauerkraut
 package utils
 
-// Helper methods for creating codecs.
+// Helper methods for creating cdoecs/formats.  This should avoid as much JVM-specific code as possible.
 object InlineWriter:
   final val Utf8 = java.nio.charset.Charset.forName("UTF-8")
   /** An enum representing where most-significant-bit is written in a byte sequence. */
