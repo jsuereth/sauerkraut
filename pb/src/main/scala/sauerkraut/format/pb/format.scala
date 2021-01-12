@@ -20,7 +20,6 @@ package pb
 
 import java.nio.ByteBuffer
 import java.io.{InputStream,OutputStream}
-import com.google.protobuf.{CodedInputStream}
 
 /** 
  * A binary format that is protocol-buffer like, but will not allow

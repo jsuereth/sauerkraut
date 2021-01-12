@@ -19,19 +19,10 @@ package format
 package pb
 
 import streams.{
-  LimitableTagReadingStream
-}
-
-import com.google.protobuf.{
+  LimitableTagReadingStream,
+  Tag,
   WireFormat
 }
-import WireFormat.{
-  WIRETYPE_LENGTH_DELIMITED
-}
-
-object Tag:
-  inline def unapply(tag: Int): (Int, Int) =
-    (WireFormat.getTagWireType(tag), WireFormat.getTagFieldNumber(tag))
 
 class RawBinaryPickleReader(in: LimitableTagReadingStream)
   extends PickleReader:
@@ -59,7 +50,7 @@ class RawBinaryPickleReader(in: LimitableTagReadingStream)
         // TODO - if we hit any field we don't recognize, we quit.
         case 0 => done = true
         // Special case string (and packed) types so we don't read the length.
-        case Tag(WIRETYPE_LENGTH_DELIMITED,
+        case Tag(WireFormat.LengthDelimited,
                  fieldNum @ Field(fieldBuilder: core.PrimitiveBuilder[?])) =>
           // Don't read the length, string read will do this.
           push(fieldBuilder)

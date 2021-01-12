@@ -18,20 +18,19 @@ package sauerkraut
 package format
 package pb
 
-import com.google.protobuf.{
-  CodedOutputStream,
+
+import streams.{
+  ProtoOutputStream,
+  ProtoWireSize,
+  LimitableTagReadingStream,
   WireFormat
 }
-import WireFormat.{
-  WIRETYPE_LENGTH_DELIMITED
-}
-import streams.{ProtoOutputStream, LimitableTagReadingStream}
 
 /** Helper methods for implementing pb + raw protocols. */
 object Shared:
   /** Reads a compressed repeated primitive field. */
   def readCompressedPrimitive[E, To](in: LimitableTagReadingStream)(b: core.CollectionBuilder[E, To], elementTag: PrimitiveTag[E]): Unit =
-    limitByWireType(in)(WIRETYPE_LENGTH_DELIMITED) {
+    limitByWireType(in)(WireFormat.LengthDelimited) {
       while (!in.isAtEnd()) {
         readPrimitive(in)(b.putElement().asInstanceOf)
       }
@@ -61,9 +60,9 @@ object Shared:
       case PrimitiveTag.DoubleTag => b.putPrimitive(in.readDouble())
       case PrimitiveTag.StringTag => b.putPrimitive(in.readString())
   
-  inline def limitByWireType[A](in: LimitableTagReadingStream)(wireType: Int)(inline f: => A): Unit =
+  inline def limitByWireType[A](in: LimitableTagReadingStream)(wireType: WireFormat)(inline f: => A): Unit =
     // TODO - if field is a STRING we do not limit by length.
-    if wireType == WIRETYPE_LENGTH_DELIMITED
+    if WireFormat.LengthDelimited == wireType
     then
       var length = in.readVarInt32()
       val limit = in.pushLimit(length)
@@ -125,30 +124,30 @@ class CompressedPrimitiveCollectionSizeEstimator extends PickleCollectionWriter 
   override def putUnit(): PickleWriter = 
     this
   override def putBoolean(value: Boolean): PickleWriter =
-    size += CodedOutputStream.computeBoolSizeNoTag(value)
+    size += ProtoWireSize.sizeOf(value)
     this
   override def putByte(value: Byte): PickleWriter =
-    size += CodedOutputStream.computeInt32SizeNoTag(value.toInt)
+    size += ProtoWireSize.sizeOf(value.toInt)
     this
   override def putChar(value: Char): PickleWriter = 
-    size += CodedOutputStream.computeInt32SizeNoTag(value.toInt)
+    size += ProtoWireSize.sizeOf(value.toInt)
     this
   override def putShort(value: Short): PickleWriter =
-    size += CodedOutputStream.computeInt32SizeNoTag(value.toInt)
+    size += ProtoWireSize.sizeOf(value.toInt)
     this
   override def putInt(value: Int): PickleWriter = 
-    size += CodedOutputStream.computeInt32SizeNoTag(value)
+    size += ProtoWireSize.sizeOf(value)
     this
   override def putLong(value: Long): PickleWriter =
-    size += CodedOutputStream.computeInt64SizeNoTag(value)
+    size += ProtoWireSize.sizeOf(value)
     this
   override def putFloat(value: Float): PickleWriter =
-    size += CodedOutputStream.computeFloatSizeNoTag(value)
+    size += ProtoWireSize.sizeOf(value)
     this
   override def putDouble(value: Double): PickleWriter =
-    size += CodedOutputStream.computeDoubleSizeNoTag(value)
+    size += ProtoWireSize.sizeOf(value)
     this
   override def putString(value: String): PickleWriter =
-    size += CodedOutputStream.computeStringSizeNoTag(value)
+    size += ProtoWireSize.sizeOf(value)
     this
   
