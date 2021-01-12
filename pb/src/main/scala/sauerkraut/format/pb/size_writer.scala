@@ -18,7 +18,10 @@ package sauerkraut
 package format
 package pb
 
-import com.google.protobuf.CodedOutputStream
+import streams.{
+  ProtoWireSize,
+  WireFormat
+}
 
 trait SizeEstimator:
   def finalSize: Int
@@ -29,7 +32,7 @@ class RawPickleSizeEstimator extends PickleWriter with SizeEstimator:
   override def finalSize: Int = size
   override def flush(): Unit = ()
   override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
-    size += CodedOutputStream.computeInt32SizeNoTag(length)
+    size += ProtoWireSize.sizeOf(length)
     val estimate = RawCollectionSizeEstimateWriter()
     work(estimate)
     size += estimate.finalSize
@@ -37,31 +40,31 @@ class RawPickleSizeEstimator extends PickleWriter with SizeEstimator:
   override def putUnit(): PickleWriter = 
     this
   override def putBoolean(value: Boolean): PickleWriter =
-    size += CodedOutputStream.computeBoolSizeNoTag(value)
+    size += ProtoWireSize.sizeOf(value)
     this
   override def putByte(value: Byte): PickleWriter =
-    size += CodedOutputStream.computeInt32SizeNoTag(value.toInt)
+    size += ProtoWireSize.sizeOf(value.toInt)
     this
   override def putChar(value: Char): PickleWriter = 
-    size += CodedOutputStream.computeInt32SizeNoTag(value.toInt)
+    size += ProtoWireSize.sizeOf(value.toInt)
     this
   override def putShort(value: Short): PickleWriter =
-    size += CodedOutputStream.computeInt32SizeNoTag(value.toInt)
+    size += ProtoWireSize.sizeOf(value.toInt)
     this
   override def putInt(value: Int): PickleWriter = 
-    size += CodedOutputStream.computeInt32SizeNoTag(value)
+    size += ProtoWireSize.sizeOf(value)
     this
   override def putLong(value: Long): PickleWriter =
-    size += CodedOutputStream.computeInt64SizeNoTag(value)
+    size += ProtoWireSize.sizeOf(value)
     this
   override def putFloat(value: Float): PickleWriter =
-    size += CodedOutputStream.computeFloatSizeNoTag(value)
+    size += ProtoWireSize.sizeOf(value)
     this
   override def putDouble(value: Double): PickleWriter =
-    size += CodedOutputStream.computeDoubleSizeNoTag(value)
+    size += ProtoWireSize.sizeOf(value)
     this
   override def putString(value: String): PickleWriter =
-    size += CodedOutputStream.computeStringSizeNoTag(value)
+    size += ProtoWireSize.sizeOf(value)
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter =
     val estimate = SizeEstimateStructureWriter(RawBinaryMessageDescriptor())
@@ -93,39 +96,39 @@ class FieldSizeEstimateWriter(fieldNum: Int,
   private var size: Int = 0
   override def finalSize: Int = size
   override def putUnit(): PickleWriter = 
-    size += CodedOutputStream.computeInt32Size(fieldNum, 0)
+    size += ProtoWireSize.sizeOf(fieldNum, 0)
     this
   override def putBoolean(value: Boolean): PickleWriter =
-    size += CodedOutputStream.computeBoolSize(fieldNum, value)
+    size += ProtoWireSize.sizeOf(fieldNum, value)
     this
   override def putByte(value: Byte): PickleWriter =
-    size += CodedOutputStream.computeInt32Size(fieldNum, value.toInt)
+    size += ProtoWireSize.sizeOf(fieldNum, value.toInt)
     this
   override def putChar(value: Char): PickleWriter = 
-    size += CodedOutputStream.computeInt32Size(fieldNum, value.toInt)
+    size += ProtoWireSize.sizeOf(fieldNum, value.toInt)
     this
   override def putShort(value: Short): PickleWriter =
-    size += CodedOutputStream.computeInt32Size(fieldNum, value.toInt)
+    size += ProtoWireSize.sizeOf(fieldNum, value.toInt)
     this
   override def putInt(value: Int): PickleWriter = 
-    size += CodedOutputStream.computeInt32Size(fieldNum, value)
+    size += ProtoWireSize.sizeOf(fieldNum, value)
     this
   override def putLong(value: Long): PickleWriter =
-    size += CodedOutputStream.computeInt64Size(fieldNum, value)
+    size += ProtoWireSize.sizeOf(fieldNum, value)
     this
   override def putFloat(value: Float): PickleWriter =
-    size += CodedOutputStream.computeFloatSize(fieldNum, value)
+    size += ProtoWireSize.sizeOf(fieldNum, value)
     this
   override def putDouble(value: Double): PickleWriter =
-    size += CodedOutputStream.computeDoubleSize(fieldNum, value)
+    size += ProtoWireSize.sizeOf(fieldNum, value)
     this
   override def putString(value: String): PickleWriter =
-    size += CodedOutputStream.computeStringSize(fieldNum, value)
+    size += ProtoWireSize.sizeOf(fieldNum, value)
     this
   // TODO - Primitives behave differently from messages...
   override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = 
-    size += CodedOutputStream.computeTagSize(fieldNum)
-    size += CodedOutputStream.computeInt32SizeNoTag(length)
+    size += ProtoWireSize.sizeOfTag(WireFormat.LengthDelimited, fieldNum)
+    size += ProtoWireSize.sizeOf(length)
     work(this)
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter = 
@@ -138,8 +141,8 @@ class FieldSizeEstimateWriter(fieldNum: Int,
       tmp.finalSize
     // Structure are written as follows:
     // [TAG] [SIZE] [RAW BYTES]
-    size += CodedOutputStream.computeTagSize(fieldNum)
-    size += CodedOutputStream.computeUInt32SizeNoTag(subSize)
+    size += ProtoWireSize.sizeOfTag(WireFormat.LengthDelimited, fieldNum)
+    size += ProtoWireSize.sizeOf(subSize)
     size += subSize
     this
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =

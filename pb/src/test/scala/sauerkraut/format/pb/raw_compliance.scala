@@ -3,7 +3,7 @@ package format
 package pb
 
 import java.io.{ByteArrayInputStream,ByteArrayOutputStream}
-import com.google.protobuf.{CodedInputStream,CodedOutputStream}
+
 
 // We only do partial complaince, so we opt-in to what we can do.
 class RawBinaryComplianceTests 
