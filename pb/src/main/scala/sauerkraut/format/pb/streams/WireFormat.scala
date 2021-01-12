@@ -11,5 +11,7 @@ enum WireFormat(val flag: Int):
 
   // Constructs a proto tag for the wireformat type and the field number.
   def makeTag(fieldNumber: Int): Int = (fieldNumber << 3) | flag
+
+object WireFormat:
   def extractFormat(tag: Int): Int = (tag & 7)
   def extractField(tag: Int): Int = (tag >>> 3)

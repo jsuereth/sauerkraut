@@ -34,7 +34,7 @@ given [O <: OutputStream]: PickleWriterSupport[O, RawBinary.type] with
 
 given [I <: InputStream]: PickleReaderSupport[I, RawBinary.type] with
   def readerFor(format: RawBinary.type, input: I): PickleReader = 
-    RawBinaryPickleReader(CodedInputStream.newInstance(input))
+    RawBinaryPickleReader(streams.ProtoInputStream(input))
 
 
 // given PickleWriterSupport[Array[Byte], RawBinary.type] with
@@ -43,15 +43,15 @@ given [I <: InputStream]: PickleReaderSupport[I, RawBinary.type] with
 
 given PickleReaderSupport[Array[Byte], RawBinary.type] with
   def readerFor(format: RawBinary.type, input: Array[Byte]): PickleReader =
-    RawBinaryPickleReader(CodedInputStream.newInstance(new java.io.ByteArrayInputStream(input)))
+    RawBinaryPickleReader(streams.ProtoInputStream(new java.io.ByteArrayInputStream(input)))
 
 // given PickleWriterSupport[ByteBuffer, RawBinary.type] with
 //   def writerFor(format: RawBinary.type, output: ByteBuffer): PickleWriter = 
 //     RawBinaryPickleWriter(streams.ProtoOutputStream(output))
 
-given PickleReaderSupport[ByteBuffer, RawBinary.type] with
-  def readerFor(format: RawBinary.type, input: ByteBuffer): PickleReader =
-    RawBinaryPickleReader(CodedInputStream.newInstance(input))
+// given PickleReaderSupport[ByteBuffer, RawBinary.type] with
+//   def readerFor(format: RawBinary.type, input: ByteBuffer): PickleReader =
+//     RawBinaryPickleReader(CodedInputStream.newInstance(input))
 
 /**
  * A binary format that allows the encoding of specific protocol
@@ -80,9 +80,9 @@ given [O <: OutputStream, P <: Protos]: PickleWriterSupport[O, P] with
 
 given [I <: InputStream, P <: Protos]: PickleReaderSupport[I, P] with
   def readerFor(protos: P, input: I): PickleReader =
-    DescriptorBasedProtoReader(CodedInputStream.newInstance(input), protos.repository)
+    DescriptorBasedProtoReader(streams.ProtoInputStream(input), protos.repository)
 
 
-given [P <: Protos]: PickleReaderSupport[ByteBuffer, P] with
-  def readerFor(protos: P, input: ByteBuffer): PickleReader =
-    DescriptorBasedProtoReader(CodedInputStream.newInstance(input), protos.repository)
+// given [P <: Protos]: PickleReaderSupport[ByteBuffer, P] with
+//   def readerFor(protos: P, input: ByteBuffer): PickleReader =
+//     DescriptorBasedProtoReader(CodedInputStream.newInstance(input), protos.repository)

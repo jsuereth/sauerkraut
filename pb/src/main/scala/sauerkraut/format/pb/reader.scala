@@ -18,15 +18,18 @@ package sauerkraut
 package format
 package pb
 
+import streams.{
+  LimitableTagReadingStream
+}
+
 import com.google.protobuf.{
-  CodedInputStream,
   WireFormat
 }
 import WireFormat.{
   WIRETYPE_LENGTH_DELIMITED
 }
 
-class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepository)
+class DescriptorBasedProtoReader(in: LimitableTagReadingStream, repo: TypeDescriptorRepository)
     extends PickleReader:
   def push[T](b: core.Builder[T]): core.Builder[T] =
     b match
@@ -77,7 +80,7 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
           case _: MatchError => None
     var done: Boolean = false
     while !done do
-      in.readTag match
+      in.readTag() match
         case 0 => done = true
         case Tag(wireType, num @ FieldName(field)) =>
           readField(struct.putField(field), mapping.fieldDesc(num), wireType)

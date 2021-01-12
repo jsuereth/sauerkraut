@@ -19,19 +19,18 @@ package format
 package pb
 
 import com.google.protobuf.{
-  CodedInputStream,
   CodedOutputStream,
   WireFormat
 }
 import WireFormat.{
   WIRETYPE_LENGTH_DELIMITED
 }
-import streams.ProtoOutputStream
+import streams.{ProtoOutputStream, LimitableTagReadingStream}
 
 /** Helper methods for implementing pb + raw protocols. */
 object Shared:
   /** Reads a compressed repeated primitive field. */
-  def readCompressedPrimitive[E, To](in: CodedInputStream)(b: core.CollectionBuilder[E, To], elementTag: PrimitiveTag[E]): Unit =
+  def readCompressedPrimitive[E, To](in: LimitableTagReadingStream)(b: core.CollectionBuilder[E, To], elementTag: PrimitiveTag[E]): Unit =
     limitByWireType(in)(WIRETYPE_LENGTH_DELIMITED) {
       while (!in.isAtEnd()) {
         readPrimitive(in)(b.putElement().asInstanceOf)
@@ -49,24 +48,24 @@ object Shared:
     work(CompressedPrimitiveCollectionWriter(out))
 
   /** Reads a primitive by using the Builder's tag to determine how to interpret the data. */
-  def readPrimitive[T](in: CodedInputStream)(b: core.PrimitiveBuilder[T]): Unit =
+  def readPrimitive[T](in: LimitableTagReadingStream)(b: core.PrimitiveBuilder[T]): Unit =
     b.tag match
       case PrimitiveTag.UnitTag => ()
-      case PrimitiveTag.BooleanTag => b.putPrimitive(in.readBool())
-      case PrimitiveTag.ByteTag => b.putPrimitive(in.readRawByte())
-      case PrimitiveTag.CharTag => b.putPrimitive(in.readInt32().toChar)
-      case PrimitiveTag.ShortTag => b.putPrimitive(in.readInt32().toShort)
-      case PrimitiveTag.IntTag => b.putPrimitive(in.readInt32())
-      case PrimitiveTag.LongTag => b.putPrimitive(in.readInt64())
+      case PrimitiveTag.BooleanTag => b.putPrimitive(in.readBoolean())
+      case PrimitiveTag.ByteTag => b.putPrimitive(in.readByte())
+      case PrimitiveTag.CharTag => b.putPrimitive(in.readVarInt32().toChar)
+      case PrimitiveTag.ShortTag => b.putPrimitive(in.readVarInt32().toShort)
+      case PrimitiveTag.IntTag => b.putPrimitive(in.readVarInt32())
+      case PrimitiveTag.LongTag => b.putPrimitive(in.readVarInt64())
       case PrimitiveTag.FloatTag => b.putPrimitive(in.readFloat())
       case PrimitiveTag.DoubleTag => b.putPrimitive(in.readDouble())
       case PrimitiveTag.StringTag => b.putPrimitive(in.readString())
   
-  inline def limitByWireType[A](in: CodedInputStream)(wireType: Int)(f: => A): Unit =
+  inline def limitByWireType[A](in: LimitableTagReadingStream)(wireType: Int)(inline f: => A): Unit =
     // TODO - if field is a STRING we do not limit by length.
     if wireType == WIRETYPE_LENGTH_DELIMITED
     then
-      var length = in.readRawVarint32()
+      var length = in.readVarInt32()
       val limit = in.pushLimit(length)
       f
       in.popLimit(limit)
@@ -117,7 +116,6 @@ class CompressedPrimitiveCollectionSizeEstimator extends PickleCollectionWriter 
   private var size: Int = 0
   def finalSize: Int = size
   override def flush(): Unit = ()
-
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     pickler(this)
     this

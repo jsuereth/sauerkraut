@@ -59,7 +59,13 @@ object VarInt:
         result |= (currentByte & 0x7f) << offset
         (currentByte & 0x80 ) != 0 && offset < 32
       do ()
-      // TODO - if we encode negative ints as 64-bit VarInts, keep reading those bytes
+      // If we encode negative ints as 64-bit VarInts, keep reading those bytes.  This keeps us compatible
+      // with proto buff.
+      while
+          (currentByte & 0x80) != 0 && offset < 64
+      do
+        offset += 7 
+        currentByte = readNext()
       result
 
 

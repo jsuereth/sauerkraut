@@ -18,8 +18,11 @@ package sauerkraut
 package format
 package pb
 
+import streams.{
+  LimitableTagReadingStream
+}
+
 import com.google.protobuf.{
-  CodedInputStream,
   WireFormat
 }
 import WireFormat.{
@@ -30,7 +33,7 @@ object Tag:
   inline def unapply(tag: Int): (Int, Int) =
     (WireFormat.getTagWireType(tag), WireFormat.getTagFieldNumber(tag))
 
-class RawBinaryPickleReader(in: CodedInputStream)
+class RawBinaryPickleReader(in: LimitableTagReadingStream)
   extends PickleReader:
   override def push[T](b: core.Builder[T]): core.Builder[T] =
     b match
@@ -52,7 +55,7 @@ class RawBinaryPickleReader(in: CodedInputStream)
         else None
     var done: Boolean = false
     while (!done)
-      in.readTag match
+      in.readTag() match
         // TODO - if we hit any field we don't recognize, we quit.
         case 0 => done = true
         // Special case string (and packed) types so we don't read the length.
@@ -71,7 +74,7 @@ class RawBinaryPickleReader(in: CodedInputStream)
           }
         case _ => done = true
   private def readChoice[T](choice: core.ChoiceBuilder[T]): Unit =
-    in.readTag match
+    in.readTag() match
       case 0 => ()
       case Tag(wireType, ordinal) =>
         Shared.limitByWireType(in)(wireType) {
@@ -82,7 +85,7 @@ class RawBinaryPickleReader(in: CodedInputStream)
   private def readCollection[E, To](c: core.CollectionBuilder[E, To]): Unit  =
     // Collections are written as:
     // [TAG] [LengthInBytes] [LengthOfCollection] [Element]*
-    var length = in.readRawVarint32()
+    var length = in.readVarInt32()
     c.sizeHint(length)
     while (length > 0)
       push(c.putElement())

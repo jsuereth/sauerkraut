@@ -61,8 +61,10 @@ object InlineReader:
         (b7.toLong << 48) + 
         (b8.toLong << 56)
   inline def readFloat(inline readByte: () => Int, inline endian: Endian): Float =
+    // TODO - expose an inline if we want to avoid JVM centric code...
     java.lang.Float.intBitsToFloat(readFixed32(readByte, endian))
   inline def readDouble(inline readByte: () => Int, inline endian: Endian): Double =
+    // TODO - expose an inline if we want to avoid JVM centric code...
     java.lang.Double.longBitsToDouble(readFixed64(readByte, endian))
 
 
@@ -109,7 +111,7 @@ object InlineReader:
     // needs more than one byte to represent. NOW we deal with it.
     // `currentByte` will retain the first part of the higher-order unicode byte.
     // We need to check its header and determine how many more bytes we need to read, and continue
-    // through the rest of the (likely) unicode string.
+    // through the rest of the unicode string.
     while
       bytesRead < length
     do
@@ -139,19 +141,19 @@ object InlineReader:
           charCount += 1
         // handle four byte character (11110xxx 10xxxxxx 10xxxxxx 10xxxxxx)
         case 15 =>
-          val firstByte = currentByte & 0xff
           val secondByte = utf8ContinuationByte(readByte() & 0xff)
           val thirdByte = utf8ContinuationByte(readByte() & 0xff)
           val fourthByte = utf8ContinuationByte(readByte() & 0xff)
           // Grab the integer codepoint.
           val codePoint = (
-            ((firstByte & 0x07) << 18) +
+            ((currentByte & 0x07) << 18) +
             (secondByte  << 12) +
             (thirdByte << 6) +
             fourthByte
           )
           // Now grab the JVM reprsentation, yay jvm.
           // TODO - Do we need to check if codepoint size is > 1?
+          // TODO - Expose another inline or two to avoid JVM-centric code.
           buf(charCount) = java.lang.Character.highSurrogate(codePoint)
           buf(charCount+1) = java.lang.Character.lowSurrogate(codePoint)
           bytesRead += 3
