@@ -307,7 +307,7 @@ Latest status/analysis can be found in the [benchmarks directory](benchmarks/lat
   - [X] RawBinary + Protos vs. protocol buffer java implementation
   - [ ] Json Reading vs. raw JAWN to AST (measure overhead)
   - [ ] Jackson
-  - [X] Avro
+  - [X] Kryo
   - [ ] Thrift
   - [ ] Circe
   - [ ] uPickle

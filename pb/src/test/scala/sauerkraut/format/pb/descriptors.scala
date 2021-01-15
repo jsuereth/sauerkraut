@@ -33,7 +33,10 @@ case class NestedCollections(
   ints: ArrayBuffer[Long] @field(3)
 ) derives Writer, Buildable, ProtoTypeDescriptor
 
-val MyProtos = Protos[(Nested, Nesting, NestedCollections)]()
+
+case class OneString(message: String @field(1)) derives Writer, Buildable, ProtoTypeDescriptor
+
+val MyProtos = Protos[(Nested, Nesting, NestedCollections, OneString)]()
       
 
 
@@ -51,7 +54,6 @@ class TestProtocolBufferWithDesc:
     val out = java.io.ByteArrayOutputStream()
     pickle(MyProtos).to(out).write(value)
     val bytes = out.toByteArray()
-    System.err.println(s"Pickled:\n${hexString(bytes)}\n\n")
     val in = java.io.ByteArrayInputStream(bytes)
     assertEquals(s"Failed to roundtrip", value, pickle(MyProtos).from(in).read[T])
 
@@ -59,6 +61,7 @@ class TestProtocolBufferWithDesc:
     assertEquals("089601", binaryStringWithDesc(Nesting(150)))
     assertEquals("1a03089601", binaryStringWithDesc(Nested(Nesting(150))))
   @Test def roundTrip(): Unit =
+    roundTrip(OneString("helloo"))
     roundTrip(Nesting(150))
     roundTrip(Nested(Nesting(150)))
     roundTrip(NestedCollections(ArrayBuffer(Nesting(150)), ArrayBuffer(), ArrayBuffer()))

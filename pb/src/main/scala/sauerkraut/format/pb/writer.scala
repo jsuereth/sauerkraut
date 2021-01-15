@@ -18,10 +18,10 @@ package sauerkraut
 package format
 package pb
 
-import com.google.protobuf.CodedOutputStream
+import streams.ProtoOutputStream
 
 class ProtocolBufferFieldWriter(
-    out: CodedOutputStream, 
+    out: ProtoOutputStream, 
     fieldNum: Int,
     // TODO - only allow this for primitives.
     desc: ProtoTypeDescriptor[?]) 
@@ -30,7 +30,8 @@ class ProtocolBufferFieldWriter(
   override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
     try
       desc.asInstanceOf[CollectionTypeDescriptor[_,_]].element match
-        case p: PrimitiveTypeDescriptor[_] if length > 1 => Shared.writeCompressedPrimitives(out, fieldNum)(work)
+        case p: PrimitiveTypeDescriptor[_] if length > 1 =>
+          Shared.writeCompressedPrimitives(out, fieldNum)(work)
         case elemTag => work(ProtocolBufferFieldWriter(out, fieldNum, elemTag))
       this
     catch
@@ -42,7 +43,7 @@ class ProtocolBufferFieldWriter(
       // For now, we be lazy and write to temporary array, then do it all at once.
       // TODO - figure out if we can precompute and do this faster!
       val tmpByteOut = java.io.ByteArrayOutputStream()
-      val tmpOut = CodedOutputStream.newInstance(tmpByteOut)
+      val tmpOut = ProtoOutputStream(tmpByteOut)
       work(DescriptorBasedProtoStructureWriter(tmpOut, desc.asInstanceOf))
       tmpOut.flush()
       out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
@@ -54,22 +55,22 @@ class ProtocolBufferFieldWriter(
   override def putUnit(): PickleWriter = 
     this
   override def putBoolean(value: Boolean): PickleWriter =
-    out.writeBool(fieldNum, value)
+    out.writeBoolean(fieldNum, value)
     this
   override def putByte(value: Byte): PickleWriter =
-    out.writeInt32(fieldNum, value.toInt)
+    out.writeInt(fieldNum, value.toInt)
     this
   override def putChar(value: Char): PickleWriter = 
-    out.writeInt32(fieldNum, value.toInt)
+    out.writeInt(fieldNum, value.toInt)
     this
   override def putShort(value: Short): PickleWriter =
-    out.writeInt32(fieldNum, value.toInt)
+    out.writeInt(fieldNum, value.toInt)
     this
   override def putInt(value: Int): PickleWriter = 
-    out.writeInt32(fieldNum, value)
+    out.writeInt(fieldNum, value)
     this
   override def putLong(value: Long): PickleWriter =
-    out.writeInt64(fieldNum, value)
+    out.writeLong(fieldNum, value)
     this
   override def putFloat(value: Float): PickleWriter =
     out.writeFloat(fieldNum, value)
@@ -90,7 +91,7 @@ class ProtocolBufferFieldWriter(
 
 /** This class can write out a proto structure given a TypeDescriptorMapping of field name to number. */
 class DescriptorBasedProtoStructureWriter(
-    out: CodedOutputStream,
+    out: ProtoOutputStream,
     mapping: MessageProtoDescriptor[?]) extends PickleStructureWriter:
   override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     val idx = mapping.fieldNumber(name)
@@ -99,7 +100,7 @@ class DescriptorBasedProtoStructureWriter(
 
 /** A pickle writer that will only write proto messages using ProtoTypeDescriptors. */
 class DescriptorBasedProtoWriter(
-    out: CodedOutputStream,
+    out: ProtoOutputStream,
     repository: TypeDescriptorRepository
 ) extends PickleWriter:
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =

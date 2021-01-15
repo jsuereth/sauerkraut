@@ -18,15 +18,13 @@ package sauerkraut
 package format
 package pb
 
-import com.google.protobuf.{
-  CodedInputStream,
+import streams.{
+  LimitableTagReadingStream,
+  Tag,
   WireFormat
 }
-import WireFormat.{
-  WIRETYPE_LENGTH_DELIMITED
-}
 
-class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepository)
+class DescriptorBasedProtoReader(in: LimitableTagReadingStream, repo: TypeDescriptorRepository)
     extends PickleReader:
   def push[T](b: core.Builder[T]): core.Builder[T] =
     b match
@@ -45,23 +43,23 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
       case e: ClassCastException => throw BuildException(s"Builder error.  Builder: $b, Descriptor: $desc", e)
     b
 
-  private inline def readField[T](fieldBuilder: core.Builder[T], desc: ProtoTypeDescriptor[T], wireType: Int): Unit =
+  private inline def readField[T](fieldBuilder: core.Builder[T], desc: ProtoTypeDescriptor[T], wireType: WireFormat): Unit =
     try 
       fieldBuilder match {
         case choice: core.ChoiceBuilder[T] => ???
         case struct: core.StructureBuilder[T] =>
-          Shared.limitByWireType(in)(WIRETYPE_LENGTH_DELIMITED) {
+          Shared.limitByWireType(in)(WireFormat.LengthDelimited) {
             readStructure(struct, desc.asInstanceOf)
           }
         case col: core.CollectionBuilder[_,_] =>
           val colDesc = desc.asInstanceOf[CollectionTypeDescriptor[_,_]]
           colDesc.element match
             case x: PrimitiveTypeDescriptor[_] =>
-              if (wireType == WIRETYPE_LENGTH_DELIMITED) 
+              if WireFormat.LengthDelimited == wireType then
                 Shared.readCompressedPrimitive(in)(col, x.tag.asInstanceOf)
               else pushWithDesc(col.putElement(), x.asInstanceOf)
             case other =>
-              Shared.limitByWireType(in)(WIRETYPE_LENGTH_DELIMITED) {
+              Shared.limitByWireType(in)(WireFormat.LengthDelimited) {
                 pushWithDesc(col.putElement(), other.asInstanceOf)
               }
         case p: core.PrimitiveBuilder[_] => Shared.readPrimitive(in)(p)
@@ -77,7 +75,7 @@ class DescriptorBasedProtoReader(in: CodedInputStream, repo: TypeDescriptorRepos
           case _: MatchError => None
     var done: Boolean = false
     while !done do
-      in.readTag match
+      in.readTag() match
         case 0 => done = true
         case Tag(wireType, num @ FieldName(field)) =>
           readField(struct.putField(field), mapping.fieldDesc(num), wireType)

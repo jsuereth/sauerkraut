@@ -35,6 +35,15 @@ ThisBuild / organizationName := "Google"
 val core = project
   .settings(commonSettings:_*)
 
+val utils = project
+  .settings(commonSettings:_*)
+  .dependsOn(core)
+  .settings(
+    libraryDependencies += "junit" % "junit" % "4.11",
+    // For comparisons
+    libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.11.3" % "test"
+  )
+
 val compliance = project
   .settings(commonSettings:_*)
   .dependsOn(core)
@@ -51,10 +60,7 @@ val json = project
 
 val pb = project
   .settings(commonSettings:_*)
-  .dependsOn(core, compliance % "test")
-  .settings(
-    libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.11.3"
-  )
+  .dependsOn(core, utils, compliance % "test")
 
 val pbtest = project
   .settings(commonSettings:_*)
@@ -70,7 +76,7 @@ val pbtest = project
 
 val nbt = project
   .settings(commonSettings:_*)
-  .dependsOn(core, compliance % "test")
+  .dependsOn(core, utils, compliance % "test")
 
 val xml = project
   .settings(commonSettings:_*)
