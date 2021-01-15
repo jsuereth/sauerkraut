@@ -17,7 +17,10 @@
 package sauerkraut.format.pb.streams
 
 
-import sauerkraut.utils.InlineReader
+import sauerkraut.utils.{
+  Endian,
+  InlineReader
+}
 import java.io.InputStream
 
 
@@ -122,8 +125,8 @@ class ProtoInputStream(in: InputStream) extends LimitableTagReadingStream:
   final def readString(lengthInBytes: Int): String = InlineReader.readStringUtf8(lengthInBytes, () => readNext())
   override final def readByte(): Byte = readNext().toByte
   override final def readBoolean(): Boolean = InlineReader.readBoolean(() => readNext())
-  override final def readFloat(): Float = InlineReader.readFloat(() => readNext(), InlineReader.Endian.Little)
-  override final def readDouble(): Double = InlineReader.readDouble(() => readNext(), InlineReader.Endian.Little)
+  override final def readFloat(): Float = InlineReader.readFloat(() => readNext(), Endian.Little)
+  override final def readDouble(): Double = InlineReader.readDouble(() => readNext(), Endian.Little)
   override final def readVarInt32(): Int = InlineReader.readVarInt32(() => readNext())
   override final def readVarInt64(): Long = InlineReader.readVarInt64(() => readNext())
 

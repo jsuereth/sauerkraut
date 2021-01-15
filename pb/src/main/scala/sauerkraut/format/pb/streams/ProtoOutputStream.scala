@@ -16,7 +16,10 @@
 
 package sauerkraut.format.pb.streams
 
-import sauerkraut.utils.InlineWriter
+import sauerkraut.utils.{
+  Endian,
+  InlineWriter
+}
 
 /** Helper output stream to write protocol buffers. */
 final class ProtoOutputStream(out: java.io.OutputStream):
@@ -26,8 +29,8 @@ final class ProtoOutputStream(out: java.io.OutputStream):
   def writeShort(value: Short): Unit = InlineWriter.writeVarInt32(value.toInt, (x) => out.write(x))
   def writeInt(value: Int): Unit = InlineWriter.writeVarInt32(value, (x) => out.write(x))
   def writeLong(value: Long): Unit = InlineWriter.writeVarInt64(value, (x) => out.write(x))
-  def writeFloat(value: Float): Unit = InlineWriter.writeFloat(value, (x) => out.write(x), InlineWriter.Endian.Little)
-  def writeDouble(value: Double): Unit = InlineWriter.writeDouble(value, (x) => out.write(x), InlineWriter.Endian.Little)
+  def writeFloat(value: Float): Unit = InlineWriter.writeFloat(value, (x) => out.write(x), Endian.Little)
+  def writeDouble(value: Double): Unit = InlineWriter.writeDouble(value, (x) => out.write(x), Endian.Little)
   def writeByteArray(bytes: Array[Byte]): Unit =
     writeInt(bytes.length)
     out.write(bytes)

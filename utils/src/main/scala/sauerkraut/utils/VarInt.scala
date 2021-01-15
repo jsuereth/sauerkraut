@@ -2,7 +2,7 @@ package sauerkraut
 package utils
 
 /**
-  * Helper for writing variable-sized integers
+  * Helper for writing/reading/sizing variable-sized integers
   */
 object VarInt:
   /** Returns the size, in bytes, a varint will take when written. */
@@ -30,8 +30,19 @@ object VarInt:
   /** Writes a varint to a byte buffer. */
   def write(value: Long, out: java.io.OutputStream): Unit = writeULong(value, out.write)
 
-  // Helper methods / inline impls.
+  // inline impls.
 
+  /**
+    * Reads an unsigned-long encoded in protocol buffer varint format.
+    * 
+    * TODO - Describe spec.
+    * 
+    * @param readNext
+    *        A mechanism to grab the next byte of data from an input stream.  It is
+    *        expected that this will handle EOF / missing data with exceptions. 
+    * 
+    * @return The unsigned long as a JVM signed long.
+    */
   inline def readULong(inline readNext: () => Byte): Long =
     var currentByte: Byte = readNext()
     if (currentByte & 0x80) == 0 then currentByte.toLong
@@ -45,6 +56,18 @@ object VarInt:
         (currentByte & 0x80) != 0 // && offset < 64 
       do ()
       result
+  /**
+   * Reads an unsigned integer value encoded in protoocl buffer varint format.
+   * Note: If the integer is greater than what JVM signed integers can handle
+   * the protocol buffer implementation MAY encode a full 64bit integer, so this
+   * implementation will continue reading those extra bits in that case.
+   * 
+   * @param readNext
+   *        A mechanism to grab the next byte of data from an input stream.  It is
+   *        expected that this will handle EOF / missing data with exceptions. 
+   * 
+   * @return The unsigned int as a JVM signed int.
+   */
   inline def readUInt(inline readNext: () => Byte): Int =
     var currentByte: Byte = readNext()
     if (currentByte & 0x80) == 0 then currentByte.toInt
@@ -73,6 +96,17 @@ object VarInt:
   // https://richardstartin.github.io/posts/dont-use-protobuf-for-telemetry
   private val VarIntLengths = (for (i <- 0 to 64) yield (63-i)/7).toArray
   private def varIntLength(value: Long): Int = VarIntLengths(java.lang.Long.numberOfLeadingZeros(value))
+
+  /**
+   * Write an integer value in protocol buffer VarInt format.
+   * 
+   * Note: Protocol buffers convert negative integers to unsigned 64-bit values, so
+   *       this implementation does the same.
+   * 
+   * @param value the integer value to encode
+   * @param writeByte writes a single byte of data.  It is the responsibility of this lambda
+   *                  to handle exception
+   */
   inline def writeUInt(value: Int, inline writeByte: Byte => Unit): Unit =
     val length = varIntLength(value)
     var shiftedValue = value
@@ -83,6 +117,16 @@ object VarInt:
       i += 1
     writeByte(shiftedValue.toByte)
 
+  /**
+   * Write an integer value in protocol buffer VarInt format.
+   * 
+   * Note: Protocol buffers convert negative integers to unsigned 64-bit values, so
+   *       this implementation does the same.
+   * 
+   * @param value the integer value to encode
+   * @param writeByte writes a single byte of data.  It is the responsibility of this lambda
+   *                  to handle exception
+   */
   inline def writeULong(value: Long, inline writeByte: Byte => Unit): Unit =
     val length = varIntLength(value)
     var shiftedValue = value

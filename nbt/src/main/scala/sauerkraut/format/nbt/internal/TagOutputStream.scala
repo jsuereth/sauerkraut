@@ -20,8 +20,10 @@ package nbt
 package internal
 
 import java.io.OutputStream
-import sauerkraut.utils.InlineWriter
-import InlineWriter.Endian
+import sauerkraut.utils.{
+  Endian,
+  InlineWriter
+}
 import NbtTag._
 
 /** Helper class to output Tags + Payloads for NBT format. */

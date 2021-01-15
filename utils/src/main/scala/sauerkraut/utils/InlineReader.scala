@@ -1,19 +1,31 @@
 package sauerkraut
 package utils
 
-import java.io.DataInputStream
-
 /** An exception thrown when UTF encoding is found to be in violation. */
 class UtfEncodingException(msg: String) extends java.io.IOException(msg)
 
-// Helper methods for creating cdoecs/formats.  This should avoid as much JVM-specific code as possible.
+/**
+ * Helper methods for creating cdoecs/formats.
+ * 
+ * This should avoid as much JVM-specific code as possible, over time.
+ */
 object InlineReader:
-    /** An enum representing where most-significant-bit is written in a byte sequence. */
-  enum Endian:
-    case Big, Little
-  
-  
+
+  /**
+   * Reads a boolean value encoded as a single byte
+   * 
+   * @param readByte  Pulls the next byte from input.  It is expected that
+   *                  this lambda will have already buffered the byte.
+   */
   inline def readBoolean(inline readByte: () => Int): Boolean = readByte() != 0
+  /**
+   * Reads an integer of 16 bits.
+   * 
+   * @param readByte Pulls in the next byte from an input.  It is expected that
+   *                 this lambda will have buffered 2 bytes of input prior to
+   *                 calling this method.
+   * @param endian  Whether MSB is at the beggining or end.
+   */
   inline def readFixed16(inline readByte: () => Int, inline endian: Endian): Short =
     val b1 = readByte()
     val b2 = readByte()
@@ -22,6 +34,14 @@ object InlineReader:
         ((b1 << 8) + b2).toShort
       case Endian.Little =>
         (b1 + (b2 << 8)).toShort
+  /**
+   * Reads an integer of 32 bits.
+   * 
+   * @param readByte Pulls in the next byte from an input.  It is expected that
+   *                 this lambda will have buffered 4 bytes of input prior to
+   *                 calling this method.
+   * @param endian  Whether MSB is at the beggining or end.
+   */
   inline def readFixed32(inline readByte: () => Int, inline endian: Endian): Int =
     val b1 = readByte()
     val b2 = readByte()
@@ -32,6 +52,14 @@ object InlineReader:
         (b1 << 24) + (b2 << 16)  + (b3 << 8) + b4
       case Endian.Little =>
         b1 + (b2 << 8) + (b3 << 16) + (b4 << 24)
+  /**
+   * Reads an integer of 64 bits.
+   * 
+   * @param readByte Pulls in the next byte from an input.  It is expected that
+   *                 this lambda will have buffered 8 bytes of input prior to
+   *                 calling this method.
+   * @param endian  Whether MSB is at the beggining or end.
+   */
   inline def readFixed64(inline readByte: () => Int, inline endian: Endian): Long =
     val b1 = readByte()
     val b2 = readByte()
@@ -60,17 +88,41 @@ object InlineReader:
         (b6.toLong << 40) + 
         (b7.toLong << 48) + 
         (b8.toLong << 56)
+  /**
+   * Reads a floatingpoint value of 32bits.
+   * 
+   * The implementation reads an integer input and uses `Float.intBitsToFloat`
+   * to convert back into floating point.
+   * 
+   * @param readByte Pulls in the next byte from an input.  It is expected that
+   *                 this lambda will have buffered 4 bytes of input prior to
+   *                 calling this method.
+   * @param endian  Whether MSB is at the beggining or end.
+   */
   inline def readFloat(inline readByte: () => Int, inline endian: Endian): Float =
     // TODO - expose an inline if we want to avoid JVM centric code...
     java.lang.Float.intBitsToFloat(readFixed32(readByte, endian))
+  /**
+    * Reads a floatingpoint value of 64bits.
+    * 
+    * The implementation reads an integer input and uses `Double.longBitsToDouble`
+    * to convert back into floating point.
+    * 
+    * @param readByte Pulls in the next byte from an input.  It is expected that
+    *                 this lambda will have buffered 8 bytes of input prior to
+    *                 calling this method.
+    * @param endian  Whether MSB is at the beggining or end.
+    */
   inline def readDouble(inline readByte: () => Int, inline endian: Endian): Double =
     // TODO - expose an inline if we want to avoid JVM centric code...
     java.lang.Double.longBitsToDouble(readFixed64(readByte, endian))
 
 
-  // Ensure a byte is a UTF-8 continuation byte (i.e. 10xx xxxx)
-  // If it is, then return it without the two-byte header.
-  inline def utf8ContinuationByte(byte: Int): Int =
+  /**
+   * Ensure a byte is a UTF-8 continuation byte (i.e. 10xx xxxx)
+   * If it is, then return it without the two-byte header.
+   */
+  inline private def utf8ContinuationByte(byte: Int): Int =
     if (byte & 0x80) != 0x80 then
       throw UtfEncodingException(s"Expected utf continuation byte, found: ${(byte & 0xff).toBinaryString}")
     else (byte & 0x3f)
@@ -78,7 +130,12 @@ object InlineReader:
   /** 
    * Given a byte-length and a byte-reader, will decode UTF-8 strings.
    * 
-   * It expected the byte reader will buffer the length ahead of time for efficiency.
+   * This method throws `UtfEncodingException` when it encounters bad data, or if
+   * the length cuts off a multi-byte character in the middle.
+   * 
+   * @param length The length of bytes to read.
+   * @param readByte A lambda that will read the next available byte and advance the input stream.
+   *                 It expected the byte reader will buffer the length ahead of time for efficiency.
    */
   inline def readStringUtf8(length: Int, inline readByte: () => Int): String = 
     var bytesRead = 0
@@ -171,8 +228,26 @@ object InlineReader:
     // Finally create a string from our character buffers.
     new String(buf, 0, charCount)
   
-
+  /**
+    * Reads a variable-length encoded integer of (maximum) 64bits.
+    * 
+    * @param readByte a function that will read the next byte of data.
+    *                 It is expected that any buffering of data is done
+    *                 outside thiis method.  Additonally, failure to pull
+    *                 a byte is expected to throw an exception.
+    */
   inline def readVarInt64(inline readByte: () => Int): Long =
     VarInt.readULong(() => readByte().toByte)
+   /**
+    * Reads a variable-length encoded integer of (maximum) 64bits.
+    * 
+    * Note: The integer value is expected to be within the 32-bit range,
+    * but negative integers will be encoded as unsigned 64-bit integers.
+    * 
+    * @param readByte a function that will read the next byte of data.
+    *                 It is expected that any buffering of data is done
+    *                 outside thiis method.  Additonally, failure to pull
+    *                 a byte is expected to throw an exception.
+    */
   inline def readVarInt32(inline readByte: () => Int): Int =
     VarInt.readUInt(() => readByte().toByte)
