@@ -39,21 +39,21 @@ final class PickleFormatDsl[F <: PickleFormat](format: F):
     s.readerFor(format, input)
 
 
-extension [T](pickle: PickleReader)
+extension (pickle: PickleReader)
   /** Reads type `T` using the PickleReader. */
-  def read(using b: core.Buildable[T]): T =
+  def read[T](using b: core.Buildable[T]): T =
     pickle.push(b.newBuilder).result
 
 
-extension [T](pickle: PickleWriter)
+extension (pickle: PickleWriter)
   /** Writes the value to a pickle. Note: This flushes the pickle writer. */
-  def write(value: T)(using s: core.Writer[T]): Unit =
+  def write[T](value: T)(using s: core.Writer[T]): Unit =
     s.write(value, pickle)
     pickle.flush()
 
-extension [T](pickle: PickleWriter)
+extension (pickle: PickleWriter)
   /** Writes the value to a pickle.  Note: This does not flush the pickle writer. */
-  def lazyWrite(value: T)(using s: core.Writer[T]): Unit =
+  def lazyWrite[T](value: T)(using s: core.Writer[T]): Unit =
     s.write(value, pickle)
 
 extension [T](value: T) 

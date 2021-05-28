@@ -1,6 +1,11 @@
 import com.typesafe.sbt.license.{DepModuleInfo}
 
-val dottyVersion = "3.0.0-M3"
+
+val Deps = new {
+  val protobufJava = "com.google.protobuf" % "protobuf-java" % "3.17.1"
+  val jawnAst = "org.typelevel" %% "jawn-ast" % "1.1.2"
+  val junit = "junit" % "junit" % "4.11"
+}
 
 val commonSettings: Seq[Setting[_]] = Seq(
   organization := (ThisBuild / organization).value,
@@ -18,16 +23,17 @@ val commonSettings: Seq[Setting[_]] = Seq(
     case DepModuleInfo(group, id, version) if id contains "junit" => "Used for testing"
     case DepModuleInfo(group, id, version) if id contains "protocjar" => "Used to compile proto files to Java."
   },
-   useScala3doc := true,
 )
+
+
 
 // Overall GHA setup + project defaults.
 ThisBuild / githubWorkflowPublish := Nil
 ThisBuild / githubWorkflowArtifactUpload := false
 // ThisBuild / githubWorkflowScalaVersions := Seq(dottyVersion)
 ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8", "adopt@1.11")
-ThisBuild / scalaVersion := dottyVersion
-ThisBuild / crossScalaVersions := Seq(dottyVersion)
+ThisBuild / scalaVersion := "3.0.0"
+ThisBuild / crossScalaVersions := Seq((ThisBuild / scalaVersion).value)
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "com.jsuereth.sauerkraut"
 ThisBuild / organizationName := "Google"
@@ -39,23 +45,23 @@ val utils = project
   .settings(commonSettings:_*)
   .dependsOn(core)
   .settings(
-    libraryDependencies += "junit" % "junit" % "4.11",
+    libraryDependencies += Deps.junit,
     // For comparisons
-    libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.11.3" % "test"
+    libraryDependencies += Deps.protobufJava % "test"
   )
 
 val compliance = project
   .settings(commonSettings:_*)
   .dependsOn(core)
   .settings(
-    libraryDependencies += "junit" % "junit" % "4.11"
+    libraryDependencies += Deps.junit
   )
 
 val json = project
   .settings(commonSettings:_*)
   .dependsOn(core, compliance % "test")
   .settings(
-    libraryDependencies += "org.typelevel" % "jawn-ast_2.13" % "1.0.0"
+    libraryDependencies += Deps.jawnAst
   )
 
 val pb = project
@@ -67,9 +73,9 @@ val pbtest = project
   .dependsOn(pb)
   .enablePlugins(ProtobufPlugin)
   .settings(
-    skip in publish := true,
-    libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.11.3",
-    protobufRunProtoc in ProtobufConfig := { args =>
+    publish / skip := true,
+    libraryDependencies += Deps.protobufJava,
+    ProtobufConfig / protobufRunProtoc  := { args =>
       com.github.os72.protocjar.Protoc.runProtoc("-v370" +: args.toArray)
     }
   )
@@ -89,11 +95,11 @@ val benchmarks = project
   .settings(commonSettings:_*)
   .dependsOn(nbt, pb, json, xml)
   .settings(
-    fork in run := true,
-    javaOptions in run += "-Xmx6G",
+    run / fork := true,
+    run  / javaOptions += "-Xmx6G",
     libraryDependencies += "org.openjdk.jmh" % "jmh-core" % "1.23",
     libraryDependencies += "com.esotericsoftware" % "kryo" % "5.0.3",
-    protobufRunProtoc in ProtobufConfig := { args =>
+    ProtobufConfig / protobufRunProtoc := { args =>
       com.github.os72.protocjar.Protoc.runProtoc("-v370" +: args.toArray)
     }
   )
@@ -107,4 +113,4 @@ val root = project.in(file(".")).aggregate(
   xml,
   pbtest,
   benchmarks
-).settings(skip in publish := true)
+).settings(publish / skip := true)

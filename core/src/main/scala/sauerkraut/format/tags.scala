@@ -200,8 +200,8 @@ inline def typeName[T]: String = ${typeNameImpl[T]}
 private inline def unsupportedType[T]: FastTypeTag[T] = ${unsupportedTypeImpl[T]}
 private def unsupportedTypeImpl[T: Type](using qctx: Quotes): Expr[FastTypeTag[T]] =
   quotes.reflect.report.error(s"Unsupported saurekraut pickling type: ${Type.show[T]}")
-  Expr(null)
+  '{???}
 private inline def notPrimitiveError[T]: PrimitiveTag[T] = ${notPrimitiveErrorImpl[T]}
 private def notPrimitiveErrorImpl[T: Type](using qctx: Quotes): Expr[PrimitiveTag[T]] =
   quotes.reflect.report.error(s"Not a sauerkraut primitive type: ${Type.show[T]}")
-  Expr(null)
+  '{???}
