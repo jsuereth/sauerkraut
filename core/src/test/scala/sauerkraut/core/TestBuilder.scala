@@ -1,5 +1,6 @@
 package sauerkraut
 package core
+package testbuilder
 
 import org.junit.Test
 import org.junit.Assert._

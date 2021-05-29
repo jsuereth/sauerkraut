@@ -5,6 +5,7 @@ val Deps = new {
   val protobufJava = "com.google.protobuf" % "protobuf-java" % "3.17.1"
   val jawnAst = "org.typelevel" %% "jawn-ast" % "1.1.2"
   val junit = "junit" % "junit" % "4.11"
+  val easyMock = "org.easymock" % "easymock" % "4.3"
 }
 
 val commonSettings: Seq[Setting[_]] = Seq(
@@ -40,6 +41,7 @@ ThisBuild / organizationName := "Google"
 
 val core = project
   .settings(commonSettings:_*)
+  .settings(libraryDependencies += Deps.easyMock % "test")
 
 val utils = project
   .settings(commonSettings:_*)
