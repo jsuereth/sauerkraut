@@ -156,8 +156,7 @@ class SizeEstimateStructureWriter(d: MessageProtoDescriptor[?])
     with SizeEstimator:
   private var size = 0
   override def putField(number: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
-    val idx = d.fieldNumber(name)
-    val fieldPickle = FieldSizeEstimateWriter(idx, Some(d.fieldDesc(idx)))
+    val fieldPickle = FieldSizeEstimateWriter(number, Some(d.fieldDesc(number)))
     pickler(fieldPickle)
     size += fieldPickle.finalSize
     this

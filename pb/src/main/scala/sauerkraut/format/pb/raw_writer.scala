@@ -76,10 +76,8 @@ class RawBinaryPickleWriter(out: ProtoOutputStream) extends PickleWriter with Pi
  * a new index, starting with 1 and moving up.
  */
 class RawBinaryStructureWriter(out: ProtoOutputStream) extends PickleStructureWriter:
-  private var currentFieldIndex = 0
   override def putField(number: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
-    currentFieldIndex += 1
-    pickler(RawBinaryFieldWriter(out, currentFieldIndex))
+    pickler(RawBinaryFieldWriter(out, number))
     this
 
 /** 

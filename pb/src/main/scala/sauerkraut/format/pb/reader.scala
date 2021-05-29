@@ -68,14 +68,9 @@ class DescriptorBasedProtoReader(in: LimitableTagReadingStream, repo: TypeDescri
       case e: ClassCastException => throw BuildException(s"Builder and descriptor do not align.  Builder: $fieldBuilder, Descriptor: $desc", null)
 
   private def readStructure[T](struct: core.StructureBuilder[T], mapping: MessageProtoDescriptor[T]): Unit =
-    object FieldName:
-      def unapply(num: Int): Option[String] = 
-        try Some(mapping.fieldName(num))
-        catch 
-          case _: MatchError => None
     var done: Boolean = false
     while !done do
       in.readTag() match
         case 0 => done = true
-        case Tag(wireType, num @ FieldName(field)) =>
-          readField(struct.putField(field), mapping.fieldDesc(num), wireType)
+        case Tag(wireType, num) =>
+          readField(struct.putField(num), mapping.fieldDesc(num), wireType)
