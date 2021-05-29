@@ -82,7 +82,7 @@ class PrettyPrintStructureWriter(out: Writer, indent: Int) extends PickleStructu
   private def writePostFix(): Unit =
     out.write("\n")
     indentSpace(indent-1)
-  override def putField(name: String, writer: PickleWriter => Unit): PickleStructureWriter =
+  override def putField(num: Int, name: String, writer: PickleWriter => Unit): PickleStructureWriter =
     writePrefix()
     out.write(name)
     out.write(": ")

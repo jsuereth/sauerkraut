@@ -62,7 +62,7 @@ class XmlPickleWriter(out: Writer) extends PickleWriter with PickleCollectionWri
     this
 
   override def flush(): Unit = out.flush()
-  override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
+  override def putField(number: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     out.write("<field name=\"")
     out.write(name)
     out.write("\">")

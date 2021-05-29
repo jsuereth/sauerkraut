@@ -93,7 +93,7 @@ class ProtocolBufferFieldWriter(
 class DescriptorBasedProtoStructureWriter(
     out: ProtoOutputStream,
     mapping: MessageProtoDescriptor[?]) extends PickleStructureWriter:
-  override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
+  override def putField(number: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     val idx = mapping.fieldNumber(name)
     pickler(ProtocolBufferFieldWriter(out, idx, mapping.fieldDesc(idx)))
     this

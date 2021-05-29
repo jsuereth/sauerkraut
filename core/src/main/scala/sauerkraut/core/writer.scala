@@ -28,6 +28,7 @@ object Writer:
   import scala.compiletime.{constValue,erasedValue,summonFrom}
   import deriving._
   import internal.InlineHelper.summonLabel
+  import internal.MacroHelper.fieldNum
   /** Derives writers of type T. */
   inline def derived[T](using m: Mirror.Of[T]): Writer[T] =
     new Writer[T] {
@@ -35,7 +36,7 @@ object Writer:
       override def write(value: T, pickle: format.PickleWriter): Unit =
         inline m match
           case m: Mirror.ProductOf[T] =>
-            writeStruct[m.MirroredElemTypes, m.MirroredElemLabels](
+            writeStruct[T, m.MirroredElemTypes, m.MirroredElemLabels](
               value,
               pickle,
               tag)
@@ -48,15 +49,23 @@ object Writer:
           case _ => compiletime.error("Cannot derive serialization for non-product classes")
     }
   /** Writes all the fields (in Elems) to the structure writer. */
-  inline private def writeElems[Elems <: Tuple, Labels <: Tuple](
+  inline private def writeFields[ProductType, FieldTypes <: Tuple, Labels <: Tuple](
     pickle: format.PickleStructureWriter, value: Any, idx: Int): Unit =
-      inline erasedValue[Elems] match
-        case _: (elem *: elems1) =>
-          pickle.putField(summonLabel[Labels](idx),
-            fieldPickle =>
-              writeInl[elem](value.asInstanceOf[Product].productElement(idx).asInstanceOf[elem], fieldPickle))
-          writeElems[elems1, Labels](pickle, value, idx+1)
+      inline erasedValue[FieldTypes] match
+        case _: (fieldType *: fieldTypes) =>
+          inline erasedValue[Labels] match
+            case _: (fieldLabel *: fieldLabels) =>
+              writeField[ProductType, fieldType, fieldLabel](pickle, value, idx)
+              writeFields[ProductType, fieldTypes, fieldLabels](pickle, value, idx+1)
+            case _: EmptyTuple => compiletime.error("LOGIC ERROR: Ran out of field labels for field types")
         case _: EmptyTuple => ()
+
+  inline private def writeField[ProductType, FieldType, Label](pickle: format.PickleStructureWriter, value: Any, idx: Int): Unit =
+    inline constValue[Label] match
+      case name: String => 
+        pickle.putField(fieldNum[ProductType](name), name, fieldPickle =>
+          writeInl[FieldType](value.asInstanceOf[Product].productElement(idx).asInstanceOf[FieldType], fieldPickle))
+      case _ => compiletime.error("Could not find field name")
   
   inline private def writeOption[NamesAndElems <: Tuple](value: Any, pickle: format.PickleWriter, tag: format.FastTypeTag[?]): Unit =
     inline erasedValue[NamesAndElems] match
@@ -69,10 +78,10 @@ object Writer:
         else writeOption[tail](value, pickle, tag)
       case _: EmptyTuple => ()
 
-  inline private def writeStruct[MirroredElemTypes <: Tuple, MirroredElemLabels <: Tuple](
+  inline private def writeStruct[P, MirroredElemTypes <: Tuple, MirroredElemLabels <: Tuple](
     value: Any, pickle: format.PickleWriter, tag: format.FastTypeTag[?]): Unit =
     pickle.putStructure(this, tag)(writer =>
-            writeElems[MirroredElemTypes, MirroredElemLabels](writer, value, 0))
+            writeFields[P, MirroredElemTypes, MirroredElemLabels](writer, value, 0))
 
   inline private def label[A]: String = constValue[A].asInstanceOf[String]
 
@@ -84,7 +93,7 @@ object Writer:
       // manifest sub-writers for Enums/coproduct/sum types without
       // directly embedding them in the write method of the parent enum.
       case m: Mirror.ProductOf[A] =>
-        writeStruct[m.MirroredElemTypes, m.MirroredElemLabels](
+        writeStruct[A, m.MirroredElemTypes, m.MirroredElemLabels](
           value,
           pickle,
           format.fastTypeTag[A]())

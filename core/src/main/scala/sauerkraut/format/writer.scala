@@ -77,7 +77,7 @@ trait PickleWriter:
   // TODO - make this less ugly / better design.  Currently this is encoded behind struct, but
   // we should allow formats to be clever.
   final def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
-    putStructure(picklee, tag)(_.putField(choice, work))
+    putStructure(picklee, tag)(_.putField(0, choice, work))
   /** Flush any pending writes down this writer. */
   def flush(): Unit
 
@@ -92,7 +92,7 @@ trait PickleStructureWriter:
    *                 You should ensure this function will perform a beginEntry()/endEntry() block.
    * @return A builder for remaining items in the current complex structure being pickled.
    */
-  def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter
+  def putField(num: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter
 
 /** A writer of collection elements. */
 trait PickleCollectionWriter:

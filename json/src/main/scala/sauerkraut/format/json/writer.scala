@@ -74,7 +74,7 @@ class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter:
 
 class JsonStructureWriter(out: JsonOutputStream) extends PickleStructureWriter:
   private var needsComma = false
-  def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
+  def putField(number: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     if (needsComma) out.write(',')
     // TODO - escape the name...
     out.write('"')

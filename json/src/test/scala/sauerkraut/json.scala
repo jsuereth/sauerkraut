@@ -15,9 +15,9 @@ given Writer[TestManual] with
     format.structTag[TestManual](Array("x", "b", "stuff"))
   override def write(value: TestManual, pickle: format.PickleWriter): Unit =
     pickle.putStructure(value, fastTypeTag[TestManual]())(
-      _.putField("x", w => w.putDouble(value.x)).
-      putField("b", w => w.putInt(value.b)).
-      putField("stuff", _.putCollection(value.stuff.length, collectionTag[Array[Int], Int](fastTypeTag()))(c =>
+      _.putField(1, "x", w => w.putDouble(value.x)).
+      putField(2, "b", w => w.putInt(value.b)).
+      putField(3, "stuff", _.putCollection(value.stuff.length, collectionTag[Array[Int], Int](fastTypeTag()))(c =>
         value.stuff.foreach(i => c.putElement(w => w.putInt(i))))))
 
 case class TestDerived(x: Double, b: Int, z: List[String])

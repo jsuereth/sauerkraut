@@ -93,7 +93,7 @@ class NbtPickleWriter(out: TagOutputStream, optName: Option[String] = None)
   override def flush(): Unit = out.flush()
 
   // Structure writing can go here.
-  override def putField(name: String, fieldWriter: PickleWriter => Unit): PickleStructureWriter =
+  override def putField(number: Int, name: String, fieldWriter: PickleWriter => Unit): PickleStructureWriter =
     fieldWriter(NbtPickleWriter(out, Some(name)))
     this
 
