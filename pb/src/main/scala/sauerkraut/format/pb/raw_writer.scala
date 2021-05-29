@@ -19,6 +19,7 @@ package format
 package pb
 
 import streams.{ProtoOutputStream, WireFormat}
+import sauerkraut.format.PickleStructureWriter
 
 /**
  * A PickleWriter that writes protocol-buffer-like pickles.   This will NOT
@@ -26,7 +27,8 @@ import streams.{ProtoOutputStream, WireFormat}
  * it sees them as 1->N. This is ok for ephemeral serialization where there is no
  * class/definition skew, but not ok in most serialization applications.
  */
-class RawBinaryPickleWriter(out: ProtoOutputStream) extends PickleWriter with PickleCollectionWriter:
+class RawBinaryPickleWriter(out: ProtoOutputStream)
+    extends PickleWriter with PickleCollectionWriter with PickleStructureWriter:
   override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
     // When writing 'raw' collections, we just write a length, then each element.
     out.writeInt(length)
@@ -38,7 +40,7 @@ class RawBinaryPickleWriter(out: ProtoOutputStream) extends PickleWriter with Pi
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
     tag match
       case ctag: Choice[a] => work(RawBinaryChoiceWriter(ctag.ordinal(picklee.asInstanceOf[a]), out)) 
-      case _ => work(RawBinaryStructureWriter(out))
+      case _ => work(RawBinaryPickleWriter(out))
     this
   override def putUnit(): PickleWriter = 
     this
@@ -70,12 +72,6 @@ class RawBinaryPickleWriter(out: ProtoOutputStream) extends PickleWriter with Pi
     out.writeString(value)
     this
   override def flush(): Unit = out.flush()
-
-/** 
- * An unknown protocol buffer structure writer.  It simply gives all new fields
- * a new index, starting with 1 and moving up.
- */
-class RawBinaryStructureWriter(out: ProtoOutputStream) extends PickleStructureWriter:
   override def putField(number: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     pickler(RawBinaryFieldWriter(out, number))
     this
@@ -102,7 +98,7 @@ class RawBinaryFieldWriter(out: ProtoOutputStream, fieldNum: Int)
     sizeEstimate.putStructure(picklee, tag)(work)
     out.writeInt(WireFormat.LengthDelimited.makeTag(fieldNum))
     out.writeInt(sizeEstimate.finalSize)
-    work(RawBinaryStructureWriter(out))
+    work(RawBinaryPickleWriter(out))
     this
 
   override def putUnit(): PickleWriter = 

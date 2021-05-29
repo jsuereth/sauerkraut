@@ -70,7 +70,7 @@ object Protos:
 
 given [O <: OutputStream, P <: Protos]: PickleWriterSupport[O, P] with
   def writerFor(protos: P, output: O): PickleWriter =
-    DescriptorBasedProtoWriter(streams.ProtoOutputStream(output), protos.repository)
+    DescriptorBasedProtoWriter(streams.ProtoOutputStream(output))
 
 // given [P <: Protos]: PickleWriterSupport[ByteBuffer, P] with
 //   def writerFor(protos: P, output: ByteBuffer): PickleWriter = 
