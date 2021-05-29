@@ -20,7 +20,7 @@ package benchmarks
 import core.{Writer,Buildable,given}
 import java.nio.ByteBuffer
 import java.io.OutputStreamWriter
-import format.pb.{RawBinary,Protos,ProtoTypeDescriptor,field,given}
+import format.pb.{RawBinary,Proto, given}
 import format.json.{Json,given}
 import format.nbt.{Nbt,given}
 import format.xml.{Xml,given}
@@ -31,13 +31,13 @@ import scala.collection.mutable.ArrayBuffer
 
 
 // -- Saurkraut Classes --
-case class SimpleMessage(value: Int @field(2), message: String @field(1))
-    derives Writer, Buildable, ProtoTypeDescriptor
+case class SimpleMessage(value: Int @Field(2), message: String @Field(1))
+    derives Writer, Buildable
 case class LargerMessage(
-  messages: ArrayBuffer[SimpleMessage] @field(1),
-  otherNums: ArrayBuffer[Double] @field(2),
-  ints: ArrayBuffer[Long] @field(3)
-) derives Writer, Buildable, ProtoTypeDescriptor
+  messages: ArrayBuffer[SimpleMessage] @Field(1),
+  otherNums: ArrayBuffer[Double] @Field(2),
+  ints: ArrayBuffer[Long] @Field(3)
+) derives Writer, Buildable
 
 // -- Java framework classes --
 class JavaSimpleMessage {
@@ -142,12 +142,11 @@ object SauerkrautRawBinaryBenchmarkConfig extends SauerkrautBenchmarkConfig:
 
 /** Configuration for running XML format benchmarks. */
 object SauerkrautProtoBenchmarkConfig extends SauerkrautBenchmarkConfig:
-  val MyProtos = Protos[SimpleMessage *: LargerMessage *: EmptyTuple]()
   override val name: String = "proto"
   override def load(store: ByteBuffer): LargerMessage =
-    pickle(MyProtos).from(store.in).read[LargerMessage]
+    pickle(Proto).from(store.in).read[LargerMessage]
   override def save(value: LargerMessage, store: ByteBuffer): Unit =
-    pickle(MyProtos).to(store.out).write(value)
+    pickle(Proto).to(store.out).write(value)
 
 /** Configuration for running Java Serializaiton format. */
 object JavaSerializationBenchmarks extends SauerkrautBenchmarkConfig:

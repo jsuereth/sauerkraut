@@ -60,16 +60,10 @@ given PickleReaderSupport[Array[Byte], RawBinary.type] with
  * Note:  Only those used in construction of this class will be
  *        serializable.
  */ 
-trait Protos extends PickleFormat:
-  def repository: TypeDescriptorRepository
-object Protos:
-  inline def apply[T <: Tuple](): Protos =
-     new Protos() {
-       val repository = TypeDescriptorRepository[T]()
-     }
-
-given [O <: OutputStream, P <: Protos]: PickleWriterSupport[O, P] with
-  def writerFor(protos: P, output: O): PickleWriter =
+object Proto extends PickleFormat
+  
+given [O <: OutputStream]: PickleWriterSupport[O, Proto.type] with
+  def writerFor(protos: Proto.type, output: O): PickleWriter =
     DescriptorBasedProtoWriter(streams.ProtoOutputStream(output))
 
 // given [P <: Protos]: PickleWriterSupport[ByteBuffer, P] with
@@ -77,8 +71,8 @@ given [O <: OutputStream, P <: Protos]: PickleWriterSupport[O, P] with
 //     DescriptorBasedProtoWriter(streams.ProtoOutputStream(output), protos.repository)
 
 
-given [I <: InputStream, P <: Protos]: PickleReaderSupport[I, P] with
-  def readerFor(protos: P, input: I): PickleReader =
+given [I <: InputStream]: PickleReaderSupport[I, Proto.type] with
+  def readerFor(protos: Proto.type, input: I): PickleReader =
     DescriptorBasedProtoReader(streams.ProtoInputStream(input))
 
 

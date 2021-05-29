@@ -94,7 +94,7 @@ class RawBinaryFieldWriter(out: ProtoOutputStream, fieldNum: Int)
     work(RawBinaryCollectionInFieldWriter(out, fieldNum))
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
-    val sizeEstimate = FieldSizeEstimateWriter(fieldNum, None)
+    val sizeEstimate = FieldSizeEstimateWriter(fieldNum)
     sizeEstimate.putStructure(picklee, tag)(work)
     out.writeInt(WireFormat.LengthDelimited.makeTag(fieldNum))
     out.writeInt(sizeEstimate.finalSize)
