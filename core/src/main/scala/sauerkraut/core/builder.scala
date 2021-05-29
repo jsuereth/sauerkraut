@@ -51,6 +51,13 @@ trait StructureBuilder[T] extends Builder[T]:
    * with individual elements.
    */
   def putField[F](name: String): Builder[F]
+  /** 
+   * Puts a field into this builder.
+   * 
+   * Note: For a field that are collections, this may be called mulitple times
+   * with individual elements.
+   */
+  def putField[F](number: Int): Builder[F]
 
 /** 
  * Represents a `builder` that can be used to generate one of a variety of instances
@@ -84,6 +91,7 @@ object Buildable:
   import deriving._
   import scala.compiletime.{erasedValue,constValue,summonFrom}
   import internal.InlineHelper.{summonLabels,labelIndexLookup}
+  import internal.MacroHelper.{fieldNumToConstructorOrder}
   /** Derives Builders for any product-like class. */
   inline def derived[T](using m: Mirror.Of[T]): Buildable[T] =
     inline m match
@@ -132,7 +140,14 @@ object Buildable:
               fieldBuilders(idx).asInstanceOf[Builder[F]]
             catch
               case e: IndexOutOfBoundsException =>
-                throw BuildException(s"Unable to find field $name", e)
+                throw BuildException(s"Unable to find field: $name", e)
+          override def putField[F](number: Int): Builder[F] =
+            try
+              val idx = fieldNumToConstructorOrder[T](number)
+              fieldBuilders(idx).asInstanceOf[Builder[F]]
+            catch
+              case e: IndexOutOfBoundsException =>
+                throw BuildException(s"Unable to find field by number: $number", e)
           override def result: T = m.fromProduct(fieldValues)
 
   inline def sumBuildable[T, M <: Mirror.SumOf[T]](m: M): Buildable[T] =
