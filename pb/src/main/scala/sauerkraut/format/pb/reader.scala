@@ -24,53 +24,44 @@ import streams.{
   WireFormat
 }
 
-class DescriptorBasedProtoReader(in: LimitableTagReadingStream, repo: TypeDescriptorRepository)
+class DescriptorBasedProtoReader(in: LimitableTagReadingStream)
     extends PickleReader:
   def push[T](b: core.Builder[T]): core.Builder[T] =
     b match
-      case b: core.StructureBuilder[T] =>
-        pushWithDesc(b, repo.find(b.tag))
+      case b: core.StructureBuilder[T] => pushImpl(b)
       case _ => throw BuildException(s"Unable to deserialize proto to $b", null)
 
-  private def pushWithDesc[T](b: core.Builder[T], desc: ProtoTypeDescriptor[T]): core.Builder[T] =
-    try
-      b match
-        case b: core.StructureBuilder[T] => readStructure(b, desc.asInstanceOf[MessageProtoDescriptor[T]])
-        case b: core.CollectionBuilder[_,_] => pushWithDesc(b.putElement(), desc.asInstanceOf[CollectionTypeDescriptor[_,_]].element.asInstanceOf)
-        case b: core.PrimitiveBuilder[_] => Shared.readPrimitive(in)(b)
-        case _ => throw BuildException(s"Unsupported builder for protos: $b", null)
-    catch
-      case e: ClassCastException => throw BuildException(s"Builder error.  Builder: $b, Descriptor: $desc", e)
+  private def pushImpl[T](b: core.Builder[T]): core.Builder[T] =
+    b match
+      case b: core.StructureBuilder[T] => readStructure(b)
+      case b: core.CollectionBuilder[_,_] => pushImpl(b.putElement())
+      case b: core.PrimitiveBuilder[_] => Shared.readPrimitive(in)(b)
+      case _ => throw BuildException(s"Unsupported builder for protos: $b", null)
     b
 
-  private inline def readField[T](fieldBuilder: core.Builder[T], desc: ProtoTypeDescriptor[T], wireType: WireFormat): Unit =
-    try 
-      fieldBuilder match {
-        case choice: core.ChoiceBuilder[T] => ???
-        case struct: core.StructureBuilder[T] =>
-          Shared.limitByWireType(in)(WireFormat.LengthDelimited) {
-            readStructure(struct, desc.asInstanceOf)
-          }
-        case col: core.CollectionBuilder[_,_] =>
-          val colDesc = desc.asInstanceOf[CollectionTypeDescriptor[_,_]]
-          colDesc.element match
-            case x: PrimitiveTypeDescriptor[_] =>
-              if WireFormat.LengthDelimited == wireType then
-                Shared.readCompressedPrimitive(in)(col, x.tag.asInstanceOf)
-              else pushWithDesc(col.putElement(), x.asInstanceOf)
-            case other =>
-              Shared.limitByWireType(in)(WireFormat.LengthDelimited) {
-                pushWithDesc(col.putElement(), other.asInstanceOf)
-              }
-        case p: core.PrimitiveBuilder[_] => Shared.readPrimitive(in)(p)
-      }
-    catch
-      case e: ClassCastException => throw BuildException(s"Builder and descriptor do not align.  Builder: $fieldBuilder, Descriptor: $desc", null)
+  private inline def readField[T](fieldBuilder: core.Builder[T], wireType: WireFormat): Unit = 
+    fieldBuilder match {
+      case choice: core.ChoiceBuilder[T] => ???
+      case struct: core.StructureBuilder[T] =>
+        Shared.limitByWireType(in)(WireFormat.LengthDelimited) {
+          readStructure(struct)
+        }
+      case col: core.CollectionBuilder[_,_] =>
+        col.tag.elementTag match
+          case x: PrimitiveTag[_] =>
+            if WireFormat.LengthDelimited == wireType then
+              Shared.readCompressedPrimitive(in)(col, x)
+            else pushImpl(col.putElement())
+          case other =>
+            Shared.limitByWireType(in)(WireFormat.LengthDelimited) {
+              pushImpl(col.putElement())
+            }
+      case p: core.PrimitiveBuilder[_] => Shared.readPrimitive(in)(p)
+    }
 
-  private def readStructure[T](struct: core.StructureBuilder[T], mapping: MessageProtoDescriptor[T]): Unit =
+  private def readStructure[T](struct: core.StructureBuilder[T]): Unit =
     var done: Boolean = false
     while !done do
       in.readTag() match
         case 0 => done = true
-        case Tag(wireType, num) =>
-          readField(struct.putField(num), mapping.fieldDesc(num), wireType)
+        case Tag(wireType, num) => readField(struct.putField(num), wireType)

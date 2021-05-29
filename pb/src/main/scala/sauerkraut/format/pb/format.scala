@@ -79,7 +79,7 @@ given [O <: OutputStream, P <: Protos]: PickleWriterSupport[O, P] with
 
 given [I <: InputStream, P <: Protos]: PickleReaderSupport[I, P] with
   def readerFor(protos: P, input: I): PickleReader =
-    DescriptorBasedProtoReader(streams.ProtoInputStream(input), protos.repository)
+    DescriptorBasedProtoReader(streams.ProtoInputStream(input))
 
 
 // given [P <: Protos]: PickleReaderSupport[ByteBuffer, P] with
