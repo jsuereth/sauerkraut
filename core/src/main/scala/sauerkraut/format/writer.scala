@@ -36,7 +36,7 @@ trait PickleWriter:
     *                The function that will write the picklee to a pickle structure.
     *                Note: this may be called multiple times, e.g. when getting size estimates.
     */
-  def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter
+  def putStructure(picklee: Any, tag: Struct[_])(work: PickleStructureWriter => Unit): PickleWriter
   /** Denotes an empty value. */
   def putUnit(): PickleWriter
   /** Writes a primtiive booelan value. */
@@ -74,7 +74,7 @@ trait PickleWriter:
    * they desire.   See [[NonPrimitiveTag.Choice]] for information that can be used to distinguish
    * between options.
    */
-  def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter
+  def putChoice(picklee: Any, tag: Choice[_], choice: String)(work: PickleWriter => Unit): PickleWriter
   /** Flush any pending writes down this writer. */
   def flush(): Unit
 

@@ -33,7 +33,7 @@ class ProtocolBufferFieldWriter(
         Shared.writeCompressedPrimitives(out, fieldNum)(work)
       case elemTag => work(ProtocolBufferFieldWriter(out, fieldNum))
     this
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
+  override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
     // We need to write a header for this structure proto, which includes its size.
     // For now, we be lazy and write to temporary array, then do it all at once.
     // TODO - figure out if we can precompute and do this faster!
@@ -44,11 +44,11 @@ class ProtocolBufferFieldWriter(
     out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
     this
   
-  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+  override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter =
     // TODO - For now we need to encode this as a NESTED structure at the current field value...
     // Right now we just hack something crazy.
     // For now jsut encode as raw does.
-    val ordinal = tag.asInstanceOf[Choice[_]].ordinal(picklee.asInstanceOf)
+    val ordinal = tag.ordinal(picklee.asInstanceOf)
     // TODO: Use an actual good field number for this.
     System.err.println(s"Writing bad choice: $ordinal for $choice")
     work(ProtocolBufferFieldWriter(out, ordinal+1))
@@ -103,7 +103,7 @@ class DescriptorBasedProtoStructureWriter(out: ProtoOutputStream) extends Pickle
 class DescriptorBasedProtoWriter(
     out: ProtoOutputStream
 ) extends PickleWriter with PickleCollectionWriter:
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
+  override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
     work(DescriptorBasedProtoStructureWriter(out))
     this
 
@@ -145,7 +145,7 @@ class DescriptorBasedProtoWriter(
   override def putElement(work: PickleWriter => Unit): PickleCollectionWriter =
     work(this)
     this
-  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+  override def putChoice(picklee: Any, tag: Choice[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
     val ordinal = tag.asInstanceOf[Choice[_]].ordinal(picklee.asInstanceOf)
     work(ProtocolBufferFieldWriter(out, ordinal+1))
     this

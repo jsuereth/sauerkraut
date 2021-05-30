@@ -66,12 +66,12 @@ class RawPickleSizeEstimator extends PickleWriter with SizeEstimator:
   override def putString(value: String): PickleWriter =
     size += ProtoWireSize.sizeOf(value)
     this
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter =
+  override def putStructure(picklee: Any, tag: Struct[?])(pickler: PickleStructureWriter => Unit): PickleWriter =
     val estimate = SizeEstimateStructureWriter()
     pickler(estimate)
     size += estimate.finalSize
     this
-  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+  override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter =
     this
 
 class RawCollectionSizeEstimateWriter extends PickleCollectionWriter with SizeEstimator:
@@ -132,7 +132,7 @@ class FieldSizeEstimateWriter(fieldNum: Int)
     size += ProtoWireSize.sizeOf(length)
     work(this)
     this
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
+  override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
     val subSize =
       val tmp = SizeEstimateStructureWriter()
       work(tmp)
@@ -143,7 +143,7 @@ class FieldSizeEstimateWriter(fieldNum: Int)
     size += ProtoWireSize.sizeOf(subSize)
     size += subSize
     this
-  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+  override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter =
     this
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     pickler(this)

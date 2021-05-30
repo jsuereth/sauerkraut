@@ -84,13 +84,13 @@ class NbtPickleWriter(out: TagOutputStream, optName: Option[String] = None)
     optWriteName()
     work(NbtCollectionWriter(out, length))
     this
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
+  override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
     out.writeRawTag(NbtTag.TagCompound)
     optWriteName()
     work(this)
     out.writeRawTag(NbtTag.TagEnd)
     this
-  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+  override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter =
     out.writeRawTag(NbtTag.TagCompound)
     optWriteName()
     work(NbtPickleWriter(out, Some(choice)))
@@ -162,12 +162,12 @@ class NbtCollectionWriter(
     optHeader(out.writeRawTag(NbtTag.TagList))
     work(NbtCollectionWriter(out, length))
     this
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
+  override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
     optHeader(out.writeRawTag(NbtTag.TagCompound))
     work(NbtPickleWriter(out))
     out.writeRawTag(NbtTag.TagEnd)
     this
-  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+  override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter =
     out.writeRawTag(NbtTag.TagCompound)
     work(NbtPickleWriter(out, Some(choice)))
     out.writeRawTag(NbtTag.TagEnd)

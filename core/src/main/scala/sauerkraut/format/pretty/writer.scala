@@ -51,7 +51,7 @@ class PrettyPrintPickleWriter(out: Writer, indent: Int = 0) extends PickleWriter
   override def putString(value: String): PickleWriter =
     out.write(value)
     this
-  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
+  override def putCollection(length: Int, tag: CollectionTag[?,?])(work: PickleCollectionWriter => Unit): PickleWriter =
     if (length == 0) then
       out.write("[]")
     else
@@ -60,14 +60,14 @@ class PrettyPrintPickleWriter(out: Writer, indent: Int = 0) extends PickleWriter
         work(PrettyPrintCollectionWriter(out, indent))
         out.write(']')
     this
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
+  override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
     out.write(tag.toString)
     out.write(" {")
     work(PrettyPrintStructureWriter(out, indent+1))
     out.write("}")
     this
 
-  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+  override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter =
     out.write(tag.toString)
     out.write(" {")
     out.write("\n")

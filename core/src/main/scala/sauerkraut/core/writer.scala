@@ -71,7 +71,7 @@ object Writer:
     inline erasedValue[NamesAndElems] match
       case _: (Tuple2[name, tpe] *: tail) =>
         if value.isInstanceOf[tpe]
-        then pickle.putChoice(value, tag, label[name])(
+        then pickle.putChoice(value, tag.asInstanceOf, label[name])(
            p =>
              writeInl[tpe](value.asInstanceOf[tpe], p) 
         )
@@ -80,7 +80,7 @@ object Writer:
 
   inline private def writeStruct[P, MirroredElemTypes <: Tuple, MirroredElemLabels <: Tuple](
     value: Any, pickle: format.PickleWriter, tag: format.FastTypeTag[?]): Unit =
-    pickle.putStructure(this, tag)(writer =>
+    pickle.putStructure(this, tag.asInstanceOf)(writer =>
             writeFields[P, MirroredElemTypes, MirroredElemLabels](writer, value, 0))
 
   inline private def label[A]: String = constValue[A].asInstanceOf[String]

@@ -6,6 +6,7 @@ import org.junit.Test
 // import org.junit.Assert._
 import sauerkraut.format.PickleWriter
 import sauerkraut.format.FastTypeTag
+import sauerkraut.format.Struct
 import sauerkraut.format.PickleStructureWriter
 
 
@@ -25,7 +26,7 @@ class TestWriterBuiltInsAndDervied extends EasyMockSupport:
     // Expected behavior
     EasyMock.expect(pickleMock.putStructure(
       EasyMock.anyObject(), //EasyMock.eq(data), 
-      EasyMock.eq(writer.tag))(
+      EasyMock.eq(writer.tag.asInstanceOf[Struct[?]]))(
         EasyMock.anyObject())).andAnswer(() => {
           val f = EasyMock.getCurrentArgument(2).asInstanceOf[PickleStructureWriter => Unit]
           f(pickleStructureMock)
@@ -45,7 +46,7 @@ class TestWriterBuiltInsAndDervied extends EasyMockSupport:
     // Expected behavior
     EasyMock.expect(pickleMock.putStructure(
       EasyMock.anyObject(), //EasyMock.eq(data), 
-      EasyMock.eq(writer.tag))(
+      EasyMock.eq(writer.tag.asInstanceOf[Struct[?]]))(
         EasyMock.anyObject())).andAnswer(() => {
           val f = EasyMock.getCurrentArgument(2).asInstanceOf[PickleStructureWriter => Unit]
           f(pickleStructureMock)

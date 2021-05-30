@@ -37,11 +37,11 @@ class RawBinaryPickleWriter(out: ProtoOutputStream)
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     pickler(this)
     this
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
+  override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
     work(RawBinaryPickleWriter(out))
     this
-  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
-    val ordinal = tag.asInstanceOf[Choice[_]].ordinal(picklee.asInstanceOf)
+  override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    val ordinal = tag.ordinal(picklee.asInstanceOf)
     work(RawBinaryFieldWriter(out, ordinal+1))
     this
   override def putUnit(): PickleWriter = 
@@ -86,14 +86,15 @@ class RawBinaryFieldWriter(out: ProtoOutputStream, fieldNum: Int)
     // Collections are written as the the field number repeated.
     work(RawBinaryCollectionInFieldWriter(out, fieldNum))
     this
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
+  override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
     val sizeEstimate = FieldSizeEstimateWriter(fieldNum)
     sizeEstimate.putStructure(picklee, tag)(work)
     out.writeInt(WireFormat.LengthDelimited.makeTag(fieldNum))
     out.writeInt(sizeEstimate.finalSize)
     work(RawBinaryPickleWriter(out))
     this
-  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+  override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    // TODO
     this
 
   override def putUnit(): PickleWriter = 
