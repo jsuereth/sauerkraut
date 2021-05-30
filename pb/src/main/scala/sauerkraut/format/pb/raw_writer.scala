@@ -38,9 +38,11 @@ class RawBinaryPickleWriter(out: ProtoOutputStream)
     pickler(this)
     this
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
-    tag match
-      case ctag: Choice[a] => work(RawBinaryChoiceWriter(ctag.ordinal(picklee.asInstanceOf[a]), out)) 
-      case _ => work(RawBinaryPickleWriter(out))
+    work(RawBinaryPickleWriter(out))
+    this
+  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    val ordinal = tag.asInstanceOf[Choice[_]].ordinal(picklee.asInstanceOf)
+    work(RawBinaryFieldWriter(out, ordinal+1))
     this
   override def putUnit(): PickleWriter = 
     this
@@ -76,15 +78,6 @@ class RawBinaryPickleWriter(out: ProtoOutputStream)
     pickler(RawBinaryFieldWriter(out, number))
     this
 
-/** 
- * An unknown protocol buffer structure writer for enums.  It simply looks up the type-level ordinal.
- */
-class RawBinaryChoiceWriter(ordinal: Int, out: ProtoOutputStream) extends PickleStructureWriter:
-  private var currentFieldIndex = 0
-  override def putField(number: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
-    pickler(RawBinaryFieldWriter(out, ordinal+1))
-    this
-
 class RawBinaryFieldWriter(out: ProtoOutputStream, fieldNum: Int) 
     extends PickleWriter:
   // Writing a collection should simple write a field multiple times.
@@ -99,6 +92,8 @@ class RawBinaryFieldWriter(out: ProtoOutputStream, fieldNum: Int)
     out.writeInt(WireFormat.LengthDelimited.makeTag(fieldNum))
     out.writeInt(sizeEstimate.finalSize)
     work(RawBinaryPickleWriter(out))
+    this
+  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
     this
 
   override def putUnit(): PickleWriter = 

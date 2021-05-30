@@ -61,6 +61,14 @@ class XmlPickleWriter(out: Writer) extends PickleWriter with PickleCollectionWri
     out.write("</structure>")
     this
 
+  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    out.write("<choice type=\"")
+    out.write(choice)
+    out.write("\">")
+    work(this)
+    out.write("</choice>")
+    this
+
   override def flush(): Unit = out.flush()
   override def putField(number: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     out.write("<field name=\"")

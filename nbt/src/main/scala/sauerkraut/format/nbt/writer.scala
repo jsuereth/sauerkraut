@@ -90,6 +90,12 @@ class NbtPickleWriter(out: TagOutputStream, optName: Option[String] = None)
     work(this)
     out.writeRawTag(NbtTag.TagEnd)
     this
+  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    out.writeRawTag(NbtTag.TagCompound)
+    optWriteName()
+    work(NbtPickleWriter(out, Some(choice)))
+    out.writeRawTag(NbtTag.TagEnd)
+    this
   override def flush(): Unit = out.flush()
 
   // Structure writing can go here.
@@ -159,6 +165,11 @@ class NbtCollectionWriter(
   override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
     optHeader(out.writeRawTag(NbtTag.TagCompound))
     work(NbtPickleWriter(out))
+    out.writeRawTag(NbtTag.TagEnd)
+    this
+  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    out.writeRawTag(NbtTag.TagCompound)
+    work(NbtPickleWriter(out, Some(choice)))
     out.writeRawTag(NbtTag.TagEnd)
     this
   override def flush(): Unit = out.flush()

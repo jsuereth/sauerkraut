@@ -68,6 +68,17 @@ class JsonPickleWriter(out: JsonOutputStream) extends PickleWriter:
     work(JsonStructureWriter(out))
     out.write('}')
     this
+  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    // For now, we encode choice as its own structure with a guiding choice value.
+    // Ideally we could encode the chocie tag in the underlying structure (if it is a struct).
+    out.write('{')
+    out.write('"')
+    out.write(choice)
+    out.write('"')
+    out.write(':')
+    work(this)
+    out.write('}')
+    this
 
   override def flush(): Unit = out.flush()
 

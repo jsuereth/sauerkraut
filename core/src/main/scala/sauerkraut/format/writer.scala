@@ -74,10 +74,7 @@ trait PickleWriter:
    * they desire.   See [[NonPrimitiveTag.Choice]] for information that can be used to distinguish
    * between options.
    */
-  // TODO - make this less ugly / better design.  Currently this is encoded behind struct, but
-  // we should allow formats to be clever.
-  final def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
-    putStructure(picklee, tag)(_.putField(0, choice, work))
+  def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter
   /** Flush any pending writes down this writer. */
   def flush(): Unit
 

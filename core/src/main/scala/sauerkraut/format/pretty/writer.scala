@@ -66,6 +66,21 @@ class PrettyPrintPickleWriter(out: Writer, indent: Int = 0) extends PickleWriter
     work(PrettyPrintStructureWriter(out, indent+1))
     out.write("}")
     this
+
+  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    out.write(tag.toString)
+    out.write(" {")
+    out.write("\n")
+    out.write(indentSpace)
+    out.write("  ")
+    out.write(choice)
+    out.write(": ")
+    work(PrettyPrintPickleWriter(out, indent+1))
+    out.write("\n")
+    out.write(indentSpace)
+    out.write("}")
+    this
+
   override def flush(): Unit = out.flush()
 
 class PrettyPrintStructureWriter(out: Writer, indent: Int) extends PickleStructureWriter:

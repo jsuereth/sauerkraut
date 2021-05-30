@@ -71,6 +71,8 @@ class RawPickleSizeEstimator extends PickleWriter with SizeEstimator:
     pickler(estimate)
     size += estimate.finalSize
     this
+  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    this
 
 class RawCollectionSizeEstimateWriter extends PickleCollectionWriter with SizeEstimator:
   private var size: Int = 0
@@ -140,6 +142,8 @@ class FieldSizeEstimateWriter(fieldNum: Int)
     size += ProtoWireSize.sizeOfTag(WireFormat.LengthDelimited, fieldNum)
     size += ProtoWireSize.sizeOf(subSize)
     size += subSize
+    this
+  override def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
     this
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     pickler(this)

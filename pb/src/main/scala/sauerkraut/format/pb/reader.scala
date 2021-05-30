@@ -28,15 +28,10 @@ class DescriptorBasedProtoReader(in: LimitableTagReadingStream)
     extends PickleReader:
   def push[T](b: core.Builder[T]): core.Builder[T] =
     b match
-      case b: core.StructureBuilder[T] => pushImpl(b)
-      case _ => throw BuildException(s"Unable to deserialize proto to $b", null)
-
-  private def pushImpl[T](b: core.Builder[T]): core.Builder[T] =
-    b match
       case b: core.StructureBuilder[T] => readStructure(b)
-      case b: core.CollectionBuilder[_,_] => pushImpl(b.putElement())
+      case b: core.CollectionBuilder[_,_] => readOuterCollection(b)
       case b: core.PrimitiveBuilder[_] => Shared.readPrimitive(in)(b)
-      case _ => throw BuildException(s"Unsupported builder for protos: $b", null)
+      case c: core.ChoiceBuilder[T] => readChoice(c)
     b
 
   private inline def readField[T](fieldBuilder: core.Builder[T], wireType: WireFormat): Unit = 
@@ -51,13 +46,22 @@ class DescriptorBasedProtoReader(in: LimitableTagReadingStream)
           case x: PrimitiveTag[_] =>
             if WireFormat.LengthDelimited == wireType then
               Shared.readCompressedPrimitive(in)(col, x)
-            else pushImpl(col.putElement())
+            else push(col.putElement())
           case other =>
             Shared.limitByWireType(in)(WireFormat.LengthDelimited) {
-              pushImpl(col.putElement())
+              push(col.putElement())
             }
       case p: core.PrimitiveBuilder[_] => Shared.readPrimitive(in)(p)
     }
+
+  // Non-protoobuf encoded collections are pulled this way.  MOST collections should be
+  // encoded via fields and you can't do repeated of repeated in protos.
+  private def readOuterCollection[E, To](c: core.CollectionBuilder[E, To]): Unit =
+    var length = in.readVarInt32()
+    c.sizeHint(length)
+    while (length > 0)
+      push(c.putElement())
+      length -= 1
 
   private def readStructure[T](struct: core.StructureBuilder[T]): Unit =
     var done: Boolean = false
@@ -65,3 +69,14 @@ class DescriptorBasedProtoReader(in: LimitableTagReadingStream)
       in.readTag() match
         case 0 => done = true
         case Tag(wireType, num) => readField(struct.putField(num), wireType)
+
+  // TODO - figure out how to ACTUALLY make this work with protocol buffers, for now jsut make something work.
+  private def readChoice[T](choice: core.ChoiceBuilder[T]): Unit =
+    in.readTag() match
+      case 0 => ()
+      case Tag(wireType, ordinal) =>
+        Shared.limitByWireType(in)(wireType) {
+          // TODO - We should allow pushing choice by ordinal or name...
+          val name = choice.tag.nameFromOrdinal(ordinal-1)
+          push(choice.putChoice(name))
+        }

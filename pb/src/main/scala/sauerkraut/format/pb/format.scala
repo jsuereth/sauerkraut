@@ -79,3 +79,7 @@ given [I <: InputStream]: PickleReaderSupport[I, Proto.type] with
 // given [P <: Protos]: PickleReaderSupport[ByteBuffer, P] with
 //   def readerFor(protos: P, input: ByteBuffer): PickleReader =
 //     DescriptorBasedProtoReader(CodedInputStream.newInstance(input), protos.repository)
+
+given PickleReaderSupport[Array[Byte], Proto.type] with
+  def readerFor(format: Proto.type, input: Array[Byte]): PickleReader =
+    DescriptorBasedProtoReader(streams.ProtoInputStream(new java.io.ByteArrayInputStream(input)))
