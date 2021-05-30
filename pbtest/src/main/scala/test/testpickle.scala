@@ -16,26 +16,19 @@
 
 package test
 
+import sauerkraut.Field
 import sauerkraut.core.{
   Buildable,
   Writer,
   given
 }
-import sauerkraut.format.pb.{
-  Protos,
-  ProtoTypeDescriptor,
-  field,
-  given
-}
 
 case class TestPickle1(
-  thing: Long @field(1),
-  more: String @field(3),
-  stuff: List[Int] @field(5)) 
-  derives Writer, Buildable, ProtoTypeDescriptor
+  thing: Long @Field(1),
+  more: String @Field(3),
+  stuff: List[Int] @Field(5)) 
+  derives Writer, Buildable
 
 case class NestedTestPickle2(
-  field: TestPickle1 @field(3)
-) derives Writer, Buildable, ProtoTypeDescriptor
-
-val TestProtos = Protos[TestPickle1 *: NestedTestPickle2 *: EmptyTuple]()
+  field: TestPickle1 @Field(3)
+) derives Writer, Buildable

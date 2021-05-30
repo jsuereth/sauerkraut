@@ -24,58 +24,59 @@ import streams.{
   WireFormat
 }
 
-class DescriptorBasedProtoReader(in: LimitableTagReadingStream, repo: TypeDescriptorRepository)
+class DescriptorBasedProtoReader(in: LimitableTagReadingStream)
     extends PickleReader:
   def push[T](b: core.Builder[T]): core.Builder[T] =
     b match
-      case b: core.StructureBuilder[T] =>
-        pushWithDesc(b, repo.find(b.tag))
-      case _ => throw BuildException(s"Unable to deserialize proto to $b", null)
-
-  private def pushWithDesc[T](b: core.Builder[T], desc: ProtoTypeDescriptor[T]): core.Builder[T] =
-    try
-      b match
-        case b: core.StructureBuilder[T] => readStructure(b, desc.asInstanceOf[MessageProtoDescriptor[T]])
-        case b: core.CollectionBuilder[_,_] => pushWithDesc(b.putElement(), desc.asInstanceOf[CollectionTypeDescriptor[_,_]].element.asInstanceOf)
-        case b: core.PrimitiveBuilder[_] => Shared.readPrimitive(in)(b)
-        case _ => throw BuildException(s"Unsupported builder for protos: $b", null)
-    catch
-      case e: ClassCastException => throw BuildException(s"Builder error.  Builder: $b, Descriptor: $desc", e)
+      case b: core.StructureBuilder[T] => readStructure(b)
+      case b: core.CollectionBuilder[_,_] => readOuterCollection(b)
+      case b: core.PrimitiveBuilder[_] => Shared.readPrimitive(in)(b)
+      case c: core.ChoiceBuilder[T] => readChoice(c)
     b
 
-  private inline def readField[T](fieldBuilder: core.Builder[T], desc: ProtoTypeDescriptor[T], wireType: WireFormat): Unit =
-    try 
-      fieldBuilder match {
-        case choice: core.ChoiceBuilder[T] => ???
-        case struct: core.StructureBuilder[T] =>
-          Shared.limitByWireType(in)(WireFormat.LengthDelimited) {
-            readStructure(struct, desc.asInstanceOf)
-          }
-        case col: core.CollectionBuilder[_,_] =>
-          val colDesc = desc.asInstanceOf[CollectionTypeDescriptor[_,_]]
-          colDesc.element match
-            case x: PrimitiveTypeDescriptor[_] =>
-              if WireFormat.LengthDelimited == wireType then
-                Shared.readCompressedPrimitive(in)(col, x.tag.asInstanceOf)
-              else pushWithDesc(col.putElement(), x.asInstanceOf)
-            case other =>
-              Shared.limitByWireType(in)(WireFormat.LengthDelimited) {
-                pushWithDesc(col.putElement(), other.asInstanceOf)
-              }
-        case p: core.PrimitiveBuilder[_] => Shared.readPrimitive(in)(p)
-      }
-    catch
-      case e: ClassCastException => throw BuildException(s"Builder and descriptor do not align.  Builder: $fieldBuilder, Descriptor: $desc", null)
+  private inline def readField[T](fieldBuilder: core.Builder[T], wireType: WireFormat): Unit = 
+    fieldBuilder match {
+      case choice: core.ChoiceBuilder[T] => ???
+      case struct: core.StructureBuilder[T] =>
+        Shared.limitByWireType(in)(WireFormat.LengthDelimited) {
+          readStructure(struct)
+        }
+      case col: core.CollectionBuilder[_,_] =>
+        col.tag.elementTag match
+          case x: PrimitiveTag[_] =>
+            if WireFormat.LengthDelimited == wireType then
+              Shared.readCompressedPrimitive(in)(col, x)
+            else push(col.putElement())
+          case other =>
+            Shared.limitByWireType(in)(WireFormat.LengthDelimited) {
+              push(col.putElement())
+            }
+      case p: core.PrimitiveBuilder[_] => Shared.readPrimitive(in)(p)
+    }
 
-  private def readStructure[T](struct: core.StructureBuilder[T], mapping: MessageProtoDescriptor[T]): Unit =
-    object FieldName:
-      def unapply(num: Int): Option[String] = 
-        try Some(mapping.fieldName(num))
-        catch 
-          case _: MatchError => None
+  // Non-protoobuf encoded collections are pulled this way.  MOST collections should be
+  // encoded via fields and you can't do repeated of repeated in protos.
+  private def readOuterCollection[E, To](c: core.CollectionBuilder[E, To]): Unit =
+    var length = in.readVarInt32()
+    c.sizeHint(length)
+    while (length > 0)
+      push(c.putElement())
+      length -= 1
+
+  private def readStructure[T](struct: core.StructureBuilder[T]): Unit =
     var done: Boolean = false
     while !done do
       in.readTag() match
         case 0 => done = true
-        case Tag(wireType, num @ FieldName(field)) =>
-          readField(struct.putField(field), mapping.fieldDesc(num), wireType)
+        case Tag(wireType, num) => readField(struct.putField(num), wireType)
+
+  // TODO - figure out how to ACTUALLY make this work with protocol buffers, for now jsut make something work.
+  private def readChoice[T](choice: core.ChoiceBuilder[T]): Unit =
+    in.readTag() match
+      case 0 => ()
+      case Tag(wireType, ordinal) =>
+        Shared.limitByWireType(in)(wireType) {
+          // TODO - We should allow pushing choice by ordinal or name...
+          val name = choice.tag.nameFromOrdinal(ordinal-1)
+          push(choice.putChoice(name))
+        }

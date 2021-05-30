@@ -26,7 +26,11 @@ import streams.{
   WireFormat
 }
 
-/** Helper methods for implementing pb + raw protocols. */
+/** 
+ * Helper methods for implementing pb protocols. 
+ * 
+ * TODO - this is an artifact
+ */
 object Shared:
   /** Reads a compressed repeated primitive field. */
   def readCompressedPrimitive[E, To](in: LimitableTagReadingStream)(b: core.CollectionBuilder[E, To], elementTag: PrimitiveTag[E]): Unit =
@@ -78,7 +82,8 @@ class CompressedPrimitiveCollectionWriter(out: ProtoOutputStream) extends Pickle
     this
   // TODO - Throw better unsupported operations errors if we don't have the right shape.
   override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = ???
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter = ???
+  override def putStructure(picklee: Any, tag: Struct[?])(pickler: PickleStructureWriter => Unit): PickleWriter = ???
+  override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter = ???
   override def putUnit(): PickleWriter = 
     this
   override def putBoolean(value: Boolean): PickleWriter =
@@ -110,6 +115,9 @@ class CompressedPrimitiveCollectionWriter(out: ProtoOutputStream) extends Pickle
     this
 
 
+trait SizeEstimator:
+  def finalSize: Int
+
 /** Calculates the byte length of a a compressed repeated primtiive field. */
 class CompressedPrimitiveCollectionSizeEstimator extends PickleCollectionWriter with PickleWriter with SizeEstimator:
   private var size: Int = 0
@@ -120,7 +128,8 @@ class CompressedPrimitiveCollectionSizeEstimator extends PickleCollectionWriter 
     this
   // TODO - Throw better unsupported operations errors if we don't have the right shape.
   override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = ???
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(pickler: PickleStructureWriter => Unit): PickleWriter = ???
+  override def putStructure(picklee: Any, tag: Struct[?])(pickler: PickleStructureWriter => Unit): PickleWriter = ???
+  override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter = ???
   override def putUnit(): PickleWriter = 
     this
   override def putBoolean(value: Boolean): PickleWriter =

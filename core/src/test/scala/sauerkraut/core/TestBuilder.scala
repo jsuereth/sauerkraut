@@ -1,5 +1,6 @@
 package sauerkraut
 package core
+package testbuilder
 
 import org.junit.Test
 import org.junit.Assert._
@@ -44,6 +45,13 @@ class TestBuildableBuiltInsAndDerived:
     b.putField("x").putPrimitive(1)
     b.putField("y").putPrimitive("to")
     assertEquals(SimpleStruct(1, "to"), b.result)
+
+  @Test def testSimpleStructByNumber(): Unit =
+    val b = summon[Buildable[SimpleStruct]].newBuilder
+    b.putField(1).putPrimitive(1)
+    b.putField(2).putPrimitive("to")
+    assertEquals(SimpleStruct(1, "to"), b.result)
+
 
   @Test def testSimpleChoiceOfStruct(): Unit =
     val b = summon[Buildable[SimpleChoice]].newBuilder

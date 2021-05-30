@@ -1,22 +1,43 @@
 # Protocol Buffer Formats
 
-This library makes use of `CodedInputStream`/`CodedOutputStream` from the Java protocol buffer library to
-implement two formats for Scala:
+This library provides a "protocol buffer" like format that aims to be as compatible as possible
+with Google's protocol buffer library.   This isn't always possible due to types of encoding possible
+in Scala that are not in protocol buffers.
 
-1. A `RawBinary` format which looks similar to protocol buffers, but does not maintain all of its characteristics.
-   Specifically this one:
-   * Does not preserve field numberings across refactoring/shuffling of class definition.
-   * Does not require a `message` protocol definition.
-   * Should be able to handle any type allowed by sauerkraut.
-2. A `Protos` format intended for bi-directional protocol buffer serialization.
-   * Requires derivation of `ProtoTypeDescriptor`.
-   * Allows `@field(num)` annotations to preserve field numbering on members of classes.
-   * Is still HIGHLY experimental and incomplete.
+**Note: this library is highly experimental and incomplete**
 
+
+Example:
+
+```scala
+import sauerkraut.{pickle,write,read, Field}
+import sauerkraut.core.{Writer, Buildable, given}
+import sauerkraut.format.pb.{Proto,,given}
+
+
+case class MyMessageData(value: Int @Field(3), someStuff: Array[String] @Field(2))
+    derives Writer, Buildable
+
+def write(out: java.io.OutputStream): Unit = 
+  pickle(Proto).to(out).write(MyMessageData(1214, Array("this", "is", "a", "test")))
+```
+
+This example serializes to the equivalent of the following protocol buffer message:
+
+```proto
+message MyMessageData {
+  int32 value = 3;
+  repeated string someStuff = 2;
+}
+```
 
 # TODOs
 
+- [ ] Document Field selection for case classes
+- [ ] Document encoding of "Choice" into proto
+- [ ] Define how "raw" (non-case-class) outer-serialization is performed
+- [ ] Define un-encodable protobuf concepts
 - [ ] Enum support for descriptor-based serialization
 - [X] Collection support for descriptor-based serialization
-- [ ] Optimisation for descriptor-based serialization
+- [X] Optimisation for descriptor-based serialization
 - [ ] ByteChannel input

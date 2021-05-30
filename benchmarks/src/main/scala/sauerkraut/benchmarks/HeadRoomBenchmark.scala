@@ -43,11 +43,14 @@ package option1 {
   import sauerkraut.{_,given}
   import sauerkraut.core.{_,given}
   import format.nbt.{Nbt,given}
+  import format.pb.{Proto,given}
   given sauerkraut.core.Writer[OtherMessage] = sauerkraut.core.Writer.derived[OtherMessage]
   given sauerkraut.core.Writer[ExampleMessage] = sauerkraut.core.Writer.derived[ExampleMessage]
 
   def write(value: ExampleMessage, store: ByteBuffer): Unit =
     pickle(Nbt).to(store.out).write(value)
+  def writeProto(value: ExampleMessage, store: ByteBuffer): Unit =
+    pickle(Proto).to(store.out).write(value)
 }
 
 // Everything looks like protobuf
@@ -202,6 +205,9 @@ class WriteBenchmarks:
   @Benchmark
   def writeOption1(bh: Blackhole): Unit =
     bh.consume(option1.write(message, buffer))
+  @Benchmark
+  def writeOption1Proto(bh: Blackhole): Unit =
+    bh.consume(option1.writeProto(message, buffer))
   @Benchmark
   def writeOption2(bh: Blackhole): Unit =
     bh.consume(option2.write(message, buffer))

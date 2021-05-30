@@ -54,15 +54,23 @@ class XmlPickleWriter(out: Writer) extends PickleWriter with PickleCollectionWri
   override def putString(value: String): PickleWriter =
     // TODO - figure out whether or not to CDATA this.
     writePrimitive(out.write(value.toString()))
-  override def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter =
+  override def putStructure(picklee: Any, tag: Struct[_])(work: PickleStructureWriter => Unit): PickleWriter =
     // TODO - tag...
     out.write("<structure>")
     work(this)
     out.write("</structure>")
     this
 
+  override def putChoice(picklee: Any, tag: Choice[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    out.write("<choice type=\"")
+    out.write(choice)
+    out.write("\">")
+    work(this)
+    out.write("</choice>")
+    this
+
   override def flush(): Unit = out.flush()
-  override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
+  override def putField(number: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
     out.write("<field name=\"")
     out.write(name)
     out.write("\">")

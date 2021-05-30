@@ -21,6 +21,11 @@ extension [T](b: Builder[T])
       case sb: StructureBuilder[T] => sb.putField(name)
       case _ => 
         throw RuntimeException(s"$b is not an instance of StructureBuilder[_]") 
+  def putField(number: Int): Builder[?] =
+    b match
+      case sb: StructureBuilder[T] => sb.putField(number)
+      case _ => 
+        throw RuntimeException(s"$b is not an instance of StructureBuilder[_]") 
 
 extension [T](b: Builder[T]) 
   def putElement(): Builder[?] =

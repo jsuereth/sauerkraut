@@ -51,7 +51,7 @@ class PrettyPrintPickleWriter(out: Writer, indent: Int = 0) extends PickleWriter
   override def putString(value: String): PickleWriter =
     out.write(value)
     this
-  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
+  override def putCollection(length: Int, tag: CollectionTag[?,?])(work: PickleCollectionWriter => Unit): PickleWriter =
     if (length == 0) then
       out.write("[]")
     else
@@ -60,12 +60,27 @@ class PrettyPrintPickleWriter(out: Writer, indent: Int = 0) extends PickleWriter
         work(PrettyPrintCollectionWriter(out, indent))
         out.write(']')
     this
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
+  override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
     out.write(tag.toString)
     out.write(" {")
     work(PrettyPrintStructureWriter(out, indent+1))
     out.write("}")
     this
+
+  override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    out.write(tag.toString)
+    out.write(" {")
+    out.write("\n")
+    out.write(indentSpace)
+    out.write("  ")
+    out.write(choice)
+    out.write(": ")
+    work(PrettyPrintPickleWriter(out, indent+1))
+    out.write("\n")
+    out.write(indentSpace)
+    out.write("}")
+    this
+
   override def flush(): Unit = out.flush()
 
 class PrettyPrintStructureWriter(out: Writer, indent: Int) extends PickleStructureWriter:
@@ -82,7 +97,7 @@ class PrettyPrintStructureWriter(out: Writer, indent: Int) extends PickleStructu
   private def writePostFix(): Unit =
     out.write("\n")
     indentSpace(indent-1)
-  override def putField(name: String, writer: PickleWriter => Unit): PickleStructureWriter =
+  override def putField(num: Int, name: String, writer: PickleWriter => Unit): PickleStructureWriter =
     writePrefix()
     out.write(name)
     out.write(": ")

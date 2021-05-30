@@ -36,8 +36,7 @@ Here's a feature matrix for each format:
 | Format | Reader | Writer | All Types | Evolution Friendly | Notes                                    |
 | ------ | ------ | ------ | --------- | ------------------ | ---------------------------------------- |
 | Json   | Yes    | Yes    | Yes       | Yes                | Uses Jawn for parsing                    |
-| Binary | Yes    | Yes    | Yes       |                    |                                          |
-| Protos | Yes    | Yes    | No        |                    | For bi-directional Protocol Buffer usage |
+| Protos | Yes    | Yes    | Yes       | Yes                | Binary format evolution friendly format  |
 | NBT    | Yes    | Yes    | Yes       |                    | For the kids.                            |
 | XML    | Yes    | Yes    | Yes       |                    | Inefficient prototype.                   |
 | Pretty | No     | Yes    | No        |                    | For pretty-printing strings              |
@@ -71,51 +70,22 @@ libraryDependencies += "com.jsuereth.sauerkraut" %% "json" % "<version>"
 
 See [json project](json/README.md) for more information.
 
-## Binary
-A binary format loosely based on Protocol-Buffers.   Unlike protocol-buffers, this format can serialize any 
-Scala type.
-
-Example:
-```scala
-import sauerkraut.{pickle,read,write}
-import sauerkraut.core.{Buildable,Writer, given}
-import sauerkraut.format.pb.RawBinary
-
-case class MyFileData(value: Int, someStuff: Array[String])
-    derives Buildable, Writer
-
-def read(in: java.io.InputStream): MyFileData =
-  pickle(RawBinary).from(in).read[MyFileData]
-def write(out: java.io.OutputStream): Unit = 
-  pickle(RawBinary).to(out).write(MyFileData(1214, Array("this", "is", "a", "test")))
-```
-
-sbt build:
-```
-libraryDependencies += "com.jsuereth.sauerkraut" %% "pb" % "<version>"
-```
-
-
-See [pb project](pb/README.md) for more information.
-
 ## Protos
 A new encoding for protocol buffers within Scala!  This supports a subset of all possible protocol buffer messages
 but allows full definition of the message format within your Scala code.
 
 Example:
 ```scala
-import sauerkraut.{pickle,write,read}
+import sauerkraut.{pickle,write,read, Field}
 import sauerkraut.core.{Writer, Buildable, given}
-import sauerkraut.format.pb.{Protos,TypeDescriptorMapping,field,given}
+import sauerkraut.format.pb.{Proto,,given}
 
 
-case class MyMessageData(value: Int @field(3), someStuff: Array[String] @field(2))
-    derives TypeDescriptorMapping, Writer, Buildable
-
-val MyProtos = Protos[MyMessageData *: Unit]()
+case class MyMessageData(value: Int @Field(3), someStuff: Array[String] @Field(2))
+    derives Writer, Buildable
 
 def write(out: java.io.OutputStream): Unit = 
-  pickle(MyProtos).to(out).write(MyMessageData(1214, Array("this", "is", "a", "test")))
+  pickle(Proto).to(out).write(MyMessageData(1214, Array("this", "is", "a", "test")))
 ```
 
 This example serializes to the equivalent of the following protocol buffer message:
@@ -214,8 +184,8 @@ We split Serialization into three layers:
 1. The `source` layer.  It is expected these are some kind of stream.
 2. The `Format` layer.  This is responsible for reading a raw source and converting into
    the component types used in the `Shape` layer.  See `PickleReader` and `PickleWriter`.
-3. The `Shape` layer.  This is responsible for taking Primitives, Structs and Collections and
-   turning them into component types.
+3. The `Shape` layer.  This is responsible for turning Primitives, Structs, Choices and Collections
+   into component types.
 
 It's the circle of data:
 ```
@@ -304,7 +274,7 @@ Latest status/analysis can be found in the [benchmarks directory](benchmarks/lat
 - [ ] Well-thought out dataset for reading/writing
 - [X] Isolated read vs. write testing
 - [ ] Comparison against other frameworks.
-  - [X] RawBinary + Protos vs. protocol buffer java implementation
+  - [X] Protos vs. protocol buffer java implementation
   - [ ] Json Reading vs. raw JAWN to AST (measure overhead)
   - [ ] Jackson
   - [X] Kryo

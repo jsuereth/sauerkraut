@@ -19,38 +19,49 @@ package format
 package pb
 
 import streams.ProtoOutputStream
+import sauerkraut.format.PickleCollectionWriter
+import sauerkraut.format.PickleStructureWriter
 
-class ProtocolBufferFieldWriter(
+/** 
+ * A writer where the pickle is included as a field in an outer structure. 
+ * 
+ * @param out The output stream
+ * @param fieldNum the number of the field being written.
+ */
+class ProtoFieldWriter(
     out: ProtoOutputStream, 
-    fieldNum: Int,
-    // TODO - only allow this for primitives.
-    desc: ProtoTypeDescriptor[?]) 
+    fieldNum: Int) 
     extends PickleWriter with PickleCollectionWriter:
   // Writing a collection should simple write a field multiple times.
   override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
-    try
-      desc.asInstanceOf[CollectionTypeDescriptor[_,_]].element match
-        case p: PrimitiveTypeDescriptor[_] if length > 1 =>
-          Shared.writeCompressedPrimitives(out, fieldNum)(work)
-        case elemTag => work(ProtocolBufferFieldWriter(out, fieldNum, elemTag))
-      this
-    catch
-      case e: ClassCastException =>
-        throw new WriteException(s"Could not find collection descriptor, found: $desc", e)
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
-    try
-      // We need to write a header for this structure proto, which includes its size.
-      // For now, we be lazy and write to temporary array, then do it all at once.
-      // TODO - figure out if we can precompute and do this faster!
-      val tmpByteOut = java.io.ByteArrayOutputStream()
-      val tmpOut = ProtoOutputStream(tmpByteOut)
-      work(DescriptorBasedProtoStructureWriter(tmpOut, desc.asInstanceOf))
-      tmpOut.flush()
-      out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
-      this
-    catch
-      case e: ClassCastException =>
-        throw WriteException(s"Cannot find structure definition from: $desc", e)
+    tag.elementTag match
+      case p: PrimitiveTag[_] if length > 1 =>
+        Shared.writeCompressedPrimitives(out, fieldNum)(work)
+      case elemTag => work(this)
+    this
+  override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
+    // We need to write a header for this structure proto, which includes its size.
+    // For now, we be lazy and write to temporary array, then do it all at once.
+    // TODO - figure out if we can precompute and do this faster!
+    val tmpByteOut = java.io.ByteArrayOutputStream()
+    val tmpOut = ProtoOutputStream(tmpByteOut)
+    work(ProtoStructureWriter(tmpOut))
+    tmpOut.flush()
+    out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
+    this
+  
+  override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    // TODO - For now we need to encode this as a NESTED structure at the current field value...
+    // We need to figure out how to treat these as 'oneof' fields.
+    val ordinal = tag.ordinal(picklee.asInstanceOf)
+    val tmpByteOut = java.io.ByteArrayOutputStream()
+    val tmpOut = ProtoOutputStream(tmpByteOut)
+    work(ProtoFieldWriter(out, ordinal+1))
+    tmpOut.flush()
+    out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
+    this
+    
+
 
   override def putUnit(): PickleWriter = 
     this
@@ -82,7 +93,6 @@ class ProtocolBufferFieldWriter(
     out.writeString(fieldNum, value)
     this
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
-    // TODO - when writing primitive collection, we won't need fieldNum tags.
     pickler(this)
     this
 
@@ -90,35 +100,59 @@ class ProtocolBufferFieldWriter(
 
 
 /** This class can write out a proto structure given a TypeDescriptorMapping of field name to number. */
-class DescriptorBasedProtoStructureWriter(
-    out: ProtoOutputStream,
-    mapping: MessageProtoDescriptor[?]) extends PickleStructureWriter:
-  override def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
-    val idx = mapping.fieldNumber(name)
-    pickler(ProtocolBufferFieldWriter(out, idx, mapping.fieldDesc(idx)))
+class ProtoStructureWriter(out: ProtoOutputStream) extends PickleStructureWriter:
+  override def putField(number: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
+    pickler(ProtoFieldWriter(out, number))
     this
 
 /** A pickle writer that will only write proto messages using ProtoTypeDescriptors. */
-class DescriptorBasedProtoWriter(
-    out: ProtoOutputStream,
-    repository: TypeDescriptorRepository
-) extends PickleWriter:
-  override def putStructure(picklee: Any, tag: FastTypeTag[?])(work: PickleStructureWriter => Unit): PickleWriter =
-    try
-      work(DescriptorBasedProtoStructureWriter(out, repository.find(tag).asInstanceOf))
-      this
-    catch
-      case e: ClassCastException =>
-        throw WriteException(s"Unable to find message descriptor for $tag, found ${repository.find(tag)}", e)
-  override def putUnit(): PickleWriter = ???
-  override def putBoolean(value: Boolean): PickleWriter = ???
-  override def putByte(value: Byte): PickleWriter = ???
-  override def putChar(value: Char): PickleWriter = ???
-  override def putShort(value: Short): PickleWriter = ???
-  override def putInt(value: Int): PickleWriter = ???
-  override def putLong(value: Long): PickleWriter = ???
-  override def putFloat(value: Float): PickleWriter = ???
-  override def putDouble(value: Double): PickleWriter = ???
-  override def putString(value: String): PickleWriter = ???
-  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter = ???
+class ProtoWriter(
+    out: ProtoOutputStream
+) extends PickleWriter with PickleCollectionWriter:
+  override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
+    work(ProtoStructureWriter(out))
+    this
+
+  // --------------------------------------------------------------------------
+  // Note: Everything below here violates normal protocol buffer specification.
+  // --------------------------------------------------------------------------
+  override def putUnit(): PickleWriter = this
+  override def putBoolean(value: Boolean): PickleWriter =
+    out.writeBoolean(value)
+    this
+  override def putByte(value: Byte): PickleWriter =
+    out.writeByte(value)
+    this
+  override def putChar(value: Char): PickleWriter =
+    out.writeChar(value)
+    this
+  override def putShort(value: Short): PickleWriter =
+    out.writeShort(value)
+    this
+  override def putInt(value: Int): PickleWriter =
+    out.writeInt(value)
+    this
+  override def putLong(value: Long): PickleWriter =
+    out.writeLong(value)
+    this
+  override def putFloat(value: Float): PickleWriter =
+    out.writeFloat(value)
+    this
+  override def putDouble(value: Double): PickleWriter =
+    out.writeDouble(value)
+    this
+  override def putString(value: String): PickleWriter =
+    out.writeString(value)
+    this
+  override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
+    out.writeInt(length)
+    work(this)
+    this
+  override def putElement(work: PickleWriter => Unit): PickleCollectionWriter =
+    work(this)
+    this
+  override def putChoice(picklee: Any, tag: Choice[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
+    val ordinal = tag.asInstanceOf[Choice[_]].ordinal(picklee.asInstanceOf)
+    work(ProtoFieldWriter(out, ordinal+1))
+    this
   override def flush(): Unit = out.flush()

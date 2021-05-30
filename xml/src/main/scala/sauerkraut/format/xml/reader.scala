@@ -90,18 +90,21 @@ class XmlContentHandler(b: Builder[?]) extends DefaultHandler:
           case sb: StructureBuilder[_] =>
             stack.push(currentBuilder)
             currentBuilder = sb.putField(atts.getValue("name"))
-          case cb: ChoiceBuilder[_] =>
-            stack.push(currentBuilder)
-            currentBuilder = cb.putChoice(atts.getValue("name"))
           case _ => throw WriteException(s"Unable to push field ${atts.getValue("name")} into $currentBuilder", null)
       case "collection" => ()
       case "structure" => ()
+      case "choice" =>
+        currentBuilder match
+          case cb: ChoiceBuilder[_] =>
+            stack.push(currentBuilder)
+            currentBuilder = cb.putChoice(atts.getValue("type"))
+          case _ => throw WriteException(s"Unable to push choice ${atts.getValue("type")} into $currentBuilder", null)
       case "primitive" =>
         hadValue = false
   override def endElement(uri: String, localName: String, qName: String): Unit =
     localName match
       case "primitive" =>
         if (!hadValue) characters(Array(), 0, 0)
-      case "field" | "element" =>
+      case "field" | "element" | "choice" =>
         currentBuilder = stack.pop()
       case _ =>

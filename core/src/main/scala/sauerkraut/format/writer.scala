@@ -36,7 +36,7 @@ trait PickleWriter:
     *                The function that will write the picklee to a pickle structure.
     *                Note: this may be called multiple times, e.g. when getting size estimates.
     */
-  def putStructure(picklee: Any, tag: FastTypeTag[_])(work: PickleStructureWriter => Unit): PickleWriter
+  def putStructure(picklee: Any, tag: Struct[_])(work: PickleStructureWriter => Unit): PickleWriter
   /** Denotes an empty value. */
   def putUnit(): PickleWriter
   /** Writes a primtiive booelan value. */
@@ -74,10 +74,7 @@ trait PickleWriter:
    * they desire.   See [[NonPrimitiveTag.Choice]] for information that can be used to distinguish
    * between options.
    */
-  // TODO - make this less ugly / better design.  Currently this is encoded behind struct, but
-  // we should allow formats to be clever.
-  final def putChoice(picklee: Any, tag: FastTypeTag[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
-    putStructure(picklee, tag)(_.putField(choice, work))
+  def putChoice(picklee: Any, tag: Choice[_], choice: String)(work: PickleWriter => Unit): PickleWriter
   /** Flush any pending writes down this writer. */
   def flush(): Unit
 
@@ -92,7 +89,7 @@ trait PickleStructureWriter:
    *                 You should ensure this function will perform a beginEntry()/endEntry() block.
    * @return A builder for remaining items in the current complex structure being pickled.
    */
-  def putField(name: String, pickler: PickleWriter => Unit): PickleStructureWriter
+  def putField(num: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter
 
 /** A writer of collection elements. */
 trait PickleCollectionWriter:
