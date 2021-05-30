@@ -20,7 +20,7 @@ package benchmarks
 import core.{Writer,Buildable,given}
 import java.nio.ByteBuffer
 import java.io.OutputStreamWriter
-import format.pb.{RawBinary,Proto, given}
+import format.pb.{Proto, given}
 import format.json.{Json,given}
 import format.nbt.{Nbt,given}
 import format.xml.{Xml,given}
@@ -133,14 +133,6 @@ object SauerkrautNbtBenchmarkConfig extends SauerkrautBenchmarkConfig:
     pickle(Nbt).to(store.out).write(value)
 
 /** Configuration for running XML format benchmarks. */
-object SauerkrautRawBinaryBenchmarkConfig extends SauerkrautBenchmarkConfig:
-  override val name: String = "raw"
-  override def load(store: ByteBuffer): LargerMessage =
-    pickle(RawBinary).from(store.in).read[LargerMessage]
-  override def save(value: LargerMessage, store: ByteBuffer): Unit =
-    pickle(RawBinary).to(store.out).write(value)
-
-/** Configuration for running XML format benchmarks. */
 object SauerkrautProtoBenchmarkConfig extends SauerkrautBenchmarkConfig:
   override val name: String = "proto"
   override def load(store: ByteBuffer): LargerMessage =
@@ -202,7 +194,6 @@ val benchmarkConfigs = Set(
   SauerkrautXmlBenchmarkConfig,
   SauerkrautJsonBenchmarkConfig,
   SauerkrautNbtBenchmarkConfig,
-  SauerkrautRawBinaryBenchmarkConfig,
   SauerkrautProtoBenchmarkConfig,
   // Competitor frameworks
   JavaSerializationBenchmarks,
@@ -215,7 +206,7 @@ val benchmarkConfigs = Set(
 class ReadBenchmarks:
   private var config: BenchmarkConfig[?] = null
   private var buffer = ByteBuffer.allocate(1024*1024)
-  @Param(Array("raw", "proto", "nbt", "json", "xml", "java_pb", "java_ser", "java_kryo"))
+  @Param(Array("proto", "nbt", "json", "xml", "java_pb", "java_ser", "java_kryo"))
   var configName: String = null;
   @Setup(Level.Invocation) def setUp(): Unit =
     config = benchmarkConfigs.find(_.name == configName).get
@@ -232,7 +223,7 @@ class ReadBenchmarks:
 class WriteBenchmarks:
   private var config: BenchmarkConfig[?] = null
   private var buffer = ByteBuffer.allocate(1024*1024)
-  @Param(Array("raw", "proto", "nbt", "json", "xml", "java_pb", "java_ser", "java_kryo"))
+  @Param(Array("proto", "nbt", "json", "xml", "java_pb", "java_ser", "java_kryo"))
   var configName: String = null;
   @Setup(Level.Invocation) def setUp(): Unit =
     config = benchmarkConfigs.find(_.name == configName).get

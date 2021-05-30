@@ -7,18 +7,21 @@ import org.junit.Assert._
 import core.{Writer,given}
 
 case class Derived(x: Boolean, test: String) derives Writer
-case class Repeated(x: List[Boolean]) derives Writer
+case class Repeated(x: List[String]) derives Writer
+case class RepeatedCompressed(x: List[Boolean]) derives Writer
 enum SimpleEnum derives Writer:
   case One
   case Two
 
-class TestRawBinaryProto:
+class TestProtoWriter:
   def binary[T: Writer](value: T): Array[Byte] =
     val out = java.io.ByteArrayOutputStream()
-    pickle(RawBinary).to(out).write(value)
+    pickle(Proto).to(out).write(value)
     out.toByteArray()
   def binaryString[T: Writer](value: T): String =
     hexString(binary(value))
+
+  // Test all non-proto writing functionality
   @Test def writeUnit(): Unit =
     assertEquals("", binaryString(()))
   @Test def writeBoolean(): Unit =
@@ -45,12 +48,18 @@ class TestRawBinaryProto:
   @Test def writeListOfInt(): Unit =
     assertEquals("020304", binaryString(List(3,4)))
 
-  @Test def writeDerived(): Unit =
-    assertEquals("0800120774657374696e67", binaryString(Derived(false, "testing"))) 
+  @Test def writeRepeatedCompressed(): Unit =
+    assertEquals("0a03000100", binaryString(RepeatedCompressed(List(false, true, false))))
 
   @Test def writeRepeated(): Unit =
-    assertEquals("0a01000a01010a0100", binaryString(Repeated(List(false, true, false))))
+    assertEquals("0a06012101210121", binaryString(Repeated(List("!", "!", "!"))))
+    ()
 
   @Test def writeEnum(): Unit =
-    assertEquals("0a02", binaryString(SimpleEnum.One))
-    assertEquals("1202", binaryString(SimpleEnum.Two))
+    // Expect just field and then 0-length vaue.
+    assertEquals("0a00", binaryString(SimpleEnum.One))
+    assertEquals("1200", binaryString(SimpleEnum.Two))
+
+  // test actual protocol buffer operations
+  @Test def writeDerived(): Unit =
+    assertEquals("0800120774657374696e67", binaryString(Derived(false, "testing"))) 

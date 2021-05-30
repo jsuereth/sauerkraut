@@ -26,7 +26,11 @@ import streams.{
   WireFormat
 }
 
-/** Helper methods for implementing pb + raw protocols. */
+/** 
+ * Helper methods for implementing pb protocols. 
+ * 
+ * TODO - this is an artifact
+ */
 object Shared:
   /** Reads a compressed repeated primitive field. */
   def readCompressedPrimitive[E, To](in: LimitableTagReadingStream)(b: core.CollectionBuilder[E, To], elementTag: PrimitiveTag[E]): Unit =
@@ -110,6 +114,9 @@ class CompressedPrimitiveCollectionWriter(out: ProtoOutputStream) extends Pickle
     out.writeString(value)
     this
 
+
+trait SizeEstimator:
+  def finalSize: Int
 
 /** Calculates the byte length of a a compressed repeated primtiive field. */
 class CompressedPrimitiveCollectionSizeEstimator extends PickleCollectionWriter with PickleWriter with SizeEstimator:

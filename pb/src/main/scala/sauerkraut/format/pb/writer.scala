@@ -22,7 +22,13 @@ import streams.ProtoOutputStream
 import sauerkraut.format.PickleCollectionWriter
 import sauerkraut.format.PickleStructureWriter
 
-class ProtocolBufferFieldWriter(
+/** 
+ * A writer where the pickle is included as a field in an outer structure. 
+ * 
+ * @param out The output stream
+ * @param fieldNum the number of the field being written.
+ */
+class ProtoFieldWriter(
     out: ProtoOutputStream, 
     fieldNum: Int) 
     extends PickleWriter with PickleCollectionWriter:
@@ -31,7 +37,7 @@ class ProtocolBufferFieldWriter(
     tag.elementTag match
       case p: PrimitiveTag[_] if length > 1 =>
         Shared.writeCompressedPrimitives(out, fieldNum)(work)
-      case elemTag => work(ProtocolBufferFieldWriter(out, fieldNum))
+      case elemTag => work(this)
     this
   override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
     // We need to write a header for this structure proto, which includes its size.
@@ -39,19 +45,20 @@ class ProtocolBufferFieldWriter(
     // TODO - figure out if we can precompute and do this faster!
     val tmpByteOut = java.io.ByteArrayOutputStream()
     val tmpOut = ProtoOutputStream(tmpByteOut)
-    work(DescriptorBasedProtoStructureWriter(tmpOut))
+    work(ProtoStructureWriter(tmpOut))
     tmpOut.flush()
     out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
     this
   
   override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter =
     // TODO - For now we need to encode this as a NESTED structure at the current field value...
-    // Right now we just hack something crazy.
-    // For now jsut encode as raw does.
+    // We need to figure out how to treat these as 'oneof' fields.
     val ordinal = tag.ordinal(picklee.asInstanceOf)
-    // TODO: Use an actual good field number for this.
-    System.err.println(s"Writing bad choice: $ordinal for $choice")
-    work(ProtocolBufferFieldWriter(out, ordinal+1))
+    val tmpByteOut = java.io.ByteArrayOutputStream()
+    val tmpOut = ProtoOutputStream(tmpByteOut)
+    work(ProtoFieldWriter(out, ordinal+1))
+    tmpOut.flush()
+    out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
     this
     
 
@@ -86,7 +93,6 @@ class ProtocolBufferFieldWriter(
     out.writeString(fieldNum, value)
     this
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
-    // TODO - when writing primitive collection, we won't need fieldNum tags.
     pickler(this)
     this
 
@@ -94,17 +100,17 @@ class ProtocolBufferFieldWriter(
 
 
 /** This class can write out a proto structure given a TypeDescriptorMapping of field name to number. */
-class DescriptorBasedProtoStructureWriter(out: ProtoOutputStream) extends PickleStructureWriter:
+class ProtoStructureWriter(out: ProtoOutputStream) extends PickleStructureWriter:
   override def putField(number: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
-    pickler(ProtocolBufferFieldWriter(out, number))
+    pickler(ProtoFieldWriter(out, number))
     this
 
 /** A pickle writer that will only write proto messages using ProtoTypeDescriptors. */
-class DescriptorBasedProtoWriter(
+class ProtoWriter(
     out: ProtoOutputStream
 ) extends PickleWriter with PickleCollectionWriter:
   override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
-    work(DescriptorBasedProtoStructureWriter(out))
+    work(ProtoStructureWriter(out))
     this
 
   // --------------------------------------------------------------------------
@@ -147,6 +153,6 @@ class DescriptorBasedProtoWriter(
     this
   override def putChoice(picklee: Any, tag: Choice[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
     val ordinal = tag.asInstanceOf[Choice[_]].ordinal(picklee.asInstanceOf)
-    work(ProtocolBufferFieldWriter(out, ordinal+1))
+    work(ProtoFieldWriter(out, ordinal+1))
     this
   override def flush(): Unit = out.flush()
