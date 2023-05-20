@@ -280,7 +280,7 @@ Latest status/analysis can be found in the [benchmarks directory](benchmarks/lat
   - [X] Kryo
   - [ ] Thrift
   - [ ] Circe
-  - [ ] uPickle
+  - [X] uPickle
 - [ ] Automatic well-formatted graph dump in Markdown of results.
 
 

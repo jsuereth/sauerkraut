@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019 Google
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package sauerkraut
 package core
 package internal
@@ -31,13 +47,25 @@ object MacroHelper:
   private def fieldNumToConstructorImpl[P](using Type[P])(using Quotes)(fieldNum: Expr[Int]): Expr[Int] =
     import quotes.reflect._
     val allocations = caseFieldAllocations[P]
-    val cases: Iterable[CaseDef] =
-      for
-        ((name, num), idx) <- allocations.zipWithIndex
-      yield
-        CaseDef(Literal(IntConstant(num)), None, Literal(IntConstant(idx)))
-    // Match against the field num.
-    Match(fieldNum.asTerm, cases.toList).asExpr.asInstanceOf[Expr[Int]]
+    fieldNum.value match
+      // Field num is statically known, look it up
+      case Some(value) =>
+        val result = allocations.zipWithIndex.find {
+          case ((name, num), idx) => num == value
+        } map {
+          case ((name, num), idx) => idx
+        } getOrElse -1
+        Expr(result)
+      case None =>
+        // We need to pattern match for it.
+        val cases: Iterable[CaseDef] =
+          for
+            ((name, num), idx) <- allocations.zipWithIndex
+          yield
+            CaseDef(Literal(IntConstant(num)), None, Literal(IntConstant(idx)))
+        // Match against the field num.
+        // report.warning(s"Generated code: ${Match(fieldNum.asTerm, cases.toList).asExpr.show}")
+        Match(fieldNum.asTerm, cases.toList).asExpr.asInstanceOf[Expr[Int]]
 
 
   // Macro impelmentation for grabbing field number for compile-time name.

@@ -30,3 +30,6 @@ class TestMacroHelper:
     assertEquals(2, fieldNumToConstructorOrder[MyTestClass](5))
     assertEquals(3, fieldNumToConstructorOrder[MyTestClass](2))
     assertEquals(4, fieldNumToConstructorOrder[MyTestClass](6))
+    // Make sure fieldNum is not statically known.
+    val fieldNum = 6
+    assertEquals(4, fieldNumToConstructorOrder[MyTestClass](fieldNum))

@@ -96,6 +96,7 @@ trait ComplianceTests
   with PrimitiveComplianceTests
   with StructureComplianceTests
   with ChoiceComplianceTests
+  with FieldTests
 
 // TODO - evolution compliance tests
 // 1. Field => Option[Field]

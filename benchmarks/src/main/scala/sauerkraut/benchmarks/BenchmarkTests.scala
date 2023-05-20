@@ -32,12 +32,12 @@ import scala.collection.mutable.ArrayBuffer
 
 // -- Saurkraut Classes --
 case class SimpleMessage(value: Int @Field(2), message: String @Field(1))
-    derives Writer, Buildable
+    derives Writer, Buildable, upickle.default.ReadWriter
 case class LargerMessage(
   messages: ArrayBuffer[SimpleMessage] @Field(1),
   otherNums: ArrayBuffer[Double] @Field(2),
   ints: ArrayBuffer[Long] @Field(3)
-) derives Writer, Buildable
+) derives Writer, Buildable, upickle.default.ReadWriter
 
 // -- Java framework classes --
 class JavaSimpleMessage {
@@ -150,6 +150,22 @@ object JavaSerializationBenchmarks extends SauerkrautBenchmarkConfig:
     out.writeObject(value)
     out.flush()
 
+/** Uses UPickle -> msgpack serialization. */
+object UPickleBinarySerializationBenchmarks extends SauerkrautBenchmarkConfig:
+  override val name: String = "upickle_binary_msgpack"
+  override def load(store: ByteBuffer): LargerMessage =
+    upickle.default.readBinary[LargerMessage](store.in)
+  override def save(value: LargerMessage, store: ByteBuffer): Unit =
+    upickle.default.writeBinaryTo(value, store.out)
+
+/** Uses UPickle -> json serialization. */
+object UPickleJsonSerializationBenchmarks extends SauerkrautBenchmarkConfig:
+  override val name: String = "upickle_json"
+  override def load(store: ByteBuffer): LargerMessage =
+    upickle.default.read[LargerMessage](ujson.Readable.fromByteBuffer(store))
+  override def save(value: LargerMessage, store: ByteBuffer): Unit =
+    upickle.default.writeJs(value).writeBytesTo(store.out)
+
 object KryoSerializationBenchmarks extends BenchmarkConfig[JavaLargerMessage]:
   private val kryo = com.esotericsoftware.kryo.Kryo()
   kryo.setRegistrationRequired(false)
@@ -196,6 +212,8 @@ val benchmarkConfigs = Set(
   SauerkrautNbtBenchmarkConfig,
   SauerkrautProtoBenchmarkConfig,
   // Competitor frameworks
+  UPickleBinarySerializationBenchmarks,
+  UPickleJsonSerializationBenchmarks,
   JavaSerializationBenchmarks,
   ProtocolBufferBenchmarkConfig,
   KryoSerializationBenchmarks)
@@ -206,7 +224,8 @@ val benchmarkConfigs = Set(
 class ReadBenchmarks:
   private var config: BenchmarkConfig[?] = null
   private var buffer = ByteBuffer.allocate(1024*1024)
-  @Param(Array("proto", "nbt", "json", "xml", "java_pb", "java_ser", "java_kryo"))
+  // @Param(Array("proto", "nbt", "json", "xml", "java_pb", "java_ser", "java_kryo"))
+  @Param(Array("proto", "json", "upickle_binary_msgpack", "upickle_json"))
   var configName: String = null;
   @Setup(Level.Invocation) def setUp(): Unit =
     config = benchmarkConfigs.find(_.name == configName).get
@@ -223,7 +242,8 @@ class ReadBenchmarks:
 class WriteBenchmarks:
   private var config: BenchmarkConfig[?] = null
   private var buffer = ByteBuffer.allocate(1024*1024)
-  @Param(Array("proto", "nbt", "json", "xml", "java_pb", "java_ser", "java_kryo"))
+  // @Param(Array("proto", "nbt", "json", "xml", "java_pb", "java_ser", "java_kryo"))
+  @Param(Array("proto", "json", "upickle_binary_msgpack", "upickle_json"))
   var configName: String = null;
   @Setup(Level.Invocation) def setUp(): Unit =
     config = benchmarkConfigs.find(_.name == configName).get

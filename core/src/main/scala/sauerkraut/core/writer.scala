@@ -80,7 +80,7 @@ object Writer:
 
   inline private def writeStruct[P, MirroredElemTypes <: Tuple, MirroredElemLabels <: Tuple](
     value: Any, pickle: format.PickleWriter, tag: format.FastTypeTag[?]): Unit =
-    pickle.putStructure(this, tag.asInstanceOf)(writer =>
+    pickle.putStructure(value, tag.asInstanceOf)(writer =>
             writeFields[P, MirroredElemTypes, MirroredElemLabels](writer, value, 0))
 
   inline private def label[A]: String = constValue[A].asInstanceOf[String]

@@ -15,6 +15,7 @@ Our goal is to:
   code generation for Java *and* conventional/common
   usage does not match Java's usage.
 
+
 ## Full Results (2020-03-05)
 
 *Test #1 - Nested messages + primitive collections*
@@ -49,7 +50,7 @@ numbers from the naive implementation into something ready-for-production.
 - [X] Split apart `RawBinaryPickleReader.push` (7.4%)
 - [ ] Attempt to remove the crazy amount of boxing/unboxing we have w/ Primitives (2.5%)
   - [ ] Erase PrimitiveBuilders in codegen of `Buildable.derived[T]`
-  - [ ] Add direct un-boxed signatures for putPrimitive.
+  - [X] Add direct un-boxed signatures for putPrimitive.
 - [ ] Figure out if `Mirror.ProductOf[T]#fromProduct` could be more efficient. (2.9%)
 - [X] Support compressed repeated fields in PB format
 - [ ] Add size-hint to `CollectionBuilder`
@@ -261,3 +262,30 @@ of fields on a given structure.  Additionally, we see a lot of overhead on boxin
 [info]   1.1%   2.3% sauerkraut.benchmarks.generated.RawBinaryBenchmarks_writeAndReadSimpleMessage_jmhTest.writeAndReadSimpleMessage_avgt_jmhStub
 [info]   7.7%  15.4% <other>
 ```
+
+## Write Results (2023-05-19)
+
+Test - Sauerkraut vs. upickle
+
+| Framework  | Format    | ByteSize | Write (ns / op)   | Read ( ns / op)  |
+| ---------  | --------- | -------- | ----------------- | ---------------- |
+| Sauerkraut | proto     | 165      | 1258.493          |                  |
+| Sauerkraut | json      | 5875     | 3538.085          |                  |
+| upickle    | msgpack   | 4775     |  832.646          |                  |
+| upickle    | json      | 6075     | 2803.192          |                  |
+
+A few notes:
+
+- upickle JSON uses MORE bytes than sauerkraut, need to investigate what these are used for.
+- upickle JSON vendors jackson-fast for rendering JSON more efficiently
+- Sauerkraut collection "visiting" appears to be a major slowdown.
+  upickle directly models Array[Byte] and uses while loops for collection looping.
+- upickle msgpack (binary) serializes very quickly, but is almost as large as sauerkraut JSON.
+- This includes some optimisations in proto to memoize size calculations and String->UTF-8 byte conversion.
+
+Areas to investigate:
+
+- [ ] Vendor some better JSON serialization code from faster-json, like upickle does
+- [ ] Model particularly slow (but important) types directly in visitors
+- [ ] Look at some byte / charset conversion shenanigans in upickle
+- [ ] Add msgpack as viable format in Sauerkraut

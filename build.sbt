@@ -1,11 +1,12 @@
-import com.typesafe.sbt.license.{DepModuleInfo}
+import sbtlicensereport.license.{DepModuleInfo}
+import sbtghactions.JavaSpec
 
 
 val Deps = new {
-  val protobufJava = "com.google.protobuf" % "protobuf-java" % "3.17.1"
-  val jawnAst = "org.typelevel" %% "jawn-ast" % "1.1.2"
-  val junit = "junit" % "junit" % "4.11"
-  val easyMock = "org.easymock" % "easymock" % "4.3"
+  val protobufJava = "com.google.protobuf" % "protobuf-java" % "3.23.1"
+  val jawnAst = "org.typelevel" %% "jawn-ast" % "1.4.0"
+  val junit = "junit" % "junit" % "4.13.2"
+  val easyMock = "org.easymock" % "easymock" % "5.1.0"
 }
 
 val commonSettings: Seq[Setting[_]] = Seq(
@@ -32,8 +33,8 @@ val commonSettings: Seq[Setting[_]] = Seq(
 ThisBuild / githubWorkflowPublish := Nil
 ThisBuild / githubWorkflowArtifactUpload := false
 // ThisBuild / githubWorkflowScalaVersions := Seq(dottyVersion)
-ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8", "adopt@1.11")
-ThisBuild / scalaVersion := "3.0.0"
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17.0"), JavaSpec.temurin("11.0"))
+ThisBuild / scalaVersion := "3.2.2"
 ThisBuild / crossScalaVersions := Seq((ThisBuild / scalaVersion).value)
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "com.jsuereth.sauerkraut"
@@ -101,6 +102,7 @@ val benchmarks = project
     run  / javaOptions += "-Xmx6G",
     libraryDependencies += "org.openjdk.jmh" % "jmh-core" % "1.23",
     libraryDependencies += "com.esotericsoftware" % "kryo" % "5.0.3",
+    libraryDependencies += "com.lihaoyi" %% "upickle" % "3.1.0",
     ProtobufConfig / protobufRunProtoc := { args =>
       com.github.os72.protocjar.Protoc.runProtoc("-v370" +: args.toArray)
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google
+ * Copyright 2019 Google
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,7 +121,12 @@ class ProtoInputStream(in: InputStream) extends LimitableTagReadingStream:
   // TODO - mechanism to read raw bytes?
   override final def readString(): String = 
     val length = readVarInt32()
-    if (length > 0) then readString(length) else ""
+    if (length > 0) then
+      try readString(length)
+      catch
+        case ex: Exception =>
+          throw new RuntimeException(s"Failed to read ${length} bytes into string", ex)
+    else ""
   final def readString(lengthInBytes: Int): String = InlineReader.readStringUtf8(lengthInBytes, () => readNext())
   override final def readByte(): Byte = readNext().toByte
   override final def readBoolean(): Boolean = InlineReader.readBoolean(() => readNext())
