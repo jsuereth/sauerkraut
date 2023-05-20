@@ -68,7 +68,11 @@ class DescriptorBasedProtoReader(in: LimitableTagReadingStream)
     while !done do
       in.readTag() match
         case 0 => done = true
-        case Tag(wireType, num) => readField(struct.putField(num), wireType)
+        case Tag(wireType, num) =>
+          try readField(struct.putField(num), wireType)
+          catch
+            case ex: Exception =>
+              throw BuildException(s"Failed to read field ${num} of ${struct.tag.name}", ex)
 
   // TODO - figure out how to ACTUALLY make this work with protocol buffers, for now jsut make something work.
   private def readChoice[T](choice: core.ChoiceBuilder[T]): Unit =

@@ -18,9 +18,39 @@ package sauerkraut
 package format
 package pb
 
-import streams.ProtoOutputStream
+import streams.{ProtoOutputStream, WireFormat}
 import sauerkraut.format.PickleCollectionWriter
 import sauerkraut.format.PickleStructureWriter
+import sauerkraut.format.pretty.Pretty
+import sauerkraut.utils.InlineWriter
+
+trait ProtoSerializationCache:
+  def getCachedSize(picklee: Any): Option[Int]
+  def cacheSize(picklee: Any, size: Int): Unit
+  def cachedUtf8(value: String): Array[Byte]
+
+  inline def cachedSize(picklee: Any, inline size: => Int): Int =
+    getCachedSize(picklee) match
+      case Some(value) => value
+      case None =>
+        val result = size
+        cacheSize(picklee, result)
+        result
+
+object NoProtoSerializationCache extends ProtoSerializationCache:
+  override def getCachedSize(picklee: Any): Option[Int] = None
+  override def cacheSize(picklee: Any, size: Int): Unit = ()
+  override def cachedUtf8(value: String): Array[Byte] = value.getBytes(InlineWriter.Utf8)
+
+class SimpleProtoSerializationCache extends ProtoSerializationCache:
+  private val sizeCache: collection.mutable.Map[Any, Int] = collection.mutable.HashMap()
+  private val stringCache: collection.mutable.Map[String, Array[Byte]] = collection.mutable.HashMap()
+  override def getCachedSize(picklee: Any): Option[Int] =
+    sizeCache get picklee
+  override def cacheSize(picklee: Any, size: Int): Unit =
+    sizeCache.put(picklee, size)
+  override def cachedUtf8(value: String): Array[Byte] =
+    stringCache.getOrElseUpdate(value, value.getBytes(InlineWriter.Utf8))
 
 /** 
  * A writer where the pickle is included as a field in an outer structure. 
@@ -30,7 +60,8 @@ import sauerkraut.format.PickleStructureWriter
  */
 class ProtoFieldWriter(
     out: ProtoOutputStream, 
-    fieldNum: Int) 
+    fieldNum: Int,
+    cache: ProtoSerializationCache = SimpleProtoSerializationCache())
     extends PickleWriter with PickleCollectionWriter:
   // Writing a collection should simple write a field multiple times.
   override def putCollection(length: Int, tag: CollectionTag[_,_])(work: PickleCollectionWriter => Unit): PickleWriter =
@@ -43,22 +74,31 @@ class ProtoFieldWriter(
     // We need to write a header for this structure proto, which includes its size.
     // For now, we be lazy and write to temporary array, then do it all at once.
     // TODO - figure out if we can precompute and do this faster!
-    val tmpByteOut = java.io.ByteArrayOutputStream()
-    val tmpOut = ProtoOutputStream(tmpByteOut)
-    work(ProtoStructureWriter(tmpOut))
-    tmpOut.flush()
-    out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
+    val size = cache.cachedSize(picklee, streams.sizeOfStruct(cache, work))
+    out.writeInt(WireFormat.LengthDelimited.makeTag(fieldNum))
+    out.writeInt(size)
+    work(ProtoStructureWriter(out, cache))
+//    val tmpByteOut = java.io.ByteArrayOutputStream()
+//    val tmpOut = ProtoOutputStream(tmpByteOut)
+//    work(ProtoStructureWriter(tmpOut))
+//    tmpOut.flush()
+//    out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
     this
   
   override def putChoice(picklee: Any, tag: Choice[?], choice: String)(work: PickleWriter => Unit): PickleWriter =
     // TODO - For now we need to encode this as a NESTED structure at the current field value...
     // We need to figure out how to treat these as 'oneof' fields.
     val ordinal = tag.ordinal(picklee.asInstanceOf)
-    val tmpByteOut = java.io.ByteArrayOutputStream()
-    val tmpOut = ProtoOutputStream(tmpByteOut)
+    val size = cache.cachedSize(picklee, streams.sizeOf(cache, work))
+    out.writeInt(WireFormat.LengthDelimited.makeTag(fieldNum))
+    out.writeInt(size)
     work(ProtoFieldWriter(out, ordinal+1))
-    tmpOut.flush()
-    out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
+
+//    val tmpByteOut = java.io.ByteArrayOutputStream()
+//    val tmpOut = ProtoOutputStream(tmpByteOut)
+//    work(ProtoFieldWriter(out, ordinal+1))
+//    tmpOut.flush()
+//    out.writeByteArray(fieldNum, tmpByteOut.toByteArray())
     this
     
 
@@ -90,7 +130,8 @@ class ProtoFieldWriter(
     out.writeDouble(fieldNum, value)
     this
   override def putString(value: String): PickleWriter =
-    out.writeString(fieldNum, value)
+    out.writeByteArray(fieldNum, cache.cachedUtf8(value))
+    // out.writeString(fieldNum, value)
     this
   override def putElement(pickler: PickleWriter => Unit): PickleCollectionWriter =
     pickler(this)
@@ -100,17 +141,18 @@ class ProtoFieldWriter(
 
 
 /** This class can write out a proto structure given a TypeDescriptorMapping of field name to number. */
-class ProtoStructureWriter(out: ProtoOutputStream) extends PickleStructureWriter:
+class ProtoStructureWriter(out: ProtoOutputStream, cache: ProtoSerializationCache = SimpleProtoSerializationCache()) extends PickleStructureWriter:
   override def putField(number: Int, name: String, pickler: PickleWriter => Unit): PickleStructureWriter =
-    pickler(ProtoFieldWriter(out, number))
+    pickler(ProtoFieldWriter(out, number, cache))
     this
 
 /** A pickle writer that will only write proto messages using ProtoTypeDescriptors. */
 class ProtoWriter(
-    out: ProtoOutputStream
+    out: ProtoOutputStream,
+    cache: ProtoSerializationCache = SimpleProtoSerializationCache()
 ) extends PickleWriter with PickleCollectionWriter:
   override def putStructure(picklee: Any, tag: Struct[?])(work: PickleStructureWriter => Unit): PickleWriter =
-    work(ProtoStructureWriter(out))
+    work(ProtoStructureWriter(out, cache))
     this
 
   // --------------------------------------------------------------------------
@@ -153,6 +195,6 @@ class ProtoWriter(
     this
   override def putChoice(picklee: Any, tag: Choice[_], choice: String)(work: PickleWriter => Unit): PickleWriter =
     val ordinal = tag.asInstanceOf[Choice[_]].ordinal(picklee.asInstanceOf)
-    work(ProtoFieldWriter(out, ordinal+1))
+    work(ProtoFieldWriter(out, ordinal+1, cache))
     this
   override def flush(): Unit = out.flush()

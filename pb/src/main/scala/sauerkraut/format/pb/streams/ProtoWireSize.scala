@@ -31,6 +31,8 @@ object ProtoWireSize:
   inline def sizeOf(value: Long): Int =  VarInt.byteSize(value)
   inline def sizeOf(value: Float): Int =  4
   inline def sizeOf(value: Double): Int =  8
+  inline def sizeOf(value: Array[Byte]): Int =
+    sizeOf(value.length) + value.length
   inline def sizeOf(value: String): Int = 
     // TODO - Faster impl?
     val length = value.getBytes(InlineWriter.Utf8).length
@@ -45,3 +47,4 @@ object ProtoWireSize:
   inline def sizeOf(field: Int, value: Float): Int = sizeOfTag(WireFormat.Fixed32, field) + sizeOf(value)
   inline def sizeOf(field: Int, value: Double): Int = sizeOfTag(WireFormat.Fixed64, field) + sizeOf(value)
   inline def sizeOf(field: Int, value: String): Int = sizeOfTag(WireFormat.LengthDelimited, field) + sizeOf(value)
+  inline def sizeOf(field: Int, value: Array[Byte]): Int = sizeOfTag(WireFormat.LengthDelimited, field) + sizeOf(value)

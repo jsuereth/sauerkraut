@@ -46,4 +46,5 @@ trait PrimitiveComplianceTests extends ComplianceTestBase:
   @Test def writeString(): Unit =
     roundTrip("")
     roundTrip("testing")
+    roundTrip("This is a test of simple byte serialization for us all")
 

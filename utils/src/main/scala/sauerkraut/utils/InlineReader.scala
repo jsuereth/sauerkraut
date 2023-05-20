@@ -220,7 +220,7 @@ object InlineReader:
           buf(charCount) = currentByte.toChar
           charCount += 1
         case _ => 
-          throw UtfEncodingException(s"Encountered invalid byte: ${currentByte.toBinaryString}.  Expected valid UTF header.")
+          throw UtfEncodingException(s"At byte ${bytesRead}, Encountered invalid byte: ${currentByte.toBinaryString}.  Expected valid UTF header.")
       // Read next byte and end of do, if we have remaining bytes.
       if bytesRead < length then
         currentByte = readByte()
